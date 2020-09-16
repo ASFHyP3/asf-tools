@@ -1,20 +1,14 @@
 #!/usr/bin/env python
 import numpy as np
-import pandas as pd
-import xarray as xr
-import saa_func_lib as saa
 import logging
 import os
-import shutil
 import argparse
 import glob
-import re
 from datetime import datetime
-import saa_func_lib as saa
-import pycrs
-import subprocess
-from parse_asf_rtc_name import parse_asf_rtc_name
+from hyp3lib import saa_func_lib as saa
 from osgeo import gdal
+from subprocess import Popen, PIPE
+
 
 #
 # Path vs infiles setup:
@@ -55,23 +49,36 @@ def frange(start, stop=None, step=None):
 
 
 def get_full_extent(corners):
-    min_ullon = 180
-    max_lrlon = -180
-    min_lrlat = 90 
-    min_ullat = -90
+    min_ulx = 50000000
+    max_lrx = 0 
+    max_uly = 0
+    min_lry = 50000000
 
-    for ullon,ullat,lrlon,lrlat in extents:
-        min_ullon = min(ullon,min_ullon)
-        max_lrlon = max(lrlon,max_lrlon)
-        min_lrlat = min(lrlat,min_lrlat)
-        max_ullat = max(ullat,max_ullat)
+    for fi,ulx,lrx,lry,uly in corners:
+        print(f"{ulx,uly} {lrx,lry}")
+        min_ulx = min(ulx,min_ulx)
+        max_uly = max(uly,max_uly)
+        max_lrx = max(lrx,max_lrx)
+        min_lry = min(lry,min_lry)
 
-    return min_ullon,max_ullat,max_lrlon,min_lrlat
+    print(f"Return is upper left: {min_ulx,max_uly}; lower right: {max_lrx,min_lry}")
+    return min_ulx,max_lrx,max_uly,min_lry
 
 
-def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolution=None)
+def call_gdallocationinfo(fi,y,x):
+    cmd = ['gdallocationinfo', '-geoloc', '-valonly', fi, x, y]
+    with Popen(cmd, stdout=PIPE) as proc:
+        val = proc.stdout.read()
+        try:
+            val = float(val)
+        except: 
+            val = None 
+    return (val)
 
-    logging.info(f"make_composite: {outfile} {infiles} {path} {requesteed_pol} {resolution}"
+
+def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolution=None):
+
+    logging.info(f"make_composite: {outfile} {infiles} {path} {requested_pol} {resolution}")
     if requested_pol == None:
         requested_pol = "VV"
 
@@ -82,77 +89,87 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
     else:
         logging.info("Found list of input files to process")
     infiles.sort()
-    logging.debug("Input files: {}".format(infiles))
-
-    # Get extent of union of all images
-    extents = []
-    for fi in infiles:
-        extents.append(getCorners(fi))
-    ullon, ullat, lrlon, lrlat = get_full_extent(extents)
+    logging.debug(f"Input files: {infiles}")
 
     # resample infiles to desired resolution
-    resampled_files = []
-    for fi in infiles
+    if resolution:
+        resampled_files = []
+        for fi in infiles:
+            x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
+            pixel_size_x = trans[1]
+            pixel_size_y = trans[5] 
+            print(f"{fi} x = {pixel_size_x} y = {pixel_size_y}")
 
-        # get pixel size
-        x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
-        pixel_size_x = trans[1]
-        pixel_size_y = trans[5] 
-        print(f"{fi} x = {pixel_size_x} y = {pixel_size_y}")
-
-        # resample if necessary    
-        if resolution:
             if pixel_size_x < resolution:
                 res = int(resolution)
-                root,unused = os.path.splitext(os.path.basename(infile))
+                root,unused = os.path.splitext(os.path.basename(fi))
                 tmp_file = f"{root}_{res}.tif"
-                logging.info(f"Resampling {infile} to file {tmp_file}")
-                gdal.Translate(tmp_file,infile,xRes=resolution,yRes=resolution,resampleAlg="cubic")
+                logging.info(f"Resampling {fi} to file {tmp_file}")
+                gdal.Translate(tmp_file, fi, xRes=resolution, yRes=resolution, resampleAlg="cubic")
                 pixel_size_x = resolution
-                pixel_size_y = -1*resolution
+                pixel_size_y = -1 * resolution
                 resampled_infile = tmp_file
             else:
                 logging.warning("No resampling performed")
-                resampled_infile = infile
-        else:
-            logging.info("Skipping resample step")
-            resampled_infile = infile
+                resampled_infile = fi
+            resampled_files.append(resampled_infile)     
+    else:
+        logging.info("Skipping resample step")
+        x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(infiles[0]))
+        pixel_size_x = trans[1]
+        pixel_size_y = trans[5] 
+        print(f"{infiles[0]} x = {pixel_size_x} y = {pixel_size_y}")
+        resampled_files = infiles
 
-        resampled_files.append(resampled_infile)     
+    # Get extent of union of all images
+    extents = []
+    for fi in resampled_files:
+        ulx,lrx,lry,uly = saa.getCorners(fi)
+        extents.append([fi,ulx,lrx,lry,uly])
+    ulx, lrx, uly, lry = get_full_extent(extents)
 
-    # loop over ullon to lrlon and lrlat to ullat
-    x_pixels = (ullon - lrlon) / pixel_size_x
-    y_pixels = (lrlat - ullat) / pixel_size_y
-    outputs = np.zeros([x_pixels,y_pixels])
-    output_location_x = 0
-    output_location_y = 0
-    for lon in frange(ullon,lrlon,pixel_size_y):
-        for lat in frange(lrlat,ullat,pixel_size_x):
+    print(f"Full extent of mosaic is {ulx,uly} to {lrx,lry}")
+   
+    x_pixels = abs(int((ulx - lrx) / pixel_size_x))
+    y_pixels = abs(int((lry - uly) / pixel_size_y))
 
-            # make a list of input pixel values from each image that overlaps this lat,lon
-            for fi in resampled_files:
-                value = call_gdallocationinfo(fi)
-                if value:
-                    if value != 0:
-                        if "VV" in fi:
-                            dt = fi.split("_")[2]
-                            my_vals[f"{dt}"] = value
-                        else:
-                            dt = fi.split("_")[0]
-                            my_areas[f"{dt}"] = value
+    print(f"Output size is {x_pixels} samples by {y_pixels} lines")
 
-            # determine output pixel value
-            new_val = 0
-            for key in my_vals:
-                new_value = new_value * (my_vals[key]/my_areas[key])
-                total_weight = total_weight + 1/my_areas[key])
-            new_val = new_val / total_weight
+    outputs = np.zeros((y_pixels,x_pixels))
+    weights = np.zeros((y_pixels,x_pixels))
+    logging.info("Calculating output values")
 
-            # store output pixel value
-            outputs[output_location_x][outout_location_y] = new_val
-            output_location_x += pixel_size_x
-        output_location_y += piyel_size_y
-          
+    for fi,x_max,x_min,y_max,y_min in extents:
+        if "VV" in fi:
+            print(f"Processing file {fi}")
+            print(f"File covers {x_max,y_min} to {x_min,y_max}")
+
+            print("Reading values")
+            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace("_flat_VV","_area_map")))
+            print(f"size is {x_size,y_size}; shape is {areas.shape}")
+
+            print("Reading areas")
+            x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
+            print(f"size is {x_size,y_size}; shape is {values.shape}")
+
+
+            out_loc_x = (x_max - ulx) / pixel_size_x
+            out_loc_y = (y_min - uly) / pixel_size_y
+            end_loc_x = out_loc_x + x_size
+            end_loc_y = out_loc_y + y_size
+
+            print(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} and {int(out_loc_y)}:{int(end_loc_y)}")
+            print(f"Shapes are {values.shape,areas.shape,outputs.shape}")
+
+            outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * areas
+            weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += areas 
+
+            # write out composite
+            tmpfile = f"composite_{fi}"
+            saa.write_gdal_file_float(tmpfile,trans,proj,outputs,nodata=0)
+
+    outputs /= weights            
+
     # write out composite
     saa.write_gdal_file_float(outfile,trans,proj,outputs,nodata=0)
 
@@ -161,12 +178,12 @@ if __name__ == "__main__":
              description="Create a weighted composite mosaic from a set of S-1 RTC products",
              epilog= '''Output pixel values calculated using weights that are the inverse of the area.''')
 
-    parser.add_argument("outfile",help="Name of output netcdf file")
+    parser.add_argument("outfile",help="Name of output weighted mosaic geotiff file")
     parser.add_argument("--pol",choices=['VV','VH','HH','HV'],help="When using multi-pol data, only mosaic given polarization",default='VV')
     parser.add_argument("-r","--resolution",help="Desired output resolution",type=float)
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-p","--path", help="Name of directory where input stack is located\n" )
-    group.add_argument("-i","--infiles",nargs='?',help="Names of input series files")
+    group.add_argument("-i","--infiles",nargs='*',help="Names of input series files")
     args = parser.parse_args()
 
     logFile = "make_composite_{}.log".format(os.getpid())
@@ -175,7 +192,7 @@ if __name__ == "__main__":
     logging.getLogger().addHandler(logging.StreamHandler())
     logging.info("Starting run")
 
-    make_composite(args.outfile,args.infiles,args.path,args.pol,args.resolution))
+    make_composite(args.outfile,args.infiles,args.path,args.pol,args.resolution)
 
 
 
