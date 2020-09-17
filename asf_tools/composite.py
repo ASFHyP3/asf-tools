@@ -137,6 +137,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
 
     outputs = np.zeros((y_pixels,x_pixels))
     weights = np.zeros((y_pixels,x_pixels))
+    counts = np.zeros((y_pixels,x_pixels),dtype=np.int8)
     logging.info("Calculating output values")
 
     for fi,x_max,x_min,y_max,y_min in extents:
@@ -147,8 +148,10 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             print("Reading values")
             x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace("_flat_VV","_area_map")))
 
-            # Set zero area to 1 - get rid of NaNs
-            areas[areas == 0] = 1
+            # Set zero area to a large number to
+            #  - protect against Nans in outputs
+            #  - not skew the weights
+            areas[areas == 0] = 10000000
 
             print("Reading areas")
             x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
@@ -162,7 +165,8 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
 
             outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * 1.0/areas
             weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1.0/areas 
-  
+            counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1
+             
             # Replace NaNs in data with zeros
 #            outputs[np.isnan(outputs)] = 0
 
@@ -174,6 +178,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
 
     # write out composite
     saa.write_gdal_file_float(outfile,trans,proj,outputs,nodata=0)
+    saa.write_gdal_file("counts.tif",trans,proj,counts.astype(np.int16))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="make_composite.py",
