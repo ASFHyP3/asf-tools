@@ -146,12 +146,12 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
 
             print("Reading values")
             x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace("_flat_VV","_area_map")))
-            print(f"size is {x_size,y_size}; shape is {areas.shape}")
+
+            # Set zero area to 1 - get rid of NaNs
+            areas[areas == 0] = 1
 
             print("Reading areas")
             x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
-            print(f"size is {x_size,y_size}; shape is {values.shape}")
-
 
             out_loc_x = (x_max - ulx) / pixel_size_x
             out_loc_y = (y_min - uly) / pixel_size_y
@@ -159,10 +159,12 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             end_loc_y = out_loc_y + y_size
 
             print(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} and {int(out_loc_y)}:{int(end_loc_y)}")
-            print(f"Shapes are {values.shape,areas.shape,outputs.shape}")
 
-            outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * areas
-            weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += areas 
+            outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * 1.0/areas
+            weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1.0/areas 
+  
+            # Replace NaNs in data with zeros
+#            outputs[np.isnan(outputs)] = 0
 
             # write out composite
             tmpfile = f"composite_{fi}"
