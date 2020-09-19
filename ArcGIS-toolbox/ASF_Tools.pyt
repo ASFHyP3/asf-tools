@@ -2,10 +2,10 @@
 ##  ASF ArcGIS Toolbox         ##
 ##  Heidi Kristenson           ##
 ##  Alaska Satellite Facility  ##
-##  16 September 2020          ##
+##  18 September 2020          ##
 #################################
 
-import arcpy, os, zipfile
+import arcpy, os, zipfile, sys
 
 class Toolbox(object):
     def __init__(self):
@@ -542,12 +542,26 @@ class RGBDecomp(object):
         # Second parameter: scale of input dataset
         scale = arcpy.Parameter(
             name = "scale",
-            displayName = "Scale of input RTC (amplitude or power)",
+            displayName = "Scale of input RTC (Amplitude or Power)",
             datatype = "GPString",
             parameterType = "Required",
             direction = "Input")
 
-        # Third parameter: R/B threshold in dB
+        scale.filter.type = "ValueList"
+        scale.filter.list = ["Power", "Amplitude"]
+
+        # Third parameter: Primary polarization
+        pol = arcpy.Parameter(
+            name = "pol",
+            displayName = "Primary polarization (V or H)",
+            datatype = "GPString",
+            parameterType = "Required",
+            direction = "Input")
+
+        pol.filter.type = "ValueList"
+        pol.filter.list = ["V", "H"]
+
+        # Fourth parameter: R/B threshold in dB
         rb_thresh_db = arcpy.Parameter(
             name = "rb_thresh_db",
             displayName = "Threshold cutoff value for red/blue in dB (default: -24 dB)",
@@ -555,7 +569,7 @@ class RGBDecomp(object):
             parameterType = "Required",
             direction = "Input")
 
-        # Fourth parameter: output directory for RGB file
+        # Fifth parameter: output directory for RGB file
         outdir = arcpy.Parameter(
             name = "outdir",
             displayName = "Output directory for new RGB file",
@@ -563,7 +577,7 @@ class RGBDecomp(object):
             parameterType = "Required",
             direction = "Input")
 
-        # Fifth parameter: output name for RGB file
+        # Sixth parameter: output name for RGB file
         outname = arcpy.Parameter(
             name = "outname",
             displayName = "Filename for new RGB raster",
@@ -571,7 +585,7 @@ class RGBDecomp(object):
             parameterType = "Required",
             direction = "Input")
 
-        params = [indir, scale, rb_thresh_db, outdir, outname]
+        params = [indir, scale, pol, rb_thresh_db, outdir, outname]
         return params
 
     def isLicensed(self):
@@ -601,8 +615,6 @@ class RGBDecomp(object):
         has been changed."""
 
         # Set the default scale for the input file to be selected based on the indir name
-        # THIS NEEDS TO BE MADE MORE ROBUST; IF CHARACTER 36 ISN'T A OR P, IT THROWS AN ERROR
-        # AND MAKES EVERYTHING SAD. MAYBE A TRY CLAUSE? OR EXCEPTION?
         if parameters[0].value:
             indirbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
             inscale = indirbase[36]
@@ -615,19 +627,25 @@ class RGBDecomp(object):
             if not parameters[1].altered:
                 parameters[1].value = insc
 
+        # Set the default primary polarization
+        if parameters[0].value:
+            pol = indirbase[24]
+            if not parameters[2].altered:
+                parameters[2].value = pol
+
         # Set the default R/B threshold value
-        if not parameters[2].altered:
-            parameters[2].value = -24
+        if not parameters[3].altered:
+            parameters[3].value = -24
 
         # Set the default output directory to be the same as the input directory
         if parameters[0].value:
-            if not parameters[3].altered:
-                parameters[3].value = parameters[0].value.value
+            if not parameters[4].altered:
+                parameters[4].value = parameters[0].value.value
 
         # Set the default output filename to be the basename_RGB.tif
         if parameters[0].value:
-            if not parameters[4].altered:
-                parameters[4].value = ("%s_RGB.tif" % indirbase)
+            if not parameters[5].altered:
+                parameters[5].value = ("%s_RGB.tif" % indirbase)
 
         return
 
@@ -645,54 +663,79 @@ class RGBDecomp(object):
         # Define parameters
         indir = parameters[0].valueAsText
         scale = parameters[1].valueAsText
-        rb_thresh_db = parameters[2].valueAsText
-        outdir = parameters[3].valueAsText
-        outname = parameters[4].valueAsText
+        pol = parameters[2].valueAsText
+        rb_thresh_db = parameters[3].valueAsText
+        outdir = parameters[4].valueAsText
+        outname = parameters[5].valueAsText
 
         outmsg1 = "Parameters accepted. Generating RGB Decomposition %s..." %outname
         messages.addMessage(outmsg1)
 
         # Run the code to generate the RGB Decomposition file
 
-        # Create a message generation function
-        def logMessage(msg):
-            print(msg)
-            arcpy.AddMessage(msg)
-            messages.addMessage(msg)
-
-        logMessage("Input parameters have been defined. Preparing workspace...")
+        arcpy.AddMessage("Input parameters have been defined. Preparing workspace...")
 
         # Set the working directory containing the RTC images
         arcpy.env.workspace = indir
+        indirbase = os.path.splitext(indir)[0]
         # Create a scratch directory for intermediate files
         scratch = arcpy.CreateFolder_management(indir, "temp")
         scratchpath = os.path.join(indir, "temp")
 
-        logMessage("Workspace has been prepared. Defining input rasters...")
+        arcpy.AddMessage("Workspace has been prepared. Defining input rasters...")
+
+        # Confirm that the input dataset is dual-pol
+        dpol = indirbase[23]
+        if dpol == 'D':
+            arcpy.AddMessage("Based on the input directory, this is a dual-pol dataset.")
+        elif dpol == 'S':
+            arcpy.AddError("This is a single-pol dataset. A dual-pol dataset is required for RGB Decomposition.")
+            sys.exit(0)
+        else:
+            arcpy.AddMessage("Dual-polarization cannot be determined from the input directory.")
 
         # Set variables for co-pol and cross-pol GeoTIFFs
-        ## Figure out how to elegantly determine if the dataset is VV/VH or HH/HV
-        ### Could be either a user-set parameter, but would be better to determine from the directory contents
-        ## For now, just assuming VV/VH
+        if pol == 'V':
+            vv_tif = arcpy.ListRasters('*VV.tif')[0]
+            cp = os.path.join(indir, vv_tif)
+            arcpy.AddMessage("Co-pol dataset: %s" % vv_tif)
+            vh_tif = arcpy.ListRasters('*VH.tif')[0]
+            xp = os.path.join(indir, vh_tif)
+            arcpy.AddMessage("Cross-pol dataset: %s" % vh_tif)
 
-        vv_tif = arcpy.ListRasters('*VV.tif')[0]
-        #hh_tif = arcpy.ListRasters('*HH.tif')[0]
-        cp = os.path.join(indir, vv_tif)
+        elif pol == 'H':
+            hh_tif = arcpy.ListRasters('*HH.tif')[0]
+            cp = os.path.join(indir, hh_tif)
+            arcpy.AddMessage("Co-pol dataset: %s" % hh_tif)
+            hv_tif = arcpy.ListRasters('*HV.tif')[0]
+            xp = os.path.join(indir, hv_tif)
+            arcpy.AddMessage("Cross-pol dataset: %s" % vh_tif)
 
-        vh_tif = arcpy.ListRasters('*VH.tif')[0]
-        #hv_tif = arcpy.ListRasters('*HV.tif')[0]
-        xp = os.path.join(indir, vh_tif)
+        # Convert the scale to power if necessary
+        if scale == 'Amplitude':
+            cps = arcpy.sa.Square(cp)
+            xps = arcpy.sa.Square(xp)
+            arcpy.AddMessage("Input scale is amplitude. Converted to power scale.")
 
-        logMessage("Input rasters have been defined. Running pixel cleanup routine...")
+        elif scale == 'Power':
+            cps = cp
+            xps = xp
+            arcpy.AddMessage("Input scale is power. No conversion necessary.")
+
+        else:
+            arcpy.AddError("Input scale must be set to Amplitude or Power.")
+            sys.exit(0)
+
+        arcpy.AddMessage("Input rasters have been defined. Running pixel cleanup routine...")
 
         # Peform pixel cleanup on VV and VH RTC images, using -48 dB as cutoff for valid pixels
         pc_thresh = math.pow(10, -4.8)
-        wc_pc = "VALUE < " + str(pc_thresh)
-        #OR: wc_pc = "VALUE < %s" % (pc_thresh)
-        cp0 = arcpy.sa.Con(cp, 0, cp, wc_pc)
-        xp0 = arcpy.sa.Con(xp, 0, xp, wc_pc)
+        wc_pc = "VALUE < %s" % (pc_thresh)
+        #OR: wc_pc = "VALUE < " + str(pc_thresh)
+        cp0 = arcpy.sa.Con(cps, 0, cps, wc_pc)
+        xp0 = arcpy.sa.Con(xps, 0, xps, wc_pc)
 
-        logMessage("Pixel cleanup complete. Generating spatial masks...")
+        arcpy.AddMessage("Pixel cleanup complete. Generating spatial masks...")
 
         # Generate spatial masks based on red/blue threshold
         rb_thresh = math.pow(10, -2.4)
@@ -708,7 +751,7 @@ class RGBDecomp(object):
         # MX = SXP > 0
         MX = arcpy.sa.Con(xp0, "1", "0", "VALUE > 0")
 
-        logMessage("Spatial masks generated. Deriving red and blue components of surface scatter...")
+        arcpy.AddMessage("Spatial masks generated. Deriving red and blue components of surface scatter...")
 
         # The surface scattering component is divided into red and blue sections
         # Negative values are set to zero
@@ -719,7 +762,7 @@ class RGBDecomp(object):
         # Negative values are set to zero
         sd = arcpy.sa.Con((cp0 - xp0), "0", (cp0 - xp0), "VALUE < 0")
 
-        logMessage("Red and blue components have been derived. Applying spatial masks and scalars for each band...")
+        arcpy.AddMessage("Red and blue components have been derived. Applying spatial masks and scalars for each band...")
 
         # Apply spatial masks and specific scalars to stretch the values for each band from 1 to 255
         z = 2 / math.pi * MB * arcpy.sa.ATan(arcpy.sa.SquareRoot(sd))
@@ -727,7 +770,7 @@ class RGBDecomp(object):
         iG = 254 * MX * (3 * MR * arcpy.sa.SquareRoot(xp0) + (2 * z)) + 1
         iB = 254 * MX * (2 * arcpy.sa.SquareRoot(PB) + (5 * z)) + 1
 
-        logMessage("Spatial masks and scalars have been applied. Converting bands to 8-bit unsigned integer GeoTIFFs...")
+        arcpy.AddMessage("Spatial masks and scalars have been applied. Converting bands to 8-bit unsigned integer GeoTIFFs...")
 
         # Create empty list for RGB bands
         bandList = []
@@ -750,19 +793,36 @@ class RGBDecomp(object):
         aB.save(aBpath)
         bandList.append(aBpath)
 
-        logMessage("GeoTIFF files for each band have been saved. Combining single-band rasters to generate RGB image...")
+        arcpy.AddMessage("GeoTIFF files for each band have been saved. Combining single-band rasters to generate RGB image...")
+
+        arcpy.env.addOutputsToMap = True  # attempt to get outputs added to the map. Unsuccessful.
 
         # Combine the aRGB bands into a composite raster
         outpath = os.path.join(outdir, outname)
         arcpy.CompositeBands_management(bandList, outpath)
 
-        logMessage("RGB Decomposition product has been generated: %s" % outpath)
+        # I'm trying to get output products added to the map; no success so far.
+        # This sounded like it might do the trick, but no dice. Maybe an output parameter needs to be added?
+        #outlayer = arcpy.MakeRasterLayer_management(outpath, "RGB")
+        #arcpy.AddMessage("Theoretically generated a temporary raster layer")
 
-        # Indicate process is complete
-        outmsg2 = "Log Difference raster %s generated." %outname
+        arcpy.AddMessage("RGB Decomposition product has been generated: %s. Cleaning up..." % outpath)
+
+        # Delete temporary files
+        # The deletion of the temp folder could be set as an option, if there's any chance that users might
+        # want to have access to the individual color bands. I don't think that's likely, though.
+
+        # This does not currently work in the Python Toolbox environment. I don't know why
+        # If I run the same command in the python window, it behaves as expected. ???
+        # The setting of the workspace is probably redundant; it was a hail mary attempt to get it to work.
+        arcpy.env.workspace = indir # delete this if proven to be redundant
+        arcpy.Delete_management("temp")
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
         messages.addMessage("The Spatial Analyst Extension is in %s status." %status)
+
+        # Indicate process is complete
+        arcpy.AddMessage("RGB Decomposition process is complete.")
 
         return
