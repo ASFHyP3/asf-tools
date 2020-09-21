@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Create S1 SAR Composite Mosaic using inverse area weighting ala David Small.
 
    Path vs infiles:
@@ -13,7 +14,9 @@ import re
 import argparse
 import glob
 from datetime import datetime
-from hyp3lib import saa_func_lib as saa
+#from hyp3lib import saa_func_lib as saa
+#import hyp3lib.saa_func_lib as saa
+import saa_func_lib as saa
 from osgeo import gdal
 from subprocess import Popen, PIPE
 from osgeo.gdalconst import GRIORA_Cubic
@@ -150,6 +153,7 @@ def reproject_to_median_utm(files,resolution=None):
                 proj = ('EPSG:327%02d' % int(home_zone))
             gdal.Warp(name, fi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
             gdal.Warp(aname, afi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
+            new_files.append(name)
         else:
             # May need to reproject to desired resolution
             x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
@@ -157,11 +161,16 @@ def reproject_to_median_utm(files,resolution=None):
                 logging.info(f"Changing resolution of {fi} to {pix_size}")
                 gdal.Warp(name, fi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
                 gdal.Warp(aname, afi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
+                new_files.append(name)
             else:
-                logging.info(f"Linking {fi} to {name}")
-                os.symlink(fi,name)
-                os.symlink(afi,aname)
-        new_files.append(name)
+                if not os.path.isfile(fi):
+                    logging.info(f"Linking {fi} to {name}")
+                    os.symlink(fi,name)
+                    os.symlink(afi,aname)
+                    new_files.append(name)
+                else:
+                    logging.info(f"Found previous reproj file {fi} - taking no action")
+                    new_files.append(fi)
 
     logging.info("All files completed")
     return new_files
@@ -224,7 +233,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             # Set zero area to a large number to
             #  - protect against Nans in outputs
             #  - not skew the weights
-            areas[areas == 0] = 10000000
+            areas[areas == 0] = 1.0E12
 
             logging.info("Reading values")
             x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
