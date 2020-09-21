@@ -2,11 +2,14 @@
 import numpy as np
 import logging
 import os
+import re
 import argparse
 import glob
 from datetime import datetime
 from hyp3lib import saa_func_lib as saa
 from osgeo import gdal
+from subprocess import Popen, PIPE
+from osgeo.gdalconst import GRIORA_Cubic
 
 #
 # Path vs infiles setup:
@@ -15,7 +18,7 @@ from osgeo import gdal
 #         i.e  $PATH/20*/PRODUCT/ contains the input data, the log file and the README.txt
 #
 #     The code assumes auxiliary files are in the same location as the tiff files
-# 
+#
 
 def get_pol(infile):
     if "VV" in infile:
@@ -63,6 +66,99 @@ def get_full_extent(corners):
     return min_ulx,max_lrx,max_uly,min_lry
 
 
+def get_max_pixel_size(files):
+    pix_size = -999
+    for fi in files:
+        (x1, y1, t1, p1) = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
+        tmp = t1[1]
+        pix_size = max(pix_size, tmp)
+
+    if pix_size == -999:
+        Exception("No valid pixel sizes found")
+    return pix_size
+
+
+def get_hemisphere(fi):
+    hemi = None
+    dst = gdal.Open(fi)
+    p1 = dst.GetProjection()
+    ptr = p1.find("UTM zone ")
+    if ptr != -1:
+        (zone, hemi) = [t(s) for t, s in zip((int, str), re.search('(\d+)(.)', p1[ptr:]).groups())]
+    return hemi
+
+
+def get_zone_from_proj(fi):
+    zone = None
+    dst = gdal.Open(fi)
+    p1 = dst.GetProjection()
+    ptr = p1.find("UTM zone ")
+    if ptr != -1:
+        (zone, hemi) = [t(s) for t, s in zip((int, str), re.search("(\d+)(.)", p1[ptr:]).groups())]
+    return zone
+
+
+def parse_zones(files):
+    zones = []
+    for fi in files:
+        zone = get_zone_from_proj(fi)
+        if zone:
+            zones.append(zone)
+    return np.asarray(zones, dtype=np.int8)
+
+
+def reproject_to_median_utm(files,resolution=None):
+
+    if len(files) < 2:
+        return None 
+
+    # Set the pixel size
+    if resolution:
+        pix_size = resolution
+        print(f"Changing pixel size to {pix_size}")
+    else:
+        pix_size = get_max_pixel_size(files)
+        print(f"Using maximum pixel size {pix_size}")
+
+    # Get the median UTM zone and hemisphere
+    home_zone = np.median(parse_zones(files))
+    print(f"Home zone is {home_zone}")
+    hemi = get_hemisphere(files[0])
+    print(f"Hemisphere is {hemi}")
+
+    # Reproject files as needed
+    print("Checking projections")
+    new_files = []
+    for fi in files:
+        my_zone = get_zone_from_proj(fi)
+        name = fi.replace(".tif", "_reproj.tif")
+        afi = fi.replace("_flat_VV.tif","_area_map.tif")
+        aname = fi.replace("_flat_VV.tif","_area_map_reproj.tif")
+        if my_zone != home_zone:
+            print(f"Reprojecting {fi} to {name}")
+            if hemi == "N":
+                proj = ('EPSG:326%02d' % int(home_zone))
+            else:
+                proj = ('EPSG:327%02d' % int(home_zone))
+            gdal.Warp(name, fi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
+            gdal.Warp(aname, afi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
+        else:
+            # May need to reproject to desired resolution
+            x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
+            if x < pix_size:
+                print(f"Changing resolution of {fi} to {pix_size}")
+                gdal.Warp(name, fi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
+                gdal.Warp(aname, afi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
+            else:
+                print(f"Linking {fi} to {name}")
+                os.symlink(fi,name)
+                os.symlink(afi,aname)
+        new_files.append(name)
+
+    print("All files completed")
+    return new_files
+
+
 def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolution=None):
 
     logging.info(f"make_composite: {outfile} {infiles} {path} {requested_pol} {resolution}")
@@ -78,35 +174,17 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
     infiles.sort()
     logging.debug(f"Input files: {infiles}")
 
-    # resample infiles to desired resolution
-    if resolution:
-        resampled_files = []
-        for fi in infiles:
-            x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
-            pixel_size_x = trans[1]
-            pixel_size_y = trans[5] 
-            print(f"{fi} x = {pixel_size_x} y = {pixel_size_y}")
+    # resample infiles to maximum resolution & common UTM zone
+    resampled_files = reproject_to_median_utm(infiles,resolution) 
+    if len(resampled_files) == 0:
+        exception("Unable to resample files")
+        exit -1
 
-            if pixel_size_x < resolution:
-                res = int(resolution)
-                root,unused = os.path.splitext(os.path.basename(fi))
-                tmp_file = f"{root}_{res}.tif"
-                logging.info(f"Resampling {fi} to file {tmp_file}")
-                gdal.Translate(tmp_file, fi, xRes=resolution, yRes=resolution, resampleAlg="cubic")
-                pixel_size_x = resolution
-                pixel_size_y = -1 * resolution
-                resampled_infile = tmp_file
-            else:
-                logging.warning("No resampling performed")
-                resampled_infile = fi
-            resampled_files.append(resampled_infile)     
-    else:
-        logging.info("Skipping resample step")
-        x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(infiles[0]))
-        pixel_size_x = trans[1]
-        pixel_size_y = trans[5] 
-        print(f"{infiles[0]} x = {pixel_size_x} y = {pixel_size_y}")
-        resampled_files = infiles
+    # Get pixel size
+    x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(resampled_files[0]))
+    pixel_size_x = trans[1]
+    pixel_size_y = trans[5] 
+    print(f"{resampled_files[0]} x = {pixel_size_x} y = {pixel_size_y}")
 
     # Get extent of union of all images
     extents = []
@@ -164,6 +242,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
     saa.write_gdal_file_float(outfile,trans,proj,outputs,nodata=0)
     saa.write_gdal_file("counts.tif",trans,proj,counts.astype(np.int16))
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="make_composite.py",
              description="Create a weighted composite mosaic from a set of S-1 RTC products",
@@ -184,3 +263,6 @@ if __name__ == "__main__":
     logging.info("Starting run")
 
     make_composite(args.outfile,args.infiles,args.path,args.pol,args.resolution)
+
+
+
