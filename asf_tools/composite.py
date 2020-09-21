@@ -146,7 +146,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             print(f"File covers {x_max,y_min} to {x_min,y_max}")
 
             print("Reading areas")
-            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace("_flat_VV","_area_map")))
+            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace("_flat_VV_reproj","_area_map_reproj")))
 
             # Set zero area to a large number to
             #  - protect against Nans in outputs
@@ -197,6 +197,3 @@ if __name__ == "__main__":
     logging.info("Starting run")
 
     make_composite(args.outfile,args.infiles,args.path,args.pol,args.resolution)
-
-
-
