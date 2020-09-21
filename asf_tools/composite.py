@@ -145,7 +145,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             print(f"Processing file {fi}")
             print(f"File covers {x_max,y_min} to {x_min,y_max}")
 
-            print("Reading values")
+            print("Reading areas")
             x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace("_flat_VV","_area_map")))
 
             # Set zero area to a large number to
@@ -153,7 +153,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             #  - not skew the weights
             areas[areas == 0] = 10000000
 
-            print("Reading areas")
+            print("Reading values")
             x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
 
             out_loc_x = (x_max - ulx) / pixel_size_x
