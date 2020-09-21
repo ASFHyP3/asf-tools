@@ -1,3 +1,10 @@
+"""Create S1 SAR Composite Mosaic using inverse area weighting ala David Small.
+
+   Path vs infiles:
+     If path is passed, code assumes files are in an ASF HyP3 RTC Stacking arrangement.
+     i.e  {path}/20*/PRODUCT/ contains the input RTC data and the area maps.
+
+"""
 
 import numpy as np
 import logging
@@ -13,6 +20,7 @@ from osgeo.gdalconst import GRIORA_Cubic
 
 
 def get_pol(infile):
+    """Return the polarization of infile"""
     if "VV" in infile:
         pol = "VV"
     elif "VH" in infile:
@@ -27,6 +35,7 @@ def get_pol(infile):
 
 
 def frange(start, stop=None, step=None):
+    """Return a floating point number ranging from start to stop, adding step"""
     if stop == None:
         stop = start + 0.0
         start = 0.0
@@ -42,6 +51,7 @@ def frange(start, stop=None, step=None):
 
 
 def get_full_extent(corners):
+    """"Calculate the union of corners"""
     min_ulx = 50000000
     max_lrx = 0 
     max_uly = 0
@@ -59,6 +69,7 @@ def get_full_extent(corners):
 
 
 def get_max_pixel_size(files):
+    """Find maximum pixel size of given files"""
     pix_size = -999
     for fi in files:
         (x1, y1, t1, p1) = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
@@ -71,6 +82,7 @@ def get_max_pixel_size(files):
 
 
 def get_hemisphere(fi):
+    """Return hemispher of UTM zone - North or South"""
     hemi = None
     dst = gdal.Open(fi)
     p1 = dst.GetProjection()
@@ -81,6 +93,7 @@ def get_hemisphere(fi):
 
 
 def get_zone_from_proj(fi):
+    """Return the UTM zone of given file"""
     zone = None
     dst = gdal.Open(fi)
     p1 = dst.GetProjection()
@@ -91,6 +104,7 @@ def get_zone_from_proj(fi):
 
 
 def parse_zones(files):
+    """Return the zone numnbers of all files given"""
     zones = []
     for fi in files:
         zone = get_zone_from_proj(fi)
@@ -100,6 +114,8 @@ def parse_zones(files):
 
 
 def reproject_to_median_utm(files,resolution=None):
+    """Reproject a bunch of UTM geotiffs to the median UTM zone.
+       Use either the given resolution or the largest resolution in the stack"""
 
     if len(files) < 2:
         return None 
