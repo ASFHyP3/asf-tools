@@ -7,8 +7,6 @@ import glob
 from datetime import datetime
 from hyp3lib import saa_func_lib as saa
 from osgeo import gdal
-from subprocess import Popen, PIPE
-
 
 #
 # Path vs infiles setup:
@@ -63,17 +61,6 @@ def get_full_extent(corners):
 
     print(f"Return is upper left: {min_ulx,max_uly}; lower right: {max_lrx,min_lry}")
     return min_ulx,max_lrx,max_uly,min_lry
-
-
-def call_gdallocationinfo(fi,y,x):
-    cmd = ['gdallocationinfo', '-geoloc', '-valonly', fi, x, y]
-    with Popen(cmd, stdout=PIPE) as proc:
-        val = proc.stdout.read()
-        try:
-            val = float(val)
-        except: 
-            val = None 
-    return (val)
 
 
 def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolution=None):
