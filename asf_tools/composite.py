@@ -167,9 +167,6 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1.0/areas 
             counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1
              
-            # Replace NaNs in data with zeros
-#            outputs[np.isnan(outputs)] = 0
-
             # write out composite
             tmpfile = f"composite_{fi}"
             saa.write_gdal_file_float(tmpfile,trans,proj,outputs,nodata=0)
