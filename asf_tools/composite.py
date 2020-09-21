@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 import numpy as np
 import logging
 import os
@@ -11,14 +11,6 @@ from osgeo import gdal
 from subprocess import Popen, PIPE
 from osgeo.gdalconst import GRIORA_Cubic
 
-#
-# Path vs infiles setup:
-#
-#     If path is passed, assumes files are in an ASF HyP3 RTC Stacking arrangements
-#         i.e  $PATH/20*/PRODUCT/ contains the input data, the log file and the README.txt
-#
-#     The code assumes auxiliary files are in the same location as the tiff files
-#
 
 def get_pol(infile):
     if "VV" in infile:
@@ -56,13 +48,13 @@ def get_full_extent(corners):
     min_lry = 50000000
 
     for fi,ulx,lrx,lry,uly in corners:
-        print(f"{ulx,uly} {lrx,lry}")
+        logging.debug(f"{ulx,uly} {lrx,lry}")
         min_ulx = min(ulx,min_ulx)
         max_uly = max(uly,max_uly)
         max_lrx = max(lrx,max_lrx)
         min_lry = min(lry,min_lry)
 
-    print(f"Return is upper left: {min_ulx,max_uly}; lower right: {max_lrx,min_lry}")
+    logging.debug(f"Return is upper left: {min_ulx,max_uly}; lower right: {max_lrx,min_lry}")
     return min_ulx,max_lrx,max_uly,min_lry
 
 
@@ -115,19 +107,19 @@ def reproject_to_median_utm(files,resolution=None):
     # Set the pixel size
     if resolution:
         pix_size = resolution
-        print(f"Changing pixel size to {pix_size}")
+        logging.info(f"Changing pixel size to {pix_size}")
     else:
         pix_size = get_max_pixel_size(files)
-        print(f"Using maximum pixel size {pix_size}")
+        logging.info(f"Using maximum pixel size {pix_size}")
 
     # Get the median UTM zone and hemisphere
     home_zone = np.median(parse_zones(files))
-    print(f"Home zone is {home_zone}")
+    logging.info(f"Home zone is {home_zone}")
     hemi = get_hemisphere(files[0])
-    print(f"Hemisphere is {hemi}")
+    logging.info(f"Hemisphere is {hemi}")
 
     # Reproject files as needed
-    print("Checking projections")
+    logging.info("Checking projections")
     new_files = []
     for fi in files:
         my_zone = get_zone_from_proj(fi)
@@ -135,7 +127,7 @@ def reproject_to_median_utm(files,resolution=None):
         afi = fi.replace("_flat_VV.tif","_area_map.tif")
         aname = fi.replace("_flat_VV.tif","_area_map_reproj.tif")
         if my_zone != home_zone:
-            print(f"Reprojecting {fi} to {name}")
+            logging.info(f"Reprojecting {fi} to {name}")
             if hemi == "N":
                 proj = ('EPSG:326%02d' % int(home_zone))
             else:
@@ -146,16 +138,16 @@ def reproject_to_median_utm(files,resolution=None):
             # May need to reproject to desired resolution
             x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
             if x < pix_size:
-                print(f"Changing resolution of {fi} to {pix_size}")
+                logging.info(f"Changing resolution of {fi} to {pix_size}")
                 gdal.Warp(name, fi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
                 gdal.Warp(aname, afi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
             else:
-                print(f"Linking {fi} to {name}")
+                logging.info(f"Linking {fi} to {name}")
                 os.symlink(fi,name)
                 os.symlink(afi,aname)
         new_files.append(name)
 
-    print("All files completed")
+    logging.info("All files completed")
     return new_files
 
 
@@ -184,7 +176,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
     x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(resampled_files[0]))
     pixel_size_x = trans[1]
     pixel_size_y = trans[5] 
-    print(f"{resampled_files[0]} x = {pixel_size_x} y = {pixel_size_y}")
+    logging.info(f"{resampled_files[0]} x = {pixel_size_x} y = {pixel_size_y}")
 
     # Get extent of union of all images
     extents = []
@@ -193,12 +185,12 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
         extents.append([fi,ulx,lrx,lry,uly])
     ulx, lrx, uly, lry = get_full_extent(extents)
 
-    print(f"Full extent of mosaic is {ulx,uly} to {lrx,lry}")
+    logging.info(f"Full extent of mosaic is {ulx,uly} to {lrx,lry}")
    
     x_pixels = abs(int((ulx - lrx) / pixel_size_x))
     y_pixels = abs(int((lry - uly) / pixel_size_y))
 
-    print(f"Output size is {x_pixels} samples by {y_pixels} lines")
+    logging.info(f"Output size is {x_pixels} samples by {y_pixels} lines")
 
     outputs = np.zeros((y_pixels,x_pixels))
     weights = np.zeros((y_pixels,x_pixels))
@@ -207,10 +199,10 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
 
     for fi,x_max,x_min,y_max,y_min in extents:
         if "VV" in fi:
-            print(f"Processing file {fi}")
-            print(f"File covers {x_max,y_min} to {x_min,y_max}")
+            logging.info(f"Processing file {fi}")
+            logging.info(f"File covers {x_max,y_min} to {x_min,y_max}")
 
-            print("Reading areas")
+            logging.info("Reading areas")
             x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace("_flat_VV_reproj","_area_map_reproj")))
 
             # Set zero area to a large number to
@@ -218,7 +210,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             #  - not skew the weights
             areas[areas == 0] = 10000000
 
-            print("Reading values")
+            logging.info("Reading values")
             x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
 
             out_loc_x = (x_max - ulx) / pixel_size_x
@@ -226,7 +218,7 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
             end_loc_x = out_loc_x + x_size
             end_loc_y = out_loc_y + y_size
 
-            print(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} and {int(out_loc_y)}:{int(end_loc_y)}")
+            logging.info(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} and {int(out_loc_y)}:{int(end_loc_y)}")
 
             outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * 1.0/areas
             weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1.0/areas 
@@ -239,9 +231,11 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
     outputs /= weights            
 
     # write out composite
+    logging.info("Writing output files")
     saa.write_gdal_file_float(outfile,trans,proj,outputs,nodata=0)
     saa.write_gdal_file("counts.tif",trans,proj,counts.astype(np.int16))
 
+    logging.info("Program successfully completed")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="make_composite.py",
