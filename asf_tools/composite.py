@@ -219,6 +219,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
     outputs = np.zeros((y_pixels,x_pixels))
     weights = np.zeros((y_pixels,x_pixels))
+    temp = np.zeros((y_pixels,x_pixels))
     counts = np.zeros((y_pixels,x_pixels),dtype=np.int8)
     logging.info("Calculating output values")
 
@@ -230,11 +231,6 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
             logging.info("Reading areas")
             x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace(f"_flat_{pol}_reproj","_area_map_reproj")))
 
-            # Set zero area to a large number to
-            #  - protect against Nans in outputs
-            #  - not skew the weights
-            areas[areas == 0] = 1.0E12
-
             logging.info("Reading values")
             x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
 
@@ -245,13 +241,16 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
             logging.info(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} and {int(out_loc_y)}:{int(end_loc_y)}")
 
-            outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * 1.0/areas
-            weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1.0/areas 
+            temp = 1.0/areas 
+            temp[values==0] = 0
+
+            outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * temp
+            weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += temp
             counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1
              
             # write out composite
-            tmpfile = f"composite_{fi}"
-            saa.write_gdal_file_float(tmpfile,trans,proj,outputs,nodata=0)
+            # tmpfile = f"composite_{fi}"
+            # saa.write_gdal_file_float(tmpfile,trans,proj,outputs,nodata=0)
 
     outputs /= weights            
 
