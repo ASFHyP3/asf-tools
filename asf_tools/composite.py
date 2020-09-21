@@ -116,7 +116,7 @@ def parse_zones(files):
     return np.asarray(zones, dtype=np.int8)
 
 
-def reproject_to_median_utm(files,resolution=None):
+def reproject_to_median_utm(files,pol,resolution=None):
     """Reproject a bunch of UTM geotiffs to the median UTM zone.
        Use either the given resolution or the largest resolution in the stack"""
 
@@ -143,8 +143,8 @@ def reproject_to_median_utm(files,resolution=None):
     for fi in files:
         my_zone = get_zone_from_proj(fi)
         name = fi.replace(".tif", "_reproj.tif")
-        afi = fi.replace("_flat_VV.tif","_area_map.tif")
-        aname = fi.replace("_flat_VV.tif","_area_map_reproj.tif")
+        afi = fi.replace(f"_flat_{pol}.tif","_area_map.tif")
+        aname = fi.replace(f"_flat_{pol}.tif","_area_map_reproj.tif")
         if my_zone != home_zone:
             logging.info(f"Reprojecting {fi} to {name}")
             if hemi == "N":
@@ -176,16 +176,16 @@ def reproject_to_median_utm(files,resolution=None):
     return new_files
 
 
-def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolution=None):
+def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
-    logging.info(f"make_composite: {outfile} {infiles} {path} {requested_pol} {resolution}")
-    if requested_pol == None:
-        requested_pol = "VV"
+    logging.info(f"make_composite: {outfile} {infiles} {path} {pol} {resolution}")
+    if pol == None:
+        pol = "VV"
 
     # Establish input file list
     if path:
         logging.info("Searching for list of files to process")
-        infiles = glob.glob(os.path.join(path,"20*/PRODUCT/*{}.tif").format(requested_pol))
+        infiles = glob.glob(os.path.join(path,f"20*/PRODUCT/*{pol}.tif"))
     else:
         logging.info("Found list of input files to process")
     infiles.sort()
@@ -223,12 +223,12 @@ def make_composite(outfile, infiles=None, path=None, requested_pol=None, resolut
     logging.info("Calculating output values")
 
     for fi,x_max,x_min,y_max,y_min in extents:
-        if "VV" in fi:
+        if pol in fi:
             logging.info(f"Processing file {fi}")
             logging.info(f"File covers {x_max,y_min} to {x_min,y_max}")
 
             logging.info("Reading areas")
-            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace("_flat_VV_reproj","_area_map_reproj")))
+            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace(f"_flat_{pol}_reproj","_area_map_reproj")))
 
             # Set zero area to a large number to
             #  - protect against Nans in outputs
