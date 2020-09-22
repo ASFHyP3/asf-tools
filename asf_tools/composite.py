@@ -256,6 +256,16 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
     # write out composite
     logging.info("Writing output files")
+
+    easting = ulx
+    weres = pixel_size_x
+    werotation = trans[2]
+    northing = uly
+    nsrotation = trans[4]
+    nsres = pixel_size_y
+
+    trans = (easting,weres,werotation,northing,nsrotation,nsres)
+
     saa.write_gdal_file_float(outfile,trans,proj,outputs,nodata=0)
     saa.write_gdal_file("counts.tif",trans,proj,counts.astype(np.int16))
 
