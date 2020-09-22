@@ -78,7 +78,7 @@ def get_max_pixel_size(files):
         pix_size = max(pix_size, tmp)
 
     if pix_size == -999:
-        Exception("No valid pixel sizes found")
+        raise Exception("No valid pixel sizes found")
     return pix_size
 
 
