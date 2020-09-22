@@ -154,8 +154,26 @@ class ScaleConversion(object):
             datatype = "GPString",
             parameterType = "Required",
             direction = "Input")
+
+        # Sixth parameter: select if output is added to the map
+        outYN = arcpy.Parameter(
+            name = "outYN",
+            displayName = "Add output to map",
+            datatype = "GPBoolean",
+            parameterType = "Required",
+            direction = "Input")
+
+        outYN.value = "true"
+
+        # Seventh parameter: output layer to add to project
+        outlayer = arcpy.Parameter(
+            name = "outlayer",
+            displayName = "Derived output for final product raster",
+            datatype = "GPRasterLayer",
+            parameterType = "Derived",
+            direction = "Output")
                         
-        params = [p_inpath, p_inscale, p_outscale, p_outdir, p_outname]
+        params = [p_inpath, p_inscale, p_outscale, p_outdir, p_outname, outYN, outlayer]
         return params
 
     def rasConvert(self):
@@ -217,9 +235,7 @@ class ScaleConversion(object):
             if not parameters[3].altered:
                 parameters[3].value = workspace
 
-        # Set the default scale for the input file to be selected based on the indir name
-        # THIS NEEDS TO BE MADE MORE ROBUST; IF CHARACTER 36 ISN'T A OR P, IT THROWS AN ERROR
-        # AND MAKES EVERYTHING SAD. MAYBE A TRY CLAUSE? OR EXCEPTION?
+        # Set the default scale for the input file to be selected based on the p_inpath filename
         if parameters[0].value:
             indirbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
             inscale = indirbase[36]
@@ -258,18 +274,26 @@ class ScaleConversion(object):
         self.outscale = parameters[2].valueAsText
         self.outdir = parameters[3].valueAsText
         self.outname = parameters[4].valueAsText
+        self.outYN = parameters[5].valueAsText
 
         self.outpath = self.outdir+"\\"+self.outname
 
-        txt_msg1 = "Parameters accepted. Converting raster from %s scale to %s scale..." % (self.inscale, self.outscale)
-        messages.addMessage(txt_msg1)
+        arcpy.AddMessage("Parameters accepted. Converting raster from %s scale to %s scale..." % (self.inscale, self.outscale))
         
         # Run the rasConvert function to convert from inscale to outscale
         self.rasConvert()
-        
+
+        # Add the output product to the map
+        if self.outYN == "true":
+            dispname = os.path.splitext(self.outname)[0]
+            arcpy.MakeRasterLayer_management(self.outpath, dispname)
+            arcpy.SetParameterAsText(6, dispname)
+            arcpy.AddMessage("Added converted raster layer to map display.")
+        else:
+            arcpy.AddMessage("Option to add output layer to map was not selected. Output can be added manually if desired: %s" % self.outpath)
+
         # Indicate process is complete
-        txt_msg2 = "Converted raster from %s scale to %s scale." % (self.inscale, self.outscale)
-        messages.addMessage(txt_msg2)
+        arcpy.AddMessage("Converted raster from %s scale to %s scale." % (self.inscale, self.outscale))
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
@@ -319,8 +343,26 @@ class ReclassifyRTC(object):
             datatype = "GPDouble",
             parameterType = "Required",
             direction = "Input")
-                        
-        params = [inRTC, rc_outpath, rc_outname, thresh]
+
+        # Fifth parameter: select if output is added to the map
+        outYN = arcpy.Parameter(
+            name = "outYN",
+            displayName = "Add output to map",
+            datatype = "GPBoolean",
+            parameterType = "Required",
+            direction = "Input")
+
+        outYN.value = "true"
+
+        # Sixth parameter: output layer to add to project
+        outlayer = arcpy.Parameter(
+            name = "outlayer",
+            displayName = "Derived output for final product raster",
+            datatype = "GPRasterLayer",
+            parameterType = "Derived",
+            direction = "Output")
+
+        params = [inRTC, rc_outpath, rc_outname, thresh, outYN, outlayer]
         return params
 
     def isLicensed(self):
@@ -379,6 +421,8 @@ class ReclassifyRTC(object):
         rc_outpath = parameters[1].valueAsText
         rc_outname = parameters[2].valueAsText
         thresh = parameters[3].value
+        outYN = parameters[4].valueAsText
+
         threshstr = str(thresh)
 
         # Run the code to reclassify the image
@@ -390,6 +434,15 @@ class ReclassifyRTC(object):
         # Indicate process is complete
         txt_msg3 = "Reclassified raster generated for %s." % (inRTC)
         messages.addMessage(txt_msg3)
+
+        # Add the output product to the map
+        if outYN == "true":
+            dispname = os.path.splitext(rc_outname)[0]
+            arcpy.MakeRasterLayer_management(rcname, dispname)
+            arcpy.SetParameterAsText(5, dispname)
+            arcpy.AddMessage("Added Reclassified RTC raster layer to map display.")
+        else:
+            arcpy.AddMessage("Option to add output layer to map was not selected. Output can be added manually if desired: %s" % rcname)
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
@@ -440,8 +493,26 @@ class LogDiff(object):
             datatype = "GPString",
             parameterType = "Required",
             direction = "Input")
-                        
-        params = [date2, date1, outdir, outname]
+
+        # Fifth parameter: select if output is added to the map
+        outYN = arcpy.Parameter(
+            name = "outYN",
+            displayName = "Add output to map",
+            datatype = "GPBoolean",
+            parameterType = "Required",
+            direction = "Input")
+
+        outYN.value = "true"
+
+        # Sixth parameter: output layer to add to project
+        outlayer = arcpy.Parameter(
+            name = "outlayer",
+            displayName = "Derived output for final product raster",
+            datatype = "GPRasterLayer",
+            parameterType = "Derived",
+            direction = "Output")
+
+        params = [date2, date1, outdir, outname, outYN, outlayer]
         return params
 
     def isLicensed(self):
@@ -502,9 +573,9 @@ class LogDiff(object):
         date1 = parameters[1].valueAsText
         outdir = parameters[2].valueAsText
         outname = parameters[3].valueAsText
+        outYN = parameters[4].valueAsText
 
-        outmsg1 = "Parameters accepted. Generating Log Difference file %s..." %outname
-        messages.addMessage(outmsg1)
+        arcpy.AddMessage("Parameters accepted. Generating Log Difference file %s..." %outname)
 	
         # Run the code to calculate the log difference
         outLogDiff = str(outdir+'\\'+outname)
@@ -512,7 +583,16 @@ class LogDiff(object):
         outLog10.save(outLogDiff)
 
         # Indicate process is complete
-        outmsg2 = "Log Difference raster %s generated." %outname
+        arcpy.AddMessage("Log Difference raster %s generated." %outname)
+
+        # Add the output product to the map
+        if outYN == "true":
+            dispname = os.path.splitext(outname)[0]
+            arcpy.MakeRasterLayer_management(outLogDiff, dispname)
+            arcpy.SetParameterAsText(5, dispname)
+            arcpy.AddMessage("Added Log Difference raster layer to map display.")
+        else:
+            arcpy.AddMessage("Option to add output layer to map was not selected. Output can be added manually if desired: %s" % outLogDiff)
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
@@ -585,7 +665,25 @@ class RGBDecomp(object):
             parameterType = "Required",
             direction = "Input")
 
-        params = [indir, scale, pol, rb_thresh_db, outdir, outname]
+        # Seventh parameter: select if output is added to the map
+        outYN = arcpy.Parameter(
+            name = "outYN",
+            displayName = "Add output to map",
+            datatype = "GPBoolean",
+            parameterType = "Required",
+            direction = "Input")
+
+        outYN.value = "true"
+
+        # Eighth parameter: output layer to add to project
+        outlayer = arcpy.Parameter(
+            name = "outlayer",
+            displayName = "Derived output for final product raster",
+            datatype = "GPRasterLayer",
+            parameterType = "Derived",
+            direction = "Output")
+
+        params = [indir, scale, pol, rb_thresh_db, outdir, outname, outYN, outlayer]
         return params
 
     def isLicensed(self):
@@ -667,6 +765,7 @@ class RGBDecomp(object):
         rb_thresh_db = parameters[3].valueAsText
         outdir = parameters[4].valueAsText
         outname = parameters[5].valueAsText
+        outYN = parameters[6].valueAsText
 
         outmsg1 = "Parameters accepted. Generating RGB Decomposition %s..." %outname
         messages.addMessage(outmsg1)
@@ -677,7 +776,7 @@ class RGBDecomp(object):
 
         # Set the working directory containing the RTC images
         arcpy.env.workspace = indir
-        indirbase = os.path.splitext(indir)[0]
+        indirbase = os.path.basename(indir)
         # Create a scratch directory for intermediate files
         scratch = arcpy.CreateFolder_management(indir, "temp")
         scratchpath = os.path.join(indir, "temp")
@@ -795,16 +894,18 @@ class RGBDecomp(object):
 
         arcpy.AddMessage("GeoTIFF files for each band have been saved. Combining single-band rasters to generate RGB image...")
 
-        arcpy.env.addOutputsToMap = True  # attempt to get outputs added to the map. Unsuccessful.
-
         # Combine the aRGB bands into a composite raster
         outpath = os.path.join(outdir, outname)
         arcpy.CompositeBands_management(bandList, outpath)
 
-        # I'm trying to get output products added to the map; no success so far.
-        # This sounded like it might do the trick, but no dice. Maybe an output parameter needs to be added?
-        #outlayer = arcpy.MakeRasterLayer_management(outpath, "RGB")
-        #arcpy.AddMessage("Theoretically generated a temporary raster layer")
+        # Add the output product to the map
+        if outYN == "true":
+            dispname = os.path.splitext(outname)[0]
+            arcpy.MakeRasterLayer_management(outpath, dispname)
+            arcpy.SetParameterAsText(7, dispname)
+            arcpy.AddMessage("Added RGB raster layer to map display.")
+        else:
+            arcpy.AddMessage("Option to add output layer to map was not selected. Output can be added manually if desired: %s" % outpath)
 
         arcpy.AddMessage("RGB Decomposition product has been generated: %s. Cleaning up..." % outpath)
 
