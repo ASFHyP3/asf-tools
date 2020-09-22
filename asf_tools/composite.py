@@ -13,12 +13,10 @@ import os
 import re
 import argparse
 import glob
-from datetime import datetime
-#from hyp3lib import saa_func_lib as saa
-#import hyp3lib.saa_func_lib as saa
+# from hyp3lib import saa_func_lib as saa
+# import hyp3lib.saa_func_lib as saa
 import saa_func_lib as saa
 from osgeo import gdal
-from subprocess import Popen, PIPE
 from osgeo.gdalconst import GRIORA_Cubic
 
 
@@ -39,17 +37,17 @@ def get_pol(infile):
 
 def frange(start, stop=None, step=None):
     """Return a floating point number ranging from start to stop, adding step"""
-    if stop == None:
+    if not stop:
         stop = start + 0.0
         start = 0.0
-    if step == None:
+    if not step:
         step = 1.0
     while True:
         if step > 0 and start >= stop:
             break
         elif step < 0 and start <= stop:
             break
-        yield ("%g" % start) # return float number
+        yield ("%g" % start)  # return float number
         start = start + step
 
 
@@ -60,15 +58,15 @@ def get_full_extent(corners):
     max_uly = 0
     min_lry = 50000000
 
-    for fi,ulx,lrx,lry,uly in corners:
+    for fi, ulx, lrx, lry, uly in corners:
         logging.debug(f"{ulx,uly} {lrx,lry}")
-        min_ulx = min(ulx,min_ulx)
-        max_uly = max(uly,max_uly)
-        max_lrx = max(lrx,max_lrx)
-        min_lry = min(lry,min_lry)
+        min_ulx = min(ulx, min_ulx)
+        max_uly = max(uly, max_uly)
+        max_lrx = max(lrx, max_lrx)
+        min_lry = min(lry, min_lry)
 
     logging.debug(f"Return is upper left: {min_ulx,max_uly}; lower right: {max_lrx,min_lry}")
-    return min_ulx,max_lrx,max_uly,min_lry
+    return min_ulx, max_lrx, max_uly, min_lry
 
 
 def get_max_pixel_size(files):
@@ -85,7 +83,7 @@ def get_max_pixel_size(files):
 
 
 def get_hemisphere(fi):
-    """Return hemispher of UTM zone - North or South"""
+    """Return hemisphere of UTM zone - North or South"""
     hemi = None
     dst = gdal.Open(fi)
     p1 = dst.GetProjection()
@@ -107,7 +105,7 @@ def get_zone_from_proj(fi):
 
 
 def parse_zones(files):
-    """Return the zone numnbers of all files given"""
+    """Return the zone numbers of all files given"""
     zones = []
     for fi in files:
         zone = get_zone_from_proj(fi)
@@ -116,7 +114,7 @@ def parse_zones(files):
     return np.asarray(zones, dtype=np.int8)
 
 
-def reproject_to_median_utm(files,pol,resolution=None):
+def reproject_to_median_utm(files, pol, resolution=None):
     """Reproject a bunch of UTM geotiffs to the median UTM zone.
        Use either the given resolution or the largest resolution in the stack"""
 
@@ -143,30 +141,32 @@ def reproject_to_median_utm(files,pol,resolution=None):
     for fi in files:
         my_zone = get_zone_from_proj(fi)
         name = fi.replace(".tif", "_reproj.tif")
-        afi = fi.replace(f"_flat_{pol}.tif","_area_map.tif")
-        aname = fi.replace(f"_flat_{pol}.tif","_area_map_reproj.tif")
+        afi = fi.replace(f"_flat_{pol}.tif", "_area_map.tif")
+        aname = fi.replace(f"_flat_{pol}.tif", "_area_map_reproj.tif")
         if my_zone != home_zone:
             logging.info(f"Reprojecting {fi} to {name}")
             if hemi == "N":
                 proj = ('EPSG:326%02d' % int(home_zone))
             else:
                 proj = ('EPSG:327%02d' % int(home_zone))
-            gdal.Warp(name, fi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
-            gdal.Warp(aname, afi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
+            gdal.Warp(name, fi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,
+                      resampleAlg=GRIORA_Cubic)
+            gdal.Warp(aname, afi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,
+                      resampleAlg=GRIORA_Cubic)
             new_files.append(name)
         else:
             # May need to reproject to desired resolution
-            x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
+            x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
             if x < pix_size:
                 logging.info(f"Changing resolution of {fi} to {pix_size}")
-                gdal.Warp(name, fi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
-                gdal.Warp(aname, afi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,resampleAlg=GRIORA_Cubic)
+                gdal.Warp(name, fi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True, resampleAlg=GRIORA_Cubic)
+                gdal.Warp(aname, afi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True, resampleAlg=GRIORA_Cubic)
                 new_files.append(name)
             else:
                 if not os.path.isfile(fi):
                     logging.info(f"Linking {fi} to {name}")
-                    os.symlink(fi,name)
-                    os.symlink(afi,aname)
+                    os.symlink(fi, name)
+                    os.symlink(afi, aname)
                     new_files.append(name)
                 else:
                     logging.info(f"Found previous reproj file {fi} - taking no action")
@@ -179,26 +179,25 @@ def reproject_to_median_utm(files,pol,resolution=None):
 def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
     logging.info(f"make_composite: {outfile} {infiles} {path} {pol} {resolution}")
-    if pol == None:
+    if pol is None:
         pol = "VV"
 
     # Establish input file list
     if path:
         logging.info("Searching for list of files to process")
-        infiles = glob.glob(os.path.join(path,f"20*/PRODUCT/*{pol}.tif"))
+        infiles = glob.glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif"))
     else:
         logging.info("Found list of input files to process")
     infiles.sort()
     logging.debug(f"Input files: {infiles}")
 
     # resample infiles to maximum resolution & common UTM zone
-    resampled_files = reproject_to_median_utm(infiles,resolution) 
+    resampled_files = reproject_to_median_utm(infiles, resolution)
     if len(resampled_files) == 0:
-        exception("Unable to resample files")
-        exit -1
+        Exception("Unable to resample files")
 
     # Get pixel size
-    x,y,trans,proj = saa.read_gdal_file_geo(saa.open_gdal_file(resampled_files[0]))
+    x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(resampled_files[0]))
     pixel_size_x = trans[1]
     pixel_size_y = trans[5] 
     logging.info(f"{resampled_files[0]} x = {pixel_size_x} y = {pixel_size_y}")
@@ -206,8 +205,8 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     # Get extent of union of all images
     extents = []
     for fi in resampled_files:
-        ulx,lrx,lry,uly = saa.getCorners(fi)
-        extents.append([fi,ulx,lrx,lry,uly])
+        ulx, lrx, lry, uly = saa.getCorners(fi)
+        extents.append([fi, ulx, lrx, lry, uly])
     ulx, lrx, uly, lry = get_full_extent(extents)
 
     logging.info(f"Full extent of mosaic is {ulx,uly} to {lrx,lry}")
@@ -217,19 +216,19 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
     logging.info(f"Output size is {x_pixels} samples by {y_pixels} lines")
 
-    outputs = np.zeros((y_pixels,x_pixels))
-    weights = np.zeros((y_pixels,x_pixels))
-    temp = np.zeros((y_pixels,x_pixels))
-    counts = np.zeros((y_pixels,x_pixels),dtype=np.int8)
+    outputs = np.zeros((y_pixels, x_pixels))
+    weights = np.zeros((y_pixels, x_pixels))
+    counts = np.zeros((y_pixels, x_pixels), dtype=np.int8)
     logging.info("Calculating output values")
 
-    for fi,x_max,x_min,y_max,y_min in extents:
+    for fi, x_max, x_min, y_max, y_min in extents:
         if pol in fi:
             logging.info(f"Processing file {fi}")
             logging.info(f"File covers {x_max,y_min} to {x_min,y_max}")
 
             logging.info("Reading areas")
-            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace(f"_flat_{pol}_reproj","_area_map_reproj")))
+            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace(f"_flat_{pol}_reproj",
+                                                                                                  "_area_map_reproj")))
 
             logging.info("Reading values")
             x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
@@ -239,10 +238,11 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
             end_loc_x = out_loc_x + x_size
             end_loc_y = out_loc_y + y_size
 
-            logging.info(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} and {int(out_loc_y)}:{int(end_loc_y)}")
+            logging.info(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} "
+                         f"and {int(out_loc_y)}:{int(end_loc_y)}")
 
             temp = 1.0/areas 
-            temp[values==0] = 0
+            temp[values == 0] = 0
 
             outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * temp
             weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += temp
@@ -264,33 +264,33 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     nsrotation = trans[4]
     nsres = pixel_size_y
 
-    trans = (easting,weres,werotation,northing,nsrotation,nsres)
+    trans = (easting, weres, werotation, northing, nsrotation, nsres)
 
-    saa.write_gdal_file_float(outfile,trans,proj,outputs,nodata=0)
-    saa.write_gdal_file("counts.tif",trans,proj,counts.astype(np.int16))
+    saa.write_gdal_file_float(outfile, trans, proj, outputs, nodata=0)
+    saa.write_gdal_file("counts.tif", trans, proj, counts.astype(np.int16))
 
     logging.info("Program successfully completed")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="make_composite.py",
-             description="Create a weighted composite mosaic from a set of S-1 RTC products",
-             epilog= '''Output pixel values calculated using weights that are the inverse of the area.''')
+                                     description="Create a weighted composite mosaic from a set of S-1 RTC products",
+                                     epilog='''Output pixel values calculated using weights that are the inverse of 
+                                     the area.''')
 
-    parser.add_argument("outfile",help="Name of output weighted mosaic geotiff file")
-    parser.add_argument("--pol",choices=['VV','VH','HH','HV'],help="When using multi-pol data, only mosaic given polarization",default='VV')
-    parser.add_argument("-r","--resolution",help="Desired output resolution",type=float)
+    parser.add_argument("outfile", help="Name of output weighted mosaic geotiff file")
+    parser.add_argument("--pol", choices=['VV', 'VH', 'HH', 'HV'], help="When using multi-pol data, only mosaic given "
+                                                                        "polarization", default='VV')
+    parser.add_argument("-r", "--resolution", help="Desired output resolution", type=float)
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-p","--path", help="Name of directory where input stack is located\n" )
-    group.add_argument("-i","--infiles",nargs='*',help="Names of input series files")
+    group.add_argument("-p", "--path", help="Name of directory where input stack is located\n")
+    group.add_argument("-i", "--infiles", nargs='*', help="Names of input series files")
     args = parser.parse_args()
 
     logFile = "make_composite_{}.log".format(os.getpid())
-    logging.basicConfig(filename=logFile,format='%(asctime)s - %(levelname)s - %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
+    logging.basicConfig(filename=logFile, format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.getLogger().addHandler(logging.StreamHandler())
     logging.info("Starting run")
 
-    make_composite(args.outfile,args.infiles,args.path,args.pol,args.resolution)
-
-
-
+    make_composite(args.outfile, args.infiles, args.path, args.pol, args.resolution)
