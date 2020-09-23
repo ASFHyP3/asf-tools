@@ -666,8 +666,8 @@ class RGBDecomp(object):
         # Fourth parameter: R/B threshold in dB
         rb_thresh_db = arcpy.Parameter(
             name="rb_thresh_db",
-            displayName="Threshold cutoff value for red/blue in dB (default: -24 dB)",
-            datatype="GPLong",
+            displayName="Threshold cutoff value for red/blue in dB (default: -24.0 dB)",
+            datatype="GPDouble",
             parameterType="Required",
             direction="Input")
 
@@ -861,7 +861,7 @@ class RGBDecomp(object):
         arcpy.AddMessage("Pixel cleanup complete. Generating spatial masks...")
 
         # Generate spatial masks based on red/blue threshold
-        rb_thresh = math.pow(10, float(rb_thresh_db) / 10)
+        rb_thresh = math.pow(10, rb_thresh_db / 10)
 
         # MB = xp0 < k
         remap_mb = "0 %s 1;%s 100000 0" % (rb_thresh, rb_thresh)
