@@ -786,7 +786,7 @@ class RGBDecomp(object):
         indir = parameters[0].valueAsText
         scale = parameters[1].valueAsText
         pol = parameters[2].valueAsText
-        rb_thresh_db = parameters[3].valueAsText
+        rb_thresh_db = parameters[3].value
         outdir = parameters[4].valueAsText
         outname = parameters[5].valueAsText
         outYN = parameters[6].valueAsText
