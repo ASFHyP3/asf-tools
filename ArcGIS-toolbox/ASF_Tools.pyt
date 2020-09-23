@@ -110,8 +110,8 @@ class ScaleConversion(object):
 
         """Converts RTC products from power to amplitude"""
         self.label = "Scale Conversion (Power, Amplitude, dB)"
-        self.description = "This tool converts RTC products from Power or Amplitude scale to a different scale (" \
-                           "Power, Amplitude or dB). "
+        self.description = "This tool converts RTC products from Power or Amplitude scale to a different scale " \
+                           "(Power, Amplitude or dB)."
         self.canRunInBackground = True
 
     def getParameterInfo(self):
