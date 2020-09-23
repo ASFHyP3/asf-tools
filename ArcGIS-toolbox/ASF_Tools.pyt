@@ -436,11 +436,15 @@ class ReclassifyRTC(object):
         inRTC = parameters[0].valueAsText
         rc_outpath = parameters[1].valueAsText
         rc_outname = parameters[2].valueAsText
+        thresh = parameters[3].value
         outYN = parameters[4].valueAsText
 
-        # Run the code to reclassify the image
+        threshstr = str(thresh)
 
+        # Run the code to reclassify the image
         rcname = str(rc_outpath + '\\' + rc_outname)
+        values = "-1000.000000 %s 1;%s 1000.000000 NODATA" % (threshstr, threshstr)
+        arcpy.gp.Reclassify_sa(inRTC, "VALUE", values, rcname, "DATA")
 
         # Indicate process is complete
         txt_msg3 = "Reclassified raster generated for %s." % (inRTC)
@@ -797,6 +801,7 @@ class RGBDecomp(object):
         arcpy.env.workspace = indir
         indirbase = os.path.basename(indir)
         # Create a scratch directory for intermediate files
+        arcpy.CreateFolder_management(indir, "temp")
         scratchpath = os.path.join(indir, "temp")
 
         arcpy.AddMessage("Workspace has been prepared. Defining input rasters...")
