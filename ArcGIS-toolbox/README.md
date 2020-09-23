@@ -21,6 +21,9 @@ This tool generates a raster that includes only those pixels below a user-define
 #### Log Difference Tool 
 This tool compares two rasters by calculating the log difference on a pixel-by-pixel basis to identify areas where backscatter values have changed over time. This tool could be used to compare the pixel values of any two single-band rasters, as long as there are no negative values (NoData values will be returned for pixels with a negative number in either of the datasets).
 
+#### RGB Decomposition Tool
+This tool generates an RGB image using the co- and cross-polarized datasets from an RTC product. Input datasets can be in either amplitude or power scale, and the primary polarization can be either vertical (VV/VH) or horizontal (HH/HV).  
+
 ### Prerequisites
 Users must have either ArcGIS Desktop (ArcMap) or ArcGIS Pro installed and licensed on their computer. The Toolbox has been tested with Desktop versions 10.6.1 and 10.7.1 and Pro versions 2.4.2 and 2.5, but it may work with earlier versions as well.
 
