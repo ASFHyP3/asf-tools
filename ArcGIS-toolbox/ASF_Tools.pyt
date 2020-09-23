@@ -786,6 +786,7 @@ class RGBDecomp(object):
         indir = parameters[0].valueAsText
         scale = parameters[1].valueAsText
         pol = parameters[2].valueAsText
+        rb_thresh_db = parameters[3].valueAsText
         outdir = parameters[4].valueAsText
         outname = parameters[5].valueAsText
         outYN = parameters[6].valueAsText
@@ -860,7 +861,7 @@ class RGBDecomp(object):
         arcpy.AddMessage("Pixel cleanup complete. Generating spatial masks...")
 
         # Generate spatial masks based on red/blue threshold
-        rb_thresh = math.pow(10, -2.4)
+        rb_thresh = math.pow(10, rb_thresh_db / 10)
 
         # MB = xp0 < k
         remap_mb = "0 %s 1;%s 100000 0" % (rb_thresh, rb_thresh)
