@@ -1,8 +1,8 @@
 #################################
-#   ASF ArcGIS Toolbox         ##
-#   Heidi Kristenson           ##
-#   Alaska Satellite Facility  ##
-#   18 September 2020          ##
+#   ASF ArcGIS Toolbox          #
+#   Heidi Kristenson            #
+#   Alaska Satellite Facility   #
+#   18 September 2020           #
 #################################
 import math
 import os
@@ -755,7 +755,7 @@ class RGBDecomp(object):
         if not parameters[3].altered:
             parameters[3].value = -24
 
-        # Set the default output directory to be the same as the input directoryzipfile
+        # Set the default output directory to be the same as the input directory
         if parameters[0].value:
             if not parameters[4].altered:
                 parameters[4].value = parameters[0].value.value
