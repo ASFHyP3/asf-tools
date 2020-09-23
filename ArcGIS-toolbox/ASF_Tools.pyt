@@ -861,7 +861,7 @@ class RGBDecomp(object):
         arcpy.AddMessage("Pixel cleanup complete. Generating spatial masks...")
 
         # Generate spatial masks based on red/blue threshold
-        rb_thresh = math.pow(10, rb_thresh_db / 10)
+        rb_thresh = math.pow(10, float(rb_thresh_db) / 10)
 
         # MB = xp0 < k
         remap_mb = "0 %s 1;%s 100000 0" % (rb_thresh, rb_thresh)
