@@ -436,14 +436,12 @@ class ReclassifyRTC(object):
         inRTC = parameters[0].valueAsText
         rc_outpath = parameters[1].valueAsText
         rc_outname = parameters[2].valueAsText
-        thresh = parameters[3].value
+        thresh = parameters[3].valueAsText
         outYN = parameters[4].valueAsText
-
-        threshstr = str(thresh)
 
         # Run the code to reclassify the image
         rcname = str(rc_outpath + '\\' + rc_outname)
-        values = "-1000.000000 %s 1;%s 1000.000000 NODATA" % (threshstr, threshstr)
+        values = "-1000.000000 %s 1;%s 1000.000000 NODATA" % (thresh, thresh)
         arcpy.gp.Reclassify_sa(inRTC, "VALUE", values, rcname, "DATA")
 
         # Indicate process is complete
