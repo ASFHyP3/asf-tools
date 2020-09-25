@@ -781,10 +781,6 @@ class RGBDecomp(object):
         # Check licensing
         self.isLicensed()
 
-        # Implement Garbage Collector
-        import gc
-        gc.collect()
-
         # Define parameters
         indir = parameters[0].valueAsText
         scale = parameters[1].valueAsText
@@ -942,22 +938,7 @@ class RGBDecomp(object):
         arcpy.AddMessage("RGB Decomposition product has been generated: %s. Cleaning up..." % outpath)
 
         # Delete temporary files
-        # Note that arcpy.Delete_management doesn't work in this venue.
-
-        del aB
-
-        # Empty Garbage Collector
-        collected = gc.collect()
-        arcpy.AddMessage("Garbage collector: collected %d objects." % (collected))
-
-        # Tried shutil to get around it, but apparently the input bands are still "in use" by ArcGIS,
-        # so the directory cannot be deleted.
-        try:
-            shutil.rmtree(scratchpath)
-            arcpy.AddMessage("Temporary files deleted.")
-        except OSError as e:
-            arcpy.AddMessage("Error: %s - %s." % (e.filename, e.strerror))
-
+        # Figure out how to do this in a way that deals with all the ArcGIS barriers (locks, etc.)
         # The deletion of the temp folder could be set as an option, if there's any chance that users might
         # want to have access to the individual color bands. That may not be a likely enough scenario
         # to plan for, though.
