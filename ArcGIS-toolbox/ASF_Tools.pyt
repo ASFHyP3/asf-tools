@@ -7,6 +7,7 @@
 import math
 import os
 import sys
+import shutil
 import zipfile
 
 import arcpy  # noqa import neccesary but arcpy only available in arcgis environment
@@ -19,7 +20,7 @@ class Toolbox(object):
         self.alias = "ASF Tools"
 
         # List of tool classes associated with this toolbox
-        self.tools = [UnzipFiles, ScaleConversion, ReclassifyRTC, LogDiff, RGBDecomp]
+        self.tools = [UnzipFiles, ScaleConversion, ReclassifyRTC, LogDiff, RGBDecomp, RGBWaterMask]
 
 
 class UnzipFiles(object):
@@ -780,6 +781,10 @@ class RGBDecomp(object):
         # Check licensing
         self.isLicensed()
 
+        # Implement Garbage Collector
+        import gc
+        gc.collect()
+
         # Define parameters
         indir = parameters[0].valueAsText
         scale = parameters[1].valueAsText
@@ -937,14 +942,25 @@ class RGBDecomp(object):
         arcpy.AddMessage("RGB Decomposition product has been generated: %s. Cleaning up..." % outpath)
 
         # Delete temporary files
-        # The deletion of the temp folder could be set as an option, if there's any chance that users might
-        # want to have access to the individual color bands. I don't think that's likely, though.
+        # Note that arcpy.Delete_management doesn't work in this venue.
 
-        # This does not currently work in the Python Toolbox environment. I don't know why
-        # If I run the same command in the python window, it behaves as expected. ???
-        # The setting of the workspace is probably redundant; it was a hail mary attempt to get it to work.
-        arcpy.env.workspace = indir  # delete this if proven to be redundant
-        arcpy.Delete_management("temp")
+        del aB
+
+        # Empty Garbage Collector
+        collected = gc.collect()
+        arcpy.AddMessage("Garbage collector: collected %d objects." % (collected))
+
+        # Tried shutil to get around it, but apparently the input bands are still "in use" by ArcGIS,
+        # so the directory cannot be deleted.
+        try:
+            shutil.rmtree(scratchpath)
+            arcpy.AddMessage("Temporary files deleted.")
+        except OSError as e:
+            arcpy.AddMessage("Error: %s - %s." % (e.filename, e.strerror))
+
+        # The deletion of the temp folder could be set as an option, if there's any chance that users might
+        # want to have access to the individual color bands. That may not be a likely enough scenario
+        # to plan for, though.
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
@@ -952,5 +968,202 @@ class RGBDecomp(object):
 
         # Indicate process is complete
         arcpy.AddMessage("RGB Decomposition process is complete.")
+
+        return
+
+class RGBWaterMask(object):
+    def __init__(self):
+
+        """Generates a water mask from an RGB Decomposition product"""
+        self.label = "Water Mask from RGB"
+        self.description = "This tool generates a water mask from an RGB Decomposition product."
+        self.canRunInBackground = True
+
+    def getParameterInfo(self):
+        """Define parameter definitions"""
+
+        # First parameter: input raster dataset
+        inras = arcpy.Parameter(
+            name="inras",
+            displayName="RGB Decomposition raster to be used to generate water mask",
+            datatype="DERasterDataset",
+            parameterType="Required",
+            direction="Input")
+
+        # Second parameter: blue cutoff
+        bluecut = arcpy.Parameter(
+            name="bluecut",
+            displayName="Cutoff value for blue (default: >25)",
+            datatype="GPLong",
+            parameterType="Required",
+            direction="Input")
+
+        bluecut.value = 25
+
+        # Third parameter: green cutoff
+        greencut = arcpy.Parameter(
+            name="greencut",
+            displayName="Cutoff value for green (default: <105)",
+            datatype="GPLong",
+            parameterType="Required",
+            direction="Input")
+
+        greencut.value = 105
+
+        # Fourth parameter: red cutoff
+        redcut = arcpy.Parameter(
+            name="redcut",
+            displayName="Cutoff value for red (default: >1)",
+            datatype="GPLong",
+            parameterType="Required",
+            direction="Input")
+
+        redcut.value = 1
+
+        # Fifth parameter: output directory for water mask file
+        outdir = arcpy.Parameter(
+            name="outdir",
+            displayName="Output directory for new water mask file",
+            datatype="DEWorkspace",
+            parameterType="Required",
+            direction="Input")
+
+        # Sixth parameter: output name for water mask file
+        outname = arcpy.Parameter(
+            name="outname",
+            displayName="Filename for new RGB raster",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input")
+
+        # Seventh parameter: select if output is added to the map
+        outYN = arcpy.Parameter(
+            name="outYN",
+            displayName="Add output to map",
+            datatype="GPBoolean",
+            parameterType="Required",
+            direction="Input")
+
+        outYN.value = "true"
+
+        # Eighth parameter: output layer to add to project
+        outlayer = arcpy.Parameter(
+            name="outlayer",
+            displayName="Derived output for final product raster",
+            datatype="GPRasterLayer",
+            parameterType="Derived",
+            direction="Output")
+
+        params = [inras, bluecut, greencut, redcut, outdir, outname, outYN, outlayer]
+        return params
+
+    def isLicensed(self):
+        """This tool requires the Spatial Analyst Extension"""
+        arcpy.AddMessage("Checking Spatial Analyst Extension status...")
+        try:
+            if arcpy.CheckExtension("Spatial") != "Available":
+                raise Exception
+            else:
+                arcpy.AddMessage("Spatial Analyst Extension is available.")
+                if arcpy.CheckOutExtension("Spatial") == "CheckedOut":
+                    arcpy.AddMessage("Spatial Analyst Extension is checked out and ready for use.")
+                elif arcpy.CheckOutExtension("Spatial") == "NotInitialized":
+                    arcpy.CheckOutExtension("Spatial")
+                    arcpy.AddMessage("Spatial Analyst Extension has been checked out.")
+                else:
+                    arcpy.AddMessage("Spatial Analyst Extension is not available for use.")
+        except Exception:
+            arcpy.AddMessage(
+                "Spatial Analyst extension is not available for use. Check your licensing to make sure you have "
+                "access to this extension.")
+            return False
+
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+
+        # Set the default output directory to be the same as the home directory of the RGB Decomp input
+        if parameters[0].value:
+            if not parameters[4].altered:
+                parameters[4].value = os.path.dirname(parameters[0].value.value)
+
+        # Set the default output filename to be the basename_RGB.tif
+        if parameters[0].value:
+            if not parameters[5].altered:
+                inrasbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
+                parameters[5].value = ("%s_WaterMask.tif" % inrasbase)
+
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter.  This method is called after internal validation."""
+        return
+
+    def execute(self, parameters, messages):
+        """The source code of the tool."""
+
+        # Check licensing
+        self.isLicensed()
+
+        # Define parameters
+        inras = parameters[0].valueAsText
+        bluecut = parameters[1].valueAsText
+        greencut = parameters[2].valueAsText
+        redcut = parameters[3].valueAsText
+        outdir = parameters[4].valueAsText
+        outname = parameters[5].valueAsText
+        outYN = parameters[6].valueAsText
+
+        outmsg1 = "Parameters accepted. Generating Water Mask %s..." % outname
+        messages.addMessage(outmsg1)
+
+        # Run the code to generate the RGB Decomposition file
+
+        arcpy.AddMessage("Input parameters have been defined. Preparing workspace...")
+
+        # Set the working directory containing the RTC images
+        indir = os.path.dirname(inras)
+        arcpy.env.workspace = indir
+
+        aB = os.path.join(inras, 'Band_3')
+        aG = os.path.join(inras, 'Band_2')
+        aR = os.path.join(inras, 'Band_1')
+
+        bc = "Value > %s" % bluecut
+        gc = "Value < %s" % greencut
+        rc = "Value > %s" % redcut
+
+        conB = arcpy.sa.Con(aB, 1, 0, bc)
+        conG = arcpy.sa.Con(aG, 1, 0, gc)
+        conR = arcpy.sa.Con(aR, 1, 0, rc)
+
+        wm = conB*conG*conR
+        wm0 = arcpy.sa.SetNull(wm, wm, "Value = 0")
+        outpath = os.path.join(outdir, outname)
+        wm0.save(outpath)
+
+        # Add the output product to the map
+        if outYN == "true":
+            dispname = os.path.splitext(outname)[0]
+            arcpy.MakeRasterLayer_management(outpath, dispname)
+            arcpy.SetParameterAsText(7, dispname)
+            arcpy.AddMessage("Added water mask layer to map display.")
+        else:
+            arcpy.AddMessage(
+                "Option to add output layer to map was not selected. "
+                "Output can be added manually if desired: %s" % outpath)
+
+        arcpy.AddMessage("Water Mask has been generated: %s." % outpath)
+
+        # Check In Spatial Analyst Extension
+        status = arcpy.CheckInExtension("Spatial")
+        messages.addMessage("The Spatial Analyst Extension is in %s status." % status)
+
+        # Indicate process is complete
+        arcpy.AddMessage("Water Mask process is complete.")
 
         return
