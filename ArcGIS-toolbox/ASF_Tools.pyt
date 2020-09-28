@@ -830,7 +830,7 @@ class RGBDecomp(object):
             arcpy.AddMessage("Co-pol dataset: %s" % hh_tif)
             hv_tif = arcpy.ListRasters('*HV.tif')[0]
             xp = os.path.join(indir, hv_tif)
-            arcpy.AddMessage("Cross-pol dataset: %s" % vh_tif)
+            arcpy.AddMessage("Cross-pol dataset: %s" % hv_tif)
 
         # Convert the scale to power if necessary
         if scale == 'Amplitude':
