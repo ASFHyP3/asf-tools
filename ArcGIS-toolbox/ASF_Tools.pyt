@@ -445,7 +445,7 @@ class ReclassifyRTC(object):
         arcpy.gp.Reclassify_sa(inRTC, "VALUE", values, rcname, "DATA")
 
         # Indicate process is complete
-        arcpy.AddMessage("Reclassified raster generated for %s." % (inRTC)
+        arcpy.AddMessage("Reclassified raster generated for %s." % inRTC)
 
         # Add the output product to the map
         if out_yn == "true":
