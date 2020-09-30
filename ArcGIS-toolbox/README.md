@@ -25,7 +25,7 @@ This tool compares two rasters by calculating the log difference on a pixel-by-p
 This tool generates an RGB image using the co- and cross-polarized datasets from an RTC product. Input datasets can be in either amplitude or power scale, and the primary polarization can be either vertical (VV/VH) or horizontal (HH/HV). Visit https://github.com/ASFHyP3/hyp3-lib/blob/develop/docs/rgb_decomposition.md for more information about interpreting RGB Decomposition images and the processing steps used to generate the color values.
 
 ### Prerequisites
-Users must have either ArcGIS Desktop (ArcMap) or ArcGIS Pro installed and licensed on their computer. The Toolbox has been tested with Desktop versions 10.6.1 and 10.7.1 and Pro versions 2.4.2 and 2.5, but it may work with earlier versions as well.
+Users must have either ArcGIS Desktop (ArcMap) or ArcGIS Pro installed and licensed on their computer. The Toolbox has been tested with Desktop versions 10.6.1 and 10.7.1 and Pro versions 2.4.2, 2.5.x, 2.6.1, but it may work with earlier versions as well.
 
 Note that several of the tools require the Spatial Analyst extension. Users who do not have licensing for this extension in ArcGIS will not be able to use many of the included tools.
 
