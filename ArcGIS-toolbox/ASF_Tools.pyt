@@ -294,6 +294,9 @@ class ScaleConversion(object):
         # Run the rasConvert function to convert from inscale to outscale
         self.rasConvert()
 
+        # Indicate process is complete
+        arcpy.AddMessage("Converted raster from %s scale to %s scale." % (self.inscale, self.outscale))
+
         # Add the output product to the map
         if self.out_yn == "true":
             dispname = os.path.splitext(self.outname)[0]
@@ -304,9 +307,6 @@ class ScaleConversion(object):
             arcpy.AddMessage(
                 "Option to add output layer to map was not selected. "
                 "Output can be added manually if desired: %s" % self.outpath)
-
-        # Indicate process is complete
-        arcpy.AddMessage("Converted raster from %s scale to %s scale." % (self.inscale, self.outscale))
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
@@ -440,6 +440,7 @@ class ReclassifyRTC(object):
         out_yn = parameters[4].valueAsText
 
         # Run the code to reclassify the image
+        arcpy.AddMessage("Reclassifying raster based on a threshold of %s..." % thresh)
         rcname = os.path.join(rc_outpath, rc_outname)
         values = "-1000.000000 %s 1;%s 1000.000000 NODATA" % (thresh, thresh)
         arcpy.gp.Reclassify_sa(inRTC, "VALUE", values, rcname, "DATA")
@@ -788,10 +789,6 @@ class RGBDecomp(object):
         outname = parameters[5].valueAsText
         out_yn = parameters[6].valueAsText
 
-        arcpy.AddMessage("Parameters accepted. Generating RGB Decomposition %s..." % outname)
-
-        # Run the code to generate the RGB Decomposition file
-
         arcpy.AddMessage("Input parameters have been defined. Preparing workspace...")
 
         # Set the working directory containing the RTC images
@@ -919,6 +916,10 @@ class RGBDecomp(object):
         # Combine the aRGB bands into a composite raster
         outpath = os.path.join(outdir, outname)
         arcpy.CompositeBands_management(bandList, outpath)
+        arcpy.AddMessage("RGB Decomposition product has been generated: %s." % outpath)
+
+        # Indicate process is complete
+        arcpy.AddMessage("RGB Decomposition process is complete.")
 
         # Add the output product to the map
         if out_yn == "true":
@@ -931,23 +932,25 @@ class RGBDecomp(object):
                 "Option to add output layer to map was not selected. "
                 "Output can be added manually if desired: %s" % outpath)
 
-        arcpy.AddMessage("RGB Decomposition product has been generated: %s. Cleaning up..." % outpath)
-
+        """
         # Delete temporary files
+        arcpy.AddMessage("Cleaning up...")
+
         # The deletion of the temp folder could be set as an option, if there's any chance that users might
         # want to have access to the individual color bands. I don't think that's likely, though.
 
-        # This does not currently work in the Python Toolbox environment. I don't know why
-        # If I run the same command in the python window, it behaves as expected. ???
-        # The setting of the workspace is probably redundant; it was a hail mary attempt to get it to work.
-        arcpy.env.workspace = indir  # delete this if proven to be redundant
-        arcpy.Delete_management("temp")
+        # There is not currently a mechanism for getting rid of the temp folder.
+        # The arcpy.DeleteManagement approach doesn't work from within a tool, so that's not an option.
+        # There seems to be a residual hold on at least one of the saved input bands for the RGB Composite,
+        # so using shutil doesn't work (it won't delete a directory if a file contained in the directory
+        # still has a file lock applied). The lock is probably ArcGIS-driven.
+        # Not sure how best to proceed to get rid of the temp folder once the process is complete.
+
+        arcpy.AddMessage("Temporary files have been deleted.")
+        """
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
         arcpy.AddMessage("The Spatial Analyst Extension is in %s status." % status)
-
-        # Indicate process is complete
-        arcpy.AddMessage("RGB Decomposition process is complete.")
 
         return
