@@ -194,19 +194,19 @@ class ScaleConversion(object):
 
             elif self.outscale == 'dB':
                 out_log10 = arcpy.sa.Log10(self.inpath)
-                outT10 = arcpy.sa.Times(out_log10, 10)
-                outT10.save(self.outpath)
+                out_t10 = arcpy.sa.Times(out_log10, 10)
+                out_t10.save(self.outpath)
 
         elif self.inscale == 'Amplitude':
             if self.outscale == 'Power':
-                outSquare = arcpy.sa.Square(self.inpath)
-                outSquare.save(self.outpath)
+                out_square = arcpy.sa.Square(self.inpath)
+                out_square.save(self.outpath)
 
             elif self.outscale == 'dB':
-                outSquare = arcpy.sa.Square(self.inpath)
-                out_log10 = arcpy.sa.Log10(outSquare)
-                outT10 = arcpy.sa.Times(out_log10, 10)
-                outT10.save(self.outpath)
+                out_square = arcpy.sa.Square(self.inpath)
+                out_log10 = arcpy.sa.Log10(out_square)
+                out_t10 = arcpy.sa.Times(out_log10, 10)
+                out_t10.save(self.outpath)
 
         else:
             arcpy.AddMessage('Parameters entered incorrectly; no conversion performed.')
@@ -750,8 +750,12 @@ class RGBDecomp(object):
         # Set the default primary polarization
         if parameters[0].value:
             pol = indirbase[24]
-            if not parameters[2].altered:
-                parameters[2].value = pol
+            if pol in ("V", "H"):
+                if not parameters[2].altered:
+                    parameters[2].value = pol
+            else:
+                if not parameters[2].altered:
+                    parameters[2].value = ''
 
         # Set the default R/B threshold value
         if not parameters[3].altered:
