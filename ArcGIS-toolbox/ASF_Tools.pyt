@@ -11,11 +11,11 @@ import arcpy  # noqa import neccesary but arcpy only available in arcgis environ
 
 sys.path.append(os.path.dirname(__file__))
 
-from unzip import UnzipFiles
-from scale_conversion import ScaleConversion
-from reclassify_rtc import ReclassifyRTC
-from log_diff import LogDiff
-from rgb_decomp import RGBDecomp
+from asftools.unzip import UnzipFiles
+from asftools.scale_conversion import ScaleConversion
+from asftools.reclassify_rtc import ReclassifyRTC
+from asftools.log_diff import LogDiff
+from asftools.rgb_decomp import RGBDecomp
 
 
 class Toolbox(object):
