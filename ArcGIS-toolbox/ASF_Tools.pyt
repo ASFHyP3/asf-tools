@@ -93,14 +93,14 @@ class UnzipFiles(object):
             if item.endswith('.zip'):
                 file_name = os.path.abspath(item)
                 zip_ref = zipfile.ZipFile(file_name)
-                messages.addMessage("Extracting files from " + file_name + "...")
+                arcpy.AddMessage("Extracting files from " + file_name + "...")
                 zip_ref.extractall(outlocation)
                 zip_ref.close()
-                messages.addMessage("Files extracted. Deleting zip folder " + file_name + " from original location...")
+                arcpy.AddMessage("Files extracted. Deleting zip folder " + file_name + " from original location...")
                 os.remove(file_name)
-                messages.addMessage("Unzip complete for " + file_name)
+                arcpy.AddMessage("Unzip complete for " + file_name)
 
-        messages.addMessage("All extractions complete.")
+        arcpy.AddMessage("All extractions complete.")
 
         return
 
@@ -164,14 +164,14 @@ class ScaleConversion(object):
             direction="Input")
 
         # Sixth parameter: select if output is added to the map
-        outYN = arcpy.Parameter(
-            name="outYN",
+        out_yn = arcpy.Parameter(
+            name="out_yn",
             displayName="Add output to map",
             datatype="GPBoolean",
             parameterType="Required",
             direction="Input")
 
-        outYN.value = "true"
+        out_yn.value = "true"
 
         # Seventh parameter: output layer to add to project
         outlayer = arcpy.Parameter(
@@ -181,7 +181,7 @@ class ScaleConversion(object):
             parameterType="Derived",
             direction="Output")
 
-        params = [p_inpath, p_inscale, p_outscale, p_outdir, p_outname, outYN, outlayer]
+        params = [p_inpath, p_inscale, p_outscale, p_outdir, p_outname, out_yn, outlayer]
         return params
 
     def rasConvert(self):
@@ -189,24 +189,24 @@ class ScaleConversion(object):
 
         if self.inscale == 'Power':
             if self.outscale == 'Amplitude':
-                outSqRt = arcpy.sa.SquareRoot(self.inpath)
-                outSqRt.save(self.outpath)
+                out_sqrt = arcpy.sa.SquareRoot(self.inpath)
+                out_sqrt.save(self.outpath)
 
             elif self.outscale == 'dB':
-                outLog10 = arcpy.sa.Log10(self.inpath)
-                outT10 = arcpy.sa.Times(outLog10, 10)
-                outT10.save(self.outpath)
+                out_log10 = arcpy.sa.Log10(self.inpath)
+                out_t10 = arcpy.sa.Times(out_log10, 10)
+                out_t10.save(self.outpath)
 
         elif self.inscale == 'Amplitude':
             if self.outscale == 'Power':
-                outSquare = arcpy.sa.Square(self.inpath)
-                outSquare.save(self.outpath)
+                out_square = arcpy.sa.Square(self.inpath)
+                out_square.save(self.outpath)
 
             elif self.outscale == 'dB':
-                outSquare = arcpy.sa.Square(self.inpath)
-                outLog10 = arcpy.sa.Log10(outSquare)
-                outT10 = arcpy.sa.Times(outLog10, 10)
-                outT10.save(self.outpath)
+                out_square = arcpy.sa.Square(self.inpath)
+                out_log10 = arcpy.sa.Log10(out_square)
+                out_t10 = arcpy.sa.Times(out_log10, 10)
+                out_t10.save(self.outpath)
 
         else:
             arcpy.AddMessage('Parameters entered incorrectly; no conversion performed.')
@@ -247,8 +247,8 @@ class ScaleConversion(object):
 
         # Set the default scale for the input file to be selected based on the p_inpath filename
         if parameters[0].value:
-            indirbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
-            inscale = indirbase[36]
+            inrasbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
+            inscale = inrasbase[36]
             if inscale == 'a':
                 insc = 'Amplitude'
             elif inscale == 'p':
@@ -260,9 +260,9 @@ class ScaleConversion(object):
 
         # Set the default value for p_outname to be the input raster basename with an output scale tag
         if parameters[2].value:
-            scaleTag = parameters[2].value
+            scale_tag = parameters[2].value
             if not parameters[4].altered:
-                outnm = os.path.splitext(os.path.basename(parameters[0].value.value))[0] + "_" + scaleTag + ".tif"
+                outnm = os.path.splitext(os.path.basename(parameters[0].value.value))[0] + "_" + scale_tag + ".tif"
                 parameters[4].value = outnm
 
         return
@@ -284,7 +284,7 @@ class ScaleConversion(object):
         self.outscale = parameters[2].valueAsText
         self.outdir = parameters[3].valueAsText
         self.outname = parameters[4].valueAsText
-        self.outYN = parameters[5].valueAsText
+        self.out_yn = parameters[5].valueAsText
 
         self.outpath = self.outdir + "\\" + self.outname
 
@@ -294,8 +294,11 @@ class ScaleConversion(object):
         # Run the rasConvert function to convert from inscale to outscale
         self.rasConvert()
 
+        # Indicate process is complete
+        arcpy.AddMessage("Converted raster from %s scale to %s scale." % (self.inscale, self.outscale))
+
         # Add the output product to the map
-        if self.outYN == "true":
+        if self.out_yn == "true":
             dispname = os.path.splitext(self.outname)[0]
             arcpy.MakeRasterLayer_management(self.outpath, dispname)
             arcpy.SetParameterAsText(6, dispname)
@@ -304,9 +307,6 @@ class ScaleConversion(object):
             arcpy.AddMessage(
                 "Option to add output layer to map was not selected. "
                 "Output can be added manually if desired: %s" % self.outpath)
-
-        # Indicate process is complete
-        arcpy.AddMessage("Converted raster from %s scale to %s scale." % (self.inscale, self.outscale))
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
@@ -327,8 +327,8 @@ class ReclassifyRTC(object):
         """Define parameter definitions"""
 
         # First parameter: input RTC file to be reclassified
-        inRTC = arcpy.Parameter(
-            name="inRTC",
+        in_rtc = arcpy.Parameter(
+            name="in_rtc",
             displayName="Raster to be reclassifed",
             datatype="DERasterDataset",
             parameterType="Required",
@@ -359,14 +359,14 @@ class ReclassifyRTC(object):
             direction="Input")
 
         # Fifth parameter: select if output is added to the map
-        outYN = arcpy.Parameter(
-            name="outYN",
+        out_yn = arcpy.Parameter(
+            name="out_yn",
             displayName="Add output to map",
             datatype="GPBoolean",
             parameterType="Required",
             direction="Input")
 
-        outYN.value = "true"
+        out_yn.value = "true"
 
         # Sixth parameter: output layer to add to project
         outlayer = arcpy.Parameter(
@@ -376,7 +376,7 @@ class ReclassifyRTC(object):
             parameterType="Derived",
             direction="Output")
 
-        params = [inRTC, rc_outpath, rc_outname, thresh, outYN, outlayer]
+        params = [in_rtc, rc_outpath, rc_outname, thresh, out_yn, outlayer]
         return params
 
     def isLicensed(self):
@@ -409,15 +409,15 @@ class ReclassifyRTC(object):
 
         # Set the default value for rc_outpath to be the directory of the input raster
         if parameters[0].value:
-            workspaceR = os.path.dirname(parameters[0].value.value)
+            workspace = os.path.dirname(parameters[0].value.value)
             if not parameters[1].altered:
-                parameters[1].value = workspaceR
+                parameters[1].value = workspace
 
         # Set the default value for rc_outname to be the basename of the input raster with a Reclass tag
         if parameters[0].value:
             if not parameters[2].altered:
-                outnmR = os.path.splitext(os.path.basename(parameters[0].value.value))[0] + "_Reclass.tif"
-                parameters[2].value = outnmR
+                outnm = os.path.splitext(os.path.basename(parameters[0].value.value))[0] + "_Reclass.tif"
+                parameters[2].value = outnm
 
         return
 
@@ -433,23 +433,23 @@ class ReclassifyRTC(object):
         self.isLicensed()
 
         # Define parameters
-        inRTC = parameters[0].valueAsText
+        in_rtc = parameters[0].valueAsText
         rc_outpath = parameters[1].valueAsText
         rc_outname = parameters[2].valueAsText
         thresh = parameters[3].valueAsText
-        outYN = parameters[4].valueAsText
+        out_yn = parameters[4].valueAsText
 
         # Run the code to reclassify the image
-        rcname = str(rc_outpath + '\\' + rc_outname)
+        arcpy.AddMessage("Reclassifying raster based on a threshold of %s..." % thresh)
+        rcname = os.path.join(rc_outpath, rc_outname)
         values = "-1000.000000 %s 1;%s 1000.000000 NODATA" % (thresh, thresh)
-        arcpy.gp.Reclassify_sa(inRTC, "VALUE", values, rcname, "DATA")
+        arcpy.gp.Reclassify_sa(in_rtc, "VALUE", values, rcname, "DATA")
 
         # Indicate process is complete
-        txt_msg3 = "Reclassified raster generated for %s." % (inRTC)
-        messages.addMessage(txt_msg3)
+        arcpy.AddMessage("Reclassified raster generated for %s." % in_rtc)
 
         # Add the output product to the map
-        if outYN == "true":
+        if out_yn == "true":
             dispname = os.path.splitext(rc_outname)[0]
             arcpy.MakeRasterLayer_management(rcname, dispname)
             arcpy.SetParameterAsText(5, dispname)
@@ -510,14 +510,14 @@ class LogDiff(object):
             direction="Input")
 
         # Fifth parameter: select if output is added to the map
-        outYN = arcpy.Parameter(
-            name="outYN",
+        out_yn = arcpy.Parameter(
+            name="out_yn",
             displayName="Add output to map",
             datatype="GPBoolean",
             parameterType="Required",
             direction="Input")
 
-        outYN.value = "true"
+        out_yn.value = "true"
 
         # Sixth parameter: output layer to add to project
         outlayer = arcpy.Parameter(
@@ -527,7 +527,7 @@ class LogDiff(object):
             parameterType="Derived",
             direction="Output")
 
-        params = [date2, date1, outdir, outname, outYN, outlayer]
+        params = [date2, date1, outdir, outname, out_yn, outlayer]
         return params
 
     def isLicensed(self):
@@ -590,32 +590,32 @@ class LogDiff(object):
         date1 = parameters[1].valueAsText
         outdir = parameters[2].valueAsText
         outname = parameters[3].valueAsText
-        outYN = parameters[4].valueAsText
+        out_yn = parameters[4].valueAsText
 
         arcpy.AddMessage("Parameters accepted. Generating Log Difference file %s..." % outname)
 
         # Run the code to calculate the log difference
-        outLogDiff = str(outdir + '\\' + outname)
-        outLog10 = arcpy.sa.Log10(arcpy.sa.Divide(date2, date1))
-        outLog10.save(outLogDiff)
+        out_logdiff = os.path.join(outdir, outname)
+        out_log10 = arcpy.sa.Log10(arcpy.sa.Divide(date2, date1))
+        out_log10.save(out_logdiff)
 
         # Indicate process is complete
         arcpy.AddMessage("Log Difference raster %s generated." % outname)
 
         # Add the output product to the map
-        if outYN == "true":
+        if out_yn == "true":
             dispname = os.path.splitext(outname)[0]
-            arcpy.MakeRasterLayer_management(outLogDiff, dispname)
+            arcpy.MakeRasterLayer_management(out_logdiff, dispname)
             arcpy.SetParameterAsText(5, dispname)
             arcpy.AddMessage("Added Log Difference raster layer to map display.")
         else:
             arcpy.AddMessage(
                 "Option to add output layer to map was not selected. "
-                "Output can be added manually if desired: %s" % outLogDiff)
+                "Output can be added manually if desired: %s" % out_logdiff)
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
-        messages.addMessage("The Spatial Analyst Extension is in %s status." % status)
+        arcpy.AddMessage("The Spatial Analyst Extension is in %s status." % status)
 
         return
 
@@ -686,14 +686,14 @@ class RGBDecomp(object):
             direction="Input")
 
         # Seventh parameter: select if output is added to the map
-        outYN = arcpy.Parameter(
-            name="outYN",
+        out_yn = arcpy.Parameter(
+            name="out_yn",
             displayName="Add output to map",
             datatype="GPBoolean",
             parameterType="Required",
             direction="Input")
 
-        outYN.value = "true"
+        out_yn.value = "true"
 
         # Eighth parameter: output layer to add to project
         outlayer = arcpy.Parameter(
@@ -703,7 +703,7 @@ class RGBDecomp(object):
             parameterType="Derived",
             direction="Output")
 
-        params = [indir, scale, pol, rb_thresh_db, outdir, outname, outYN, outlayer]
+        params = [indir, scale, pol, rb_thresh_db, outdir, outname, out_yn, outlayer]
         return params
 
     def isLicensed(self):
@@ -736,7 +736,7 @@ class RGBDecomp(object):
 
         # Set the default scale for the input file to be selected based on the indir name
         if parameters[0].value:
-            indirbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
+            indirbase = os.path.basename(parameters[0].value.value)
             inscale = indirbase[36]
             if inscale == 'a':
                 insc = 'Amplitude'
@@ -750,8 +750,12 @@ class RGBDecomp(object):
         # Set the default primary polarization
         if parameters[0].value:
             pol = indirbase[24]
-            if not parameters[2].altered:
-                parameters[2].value = pol
+            if pol in ("V", "H"):
+                if not parameters[2].altered:
+                    parameters[2].value = pol
+            else:
+                if not parameters[2].altered:
+                    parameters[2].value = ''
 
         # Set the default R/B threshold value
         if not parameters[3].altered:
@@ -787,12 +791,7 @@ class RGBDecomp(object):
         rb_thresh_db = parameters[3].value
         outdir = parameters[4].valueAsText
         outname = parameters[5].valueAsText
-        outYN = parameters[6].valueAsText
-
-        outmsg1 = "Parameters accepted. Generating RGB Decomposition %s..." % outname
-        messages.addMessage(outmsg1)
-
-        # Run the code to generate the RGB Decomposition file
+        out_yn = parameters[6].valueAsText
 
         arcpy.AddMessage("Input parameters have been defined. Preparing workspace...")
 
@@ -852,7 +851,6 @@ class RGBDecomp(object):
         # Peform pixel cleanup on VV and VH RTC images, using -48 dB as cutoff for valid pixels
         pc_thresh = math.pow(10, -4.8)
         wc_pc = "VALUE < %s" % (pc_thresh)
-        # OR: wc_pc = "VALUE < " + str(pc_thresh)
         cp0 = arcpy.sa.Con(cps, 0, cps, wc_pc)
         xp0 = arcpy.sa.Con(xps, 0, xps, wc_pc)
 
@@ -861,23 +859,23 @@ class RGBDecomp(object):
         # Generate spatial masks based on red/blue threshold
         rb_thresh = math.pow(10, rb_thresh_db / 10)
 
-        # MB = xp0 < k
+        # mb = xp0 < k
         remap_mb = "0 %s 1;%s 100000 0" % (rb_thresh, rb_thresh)
-        MB = arcpy.sa.Reclassify(xp0, "VALUE", remap_mb, "DATA")
+        mb = arcpy.sa.Reclassify(xp0, "VALUE", remap_mb, "DATA")
 
-        # MR = xp0 > k
+        # mr = xp0 > k
         remap_mr = "0 %s 0;%s 100000 1" % (rb_thresh, rb_thresh)
-        MR = arcpy.sa.Reclassify(xp0, "VALUE", remap_mr, "DATA")
+        mr = arcpy.sa.Reclassify(xp0, "VALUE", remap_mr, "DATA")
 
-        # MX = SXP > 0
-        MX = arcpy.sa.Con(xp0, "1", "0", "VALUE > 0")
+        # mx = SXP > 0
+        mx = arcpy.sa.Con(xp0, "1", "0", "VALUE > 0")
 
         arcpy.AddMessage("Spatial masks generated. Deriving red and blue components of surface scatter...")
 
         # The surface scattering component is divided into red and blue sections
         # Negative values are set to zero
-        PR = arcpy.sa.Con((cp0 - (3 * xp0)), "0", (cp0 - (3 * xp0)), "VALUE < 0")
-        PB = arcpy.sa.Con(((3 * xp0) - cp0), "0", ((3 * xp0) - cp0), "VALUE < 0")
+        pr = arcpy.sa.Con((cp0 - (3 * xp0)), "0", (cp0 - (3 * xp0)), "VALUE < 0")
+        pb = arcpy.sa.Con(((3 * xp0) - cp0), "0", ((3 * xp0) - cp0), "VALUE < 0")
 
         # Calculate the difference between the co- and cross-pol values
         # Negative values are set to zero
@@ -887,44 +885,48 @@ class RGBDecomp(object):
             "Red and blue components have been derived. Applying spatial masks and scalars for each band...")
 
         # Apply spatial masks and specific scalars to stretch the values for each band from 1 to 255
-        z = 2 / math.pi * MB * arcpy.sa.ATan(arcpy.sa.SquareRoot(sd))
-        iR = 254 * MX * (2 * MR * arcpy.sa.SquareRoot(PR) + z) + 1
-        iG = 254 * MX * (3 * MR * arcpy.sa.SquareRoot(xp0) + (2 * z)) + 1
-        iB = 254 * MX * (2 * arcpy.sa.SquareRoot(PB) + (5 * z)) + 1
+        z = 2 / math.pi * mb * arcpy.sa.ATan(arcpy.sa.SquareRoot(sd))
+        ir = 254 * mx * (2 * mr * arcpy.sa.SquareRoot(pr) + z) + 1
+        ig = 254 * mx * (3 * mr * arcpy.sa.SquareRoot(xp0) + (2 * z)) + 1
+        ib = 254 * mx * (2 * arcpy.sa.SquareRoot(pb) + (5 * z)) + 1
 
         arcpy.AddMessage(
             "Spatial masks and scalars have been applied. Converting bands to 8-bit unsigned integer GeoTIFFs...")
 
         # Create empty list for RGB bands
-        bandList = []
+        band_list = []
 
         # Remove negative values and convert each band to an integer raster
-        aR = arcpy.sa.Int(arcpy.sa.Con(iR, "255", iR, "VALUE > 255"))
-        aG = arcpy.sa.Int(arcpy.sa.Con(iG, "255", iG, "VALUE > 255"))
-        aB = arcpy.sa.Int(arcpy.sa.Con(iB, "255", iB, "VALUE > 255"))
+        ar = arcpy.sa.Int(arcpy.sa.Con(ir, "255", ir, "VALUE > 255"))
+        ag = arcpy.sa.Int(arcpy.sa.Con(ig, "255", ig, "VALUE > 255"))
+        ab = arcpy.sa.Int(arcpy.sa.Con(ib, "255", ib, "VALUE > 255"))
 
         # Save bands as GeoTIFF rasters in the scratch folder
-        aRpath = os.path.join(scratchpath, "aR.tif")
-        aR.save(aRpath)
-        bandList.append(aRpath)
+        arpath = os.path.join(scratchpath, "ar.tif")
+        ar.save(arpath)
+        band_list.append(arpath)
 
-        aGpath = os.path.join(scratchpath, "aG.tif")
-        aG.save(aGpath)
-        bandList.append(aGpath)
+        agpath = os.path.join(scratchpath, "ag.tif")
+        ag.save(agpath)
+        band_list.append(agpath)
 
-        aBpath = os.path.join(scratchpath, "aB.tif")
-        aB.save(aBpath)
-        bandList.append(aBpath)
+        abpath = os.path.join(scratchpath, "ab.tif")
+        ab.save(abpath)
+        band_list.append(abpath)
 
         arcpy.AddMessage(
             "GeoTIFF files for each band have been saved. Combining single-band rasters to generate RGB image...")
 
         # Combine the aRGB bands into a composite raster
         outpath = os.path.join(outdir, outname)
-        arcpy.CompositeBands_management(bandList, outpath)
+        arcpy.CompositeBands_management(band_list, outpath)
+        arcpy.AddMessage("RGB Decomposition product has been generated: %s." % outpath)
+
+        # Indicate process is complete
+        arcpy.AddMessage("RGB Decomposition process is complete.")
 
         # Add the output product to the map
-        if outYN == "true":
+        if out_yn == "true":
             dispname = os.path.splitext(outname)[0]
             arcpy.MakeRasterLayer_management(outpath, dispname)
             arcpy.SetParameterAsText(7, dispname)
@@ -934,23 +936,25 @@ class RGBDecomp(object):
                 "Option to add output layer to map was not selected. "
                 "Output can be added manually if desired: %s" % outpath)
 
-        arcpy.AddMessage("RGB Decomposition product has been generated: %s. Cleaning up..." % outpath)
-
+        """
         # Delete temporary files
+        arcpy.AddMessage("Cleaning up...")
+
         # The deletion of the temp folder could be set as an option, if there's any chance that users might
         # want to have access to the individual color bands. I don't think that's likely, though.
 
-        # This does not currently work in the Python Toolbox environment. I don't know why
-        # If I run the same command in the python window, it behaves as expected. ???
-        # The setting of the workspace is probably redundant; it was a hail mary attempt to get it to work.
-        arcpy.env.workspace = indir  # delete this if proven to be redundant
-        arcpy.Delete_management("temp")
+        # There is not currently a mechanism for getting rid of the temp folder.
+        # The arcpy.DeleteManagement approach doesn't work from within a tool, so that's not an option.
+        # There seems to be a residual hold on at least one of the saved input bands for the RGB Composite,
+        # so using shutil doesn't work (it won't delete a directory if a file contained in the directory
+        # still has a file lock applied). The lock is probably ArcGIS-driven.
+        # Not sure how best to proceed to get rid of the temp folder once the process is complete.
+
+        arcpy.AddMessage("Temporary files have been deleted.")
+        """
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
-        messages.addMessage("The Spatial Analyst Extension is in %s status." % status)
-
-        # Indicate process is complete
-        arcpy.AddMessage("RGB Decomposition process is complete.")
+        arcpy.AddMessage("The Spatial Analyst Extension is in %s status." % status)
 
         return
