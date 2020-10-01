@@ -260,9 +260,9 @@ class ScaleConversion(object):
 
         # Set the default value for p_outname to be the input raster basename with an output scale tag
         if parameters[2].value:
-            scaleTag = parameters[2].value
+            scale_tag = parameters[2].value
             if not parameters[4].altered:
-                outnm = os.path.splitext(os.path.basename(parameters[0].value.value))[0] + "_" + scaleTag + ".tif"
+                outnm = os.path.splitext(os.path.basename(parameters[0].value.value))[0] + "_" + scale_tag + ".tif"
                 parameters[4].value = outnm
 
         return
@@ -327,8 +327,8 @@ class ReclassifyRTC(object):
         """Define parameter definitions"""
 
         # First parameter: input RTC file to be reclassified
-        inRTC = arcpy.Parameter(
-            name="inRTC",
+        in_rtc = arcpy.Parameter(
+            name="in_rtc",
             displayName="Raster to be reclassifed",
             datatype="DERasterDataset",
             parameterType="Required",
@@ -376,7 +376,7 @@ class ReclassifyRTC(object):
             parameterType="Derived",
             direction="Output")
 
-        params = [inRTC, rc_outpath, rc_outname, thresh, out_yn, outlayer]
+        params = [in_rtc, rc_outpath, rc_outname, thresh, out_yn, outlayer]
         return params
 
     def isLicensed(self):
@@ -409,15 +409,15 @@ class ReclassifyRTC(object):
 
         # Set the default value for rc_outpath to be the directory of the input raster
         if parameters[0].value:
-            workspaceR = os.path.dirname(parameters[0].value.value)
+            workspace = os.path.dirname(parameters[0].value.value)
             if not parameters[1].altered:
-                parameters[1].value = workspaceR
+                parameters[1].value = workspace
 
         # Set the default value for rc_outname to be the basename of the input raster with a Reclass tag
         if parameters[0].value:
             if not parameters[2].altered:
-                outnmR = os.path.splitext(os.path.basename(parameters[0].value.value))[0] + "_Reclass.tif"
-                parameters[2].value = outnmR
+                outnm = os.path.splitext(os.path.basename(parameters[0].value.value))[0] + "_Reclass.tif"
+                parameters[2].value = outnm
 
         return
 
@@ -433,7 +433,7 @@ class ReclassifyRTC(object):
         self.isLicensed()
 
         # Define parameters
-        inRTC = parameters[0].valueAsText
+        in_rtc = parameters[0].valueAsText
         rc_outpath = parameters[1].valueAsText
         rc_outname = parameters[2].valueAsText
         thresh = parameters[3].valueAsText
@@ -443,10 +443,10 @@ class ReclassifyRTC(object):
         arcpy.AddMessage("Reclassifying raster based on a threshold of %s..." % thresh)
         rcname = os.path.join(rc_outpath, rc_outname)
         values = "-1000.000000 %s 1;%s 1000.000000 NODATA" % (thresh, thresh)
-        arcpy.gp.Reclassify_sa(inRTC, "VALUE", values, rcname, "DATA")
+        arcpy.gp.Reclassify_sa(in_rtc, "VALUE", values, rcname, "DATA")
 
         # Indicate process is complete
-        arcpy.AddMessage("Reclassified raster generated for %s." % inRTC)
+        arcpy.AddMessage("Reclassified raster generated for %s." % in_rtc)
 
         # Add the output product to the map
         if out_yn == "true":
@@ -894,7 +894,7 @@ class RGBDecomp(object):
             "Spatial masks and scalars have been applied. Converting bands to 8-bit unsigned integer GeoTIFFs...")
 
         # Create empty list for RGB bands
-        bandList = []
+        band_list = []
 
         # Remove negative values and convert each band to an integer raster
         ar = arcpy.sa.Int(arcpy.sa.Con(ir, "255", ir, "VALUE > 255"))
@@ -904,22 +904,22 @@ class RGBDecomp(object):
         # Save bands as GeoTIFF rasters in the scratch folder
         arpath = os.path.join(scratchpath, "ar.tif")
         ar.save(arpath)
-        bandList.append(arpath)
+        band_list.append(arpath)
 
         agpath = os.path.join(scratchpath, "ag.tif")
         ag.save(agpath)
-        bandList.append(agpath)
+        band_list.append(agpath)
 
         abpath = os.path.join(scratchpath, "ab.tif")
         ab.save(abpath)
-        bandList.append(abpath)
+        band_list.append(abpath)
 
         arcpy.AddMessage(
             "GeoTIFF files for each band have been saved. Combining single-band rasters to generate RGB image...")
 
         # Combine the aRGB bands into a composite raster
         outpath = os.path.join(outdir, outname)
-        arcpy.CompositeBands_management(bandList, outpath)
+        arcpy.CompositeBands_management(band_list, outpath)
         arcpy.AddMessage("RGB Decomposition product has been generated: %s." % outpath)
 
         # Indicate process is complete
