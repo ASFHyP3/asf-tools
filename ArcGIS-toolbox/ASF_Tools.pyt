@@ -247,8 +247,8 @@ class ScaleConversion(object):
 
         # Set the default scale for the input file to be selected based on the p_inpath filename
         if parameters[0].value:
-            indirbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
-            inscale = indirbase[36]
+            inrasbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
+            inscale = inrasbase[36]
             if inscale == 'a':
                 insc = 'Amplitude'
             elif inscale == 'p':
@@ -736,7 +736,7 @@ class RGBDecomp(object):
 
         # Set the default scale for the input file to be selected based on the indir name
         if parameters[0].value:
-            indirbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
+            indirbase = os.path.basename(parameters[0].value.value)
             inscale = indirbase[36]
             if inscale == 'a':
                 insc = 'Amplitude'
