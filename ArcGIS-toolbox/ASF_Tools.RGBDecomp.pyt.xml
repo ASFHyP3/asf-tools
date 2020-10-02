@@ -1,4 +1,5 @@
-<metadata xml:lang="en"><Esri><CreaDate>20200918</CreaDate><CreaTime>13534800</CreaTime><ArcGISFormat>1.0</ArcGISFormat><SyncOnce>TRUE</SyncOnce><ModDate>20200929</ModDate><ModTime>12542200</ModTime><scaleRange><minScale>150000000</minScale><maxScale>5000</maxScale></scaleRange><ArcGISProfile>NAP</ArcGISProfile><DataProperties><itemProps><imsContentType export="False"/></itemProps></DataProperties></Esri><tool name="RGBDecomp" displayname="RGB Decomposition" toolboxalias="ASF Tools" xmlns=""><arcToolboxHelpPath>c:\program files (x86)\arcgis\desktop10.7\Help\gp</arcToolboxHelpPath><parameters><param name="indir" displayname="Input directory containing dual-pol RTC data" type="Required" direction="Input" datatype="Workspace" expression="indir"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the HyP3 RTC product directory, or other directory containing the co- and cross-pol datasets. You can also enter the path by typing or pasting it, or by dragging the folder from the Catalog window.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The two input rasters (co-pol and dual-pol) must be in the same folder, with filenames ending in XX.tif where XX is the polarization (VV, VH, HV, HH). There can only be one co-pol and one cross-pol raster in the input directory, and the datasets must be in either amplitude or power scale.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="scale" displayname="Scale of input RTC (Amplitude or Power)" type="Required" direction="Input" datatype="String" expression="Power | Amplitude"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Select the scale of the input datasets from the dropdown menu (either Amplitude or Power).&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;If you are using a HyP3 RTC product directory as the input directory, this parameter will automatically populate based on the directory name, but you can set it manually if the directory does not follow the HyP3 naming convention.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input directory after this parameter is populated, it does not automatically update to match the new input directory information. Delete the outdated parameter and press tab or click away from the field to reset it to reflect the new input directory if necessary.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="pol" displayname="Primary polarization (V or H)" type="Required" direction="Input" datatype="String" expression="V | H"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Select the primary polarization from the dropdown menu (either V for VV/VH datasets or H for HH/HV datasets).&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;If you are using a HyP3 RTC product directory as the input directory, this parameter will automatically populate based on the directory name, but you can set it manually if the directory does not follow the HyP3 naming convention.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input directory after this parameter is populated, it does not automatically update to match the new input directory information. Delete the outdated parameter and press tab or click away from the field to reset it to reflect the new input directory if necessary.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="rb_thresh_db" displayname="Threshold cutoff value for red/blue in dB (default: -24.0 dB)" type="Required" direction="Input" datatype="Double" expression="rb_thresh_db"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Set the red/blue threshold (dB).&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The default value is -24 dB, which works well for most Sentinel-1 IW datasets, but you can adjust the threshold if desired. Suitable values typically fall in the range of -19 to -25 dB.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outdir" displayname="Output directory for new RGB file" type="Required" direction="Input" datatype="Workspace" expression="outdir"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the destination directory where the output will be saved. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;By default this is set to be the same as the input directory. You can amend the path, or click the folder icon to navigate to a different output directory if desired.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input directory after the default directory populates, the output directory parameter does not automatically update. Delete the outdated directory and press tab or click away from the field to reset the output directory to reflect the new input directory.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outname" displayname="Filename for new RGB raster" type="Required" direction="Input" datatype="String" expression="outname"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Enter the filename for the output raster, including the .tif extension.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;By default, this parameter is set to add an _RGB.tif tag to the input directory name. You can amend the name, or enter an entirely different filename if desired.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input directory after this parameter is populated, it does not automatically update to match the new input directory information. Delete the outdated filename and press tab or click away from the field to reset the parameter to reflect the new input directory if necessary.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outYN" displayname="Add output to map" type="Required" direction="Input" datatype="Boolean" expression="outYN"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;P&gt;&lt;SPAN&gt;Select this option to automatically add the output raster to the map. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;This option is selected by default. Remove the check if you do not want the output raster added to the map.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;</dialogReference></param></parameters><summary>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool generates an RGB Decomposition raster from a dual-pol RTC dataset. It was designed for use with HyP3 RTC outputs, but can be used with any dual-pol RTC dataset that is in either power or amplitude scale. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The parameters are populated with default values once you select the input directory containing the RTC datasets. You can amend any of the auto-populated outputs or set them to something completely different if desired. Note that if you change your input directory, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For best results when viewing the output image, set the symbology to be an RGB Composite stretched to Minimum-Maximum with no gamma stretch applied. The default symbology is generally an RGB Composite stretched to a Percent Clip with a gamma stretch applied.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</summary><usage>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool generates an RGB Decomposition raster from a dual-pol RTC dataset. It was designed for use with HyP3 Sentinel-1 RTC outputs, but can be used with any dual-pol dataset that is in either power or amplitude scale. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The two input rasters (co-pol and dual-pol) must be in the same folder, with filenames ending in XX.tif where XX is the polarization (VV, VH, HV, HH). There can only be one co-pol and one cross-pol raster in the input directory. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The parameters will be set to default values once the input directory is selected. If you use a HyP3 RTC product folder as the input directory, all of the parameters will be automatically populated based on the information contained in the directory name. If you are not using a HyP3 product directory, or if the directory name has been changed, you will need to set the scale and primary polarization parameters manually. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The red/blue threshold can be adjusted if desired. The default is -24 dB, and the appropriate value range is generally -19 to -25 dB. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The output directory defaults to the input directory, and the output name defaults to the name of the directory tagged with _RGB.tif. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;You can amend any of the auto-populated outputs or set them to something completely different if desired. Note that if you change your input directory, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;----- &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For best results when viewing the output image, set the symbology to be an RGB Composite stretched to Minimum-Maximum with no gamma stretch applied. The default symbology is generally an RGB Composite stretched to a Percent Clip with a gamma stretch applied.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;In products generated using this tool, vegetated areas will generally appear more green, water (or desert sand) blue, and other areas such as urban landscapes more red. Where there are stronger cross-pol returns, indicating more volume scatter, the image will be more dominated by the green band, while areas with more surface scatter will have a greater contribution from the blue and red bands. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;Visit &lt;/SPAN&gt;&lt;A href="https://github.com/ASFHyP3/hyp3-lib/blob/develop/docs/rgb_decomposition.md"&gt;&lt;SPAN&gt;https://github.com/ASFHyP3/hyp3-lib/blob/develop/docs/rgb_decomposition.md&lt;/SPAN&gt;&lt;/A&gt;&lt;SPAN&gt; for more information about interpreting RGB Decomposition images and the processing steps used to generate the color values.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</usage><scriptExamples><scriptExample><title>RGB Decomposition</title><code>class RGBDecomp(object):
+<?xml version="1.0"?>
+<metadata xml:lang="en"><Esri><CreaDate>20200918</CreaDate><CreaTime>13534800</CreaTime><ArcGISFormat>1.0</ArcGISFormat><SyncOnce>TRUE</SyncOnce><ModDate>20201002</ModDate><ModTime>15000700</ModTime><scaleRange><minScale>150000000</minScale><maxScale>5000</maxScale></scaleRange><ArcGISProfile>NAP</ArcGISProfile><DataProperties><itemProps><imsContentType export="False"/></itemProps></DataProperties></Esri><tool name="RGBDecomp" displayname="RGB Decomposition" toolboxalias="ASF Tools" xmlns=""><arcToolboxHelpPath>c:\program files\arcgis\pro\Resources\Help\gp</arcToolboxHelpPath><parameters><param name="indir" displayname="Input directory containing dual-pol RTC data" type="Required" direction="Input" datatype="Workspace" expression="indir"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the HyP3 RTC product directory, or other directory containing the co- and cross-pol datasets. You can also enter the path by typing or pasting it, or by dragging the folder from the Catalog window.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The two input rasters (co-pol and dual-pol) must be in the same folder, with filenames ending in XX.tif where XX is the polarization (VV, VH, HV, HH). There can only be one co-pol and one cross-pol raster in the input directory, and the datasets must be in either amplitude or power scale.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="scale" displayname="Scale of input RTC (Amplitude or Power)" type="Required" direction="Input" datatype="String" expression="Power | Amplitude"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Select the scale of the input datasets from the dropdown menu (either Amplitude or Power).&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;If you are using a HyP3 RTC product directory as the input directory, this parameter will automatically populate based on the directory name, but you can set it manually if the directory does not follow the HyP3 naming convention.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input directory after this parameter is populated, it does not automatically update to match the new input directory information. Delete the outdated parameter and press tab or click away from the field to reset it to reflect the new input directory if necessary.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="pol" displayname="Primary polarization (V or H)" type="Required" direction="Input" datatype="String" expression="V | H"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Select the primary polarization from the dropdown menu (either V for VV/VH datasets or H for HH/HV datasets).&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;If you are using a HyP3 RTC product directory as the input directory, this parameter will automatically populate based on the directory name, but you can set it manually if the directory does not follow the HyP3 naming convention.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input directory after this parameter is populated, it does not automatically update to match the new input directory information. Delete the outdated parameter and press tab or click away from the field to reset it to reflect the new input directory if necessary.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="rb_thresh_db" displayname="Threshold cutoff value for red/blue in dB (default: -24.0 dB)" type="Required" direction="Input" datatype="Double" expression="rb_thresh_db"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Set the red/blue threshold (dB).&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The default value is -24 dB, which works well for most Sentinel-1 IW datasets, but you can adjust the threshold if desired. Suitable values typically fall in the range of -19 to -25 dB.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outdir" displayname="Output directory for new RGB file" type="Required" direction="Input" datatype="Workspace" expression="outdir"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the destination directory where the output will be saved. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;By default this is set to be the same as the input directory. You can amend the path, or click the folder icon to navigate to a different output directory if desired.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input directory after the default directory populates, the output directory parameter does not automatically update. Delete the outdated directory and press tab or click away from the field to reset the output directory to reflect the new input directory.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outname" displayname="Filename for new RGB raster" type="Required" direction="Input" datatype="String" expression="outname"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Enter the filename for the output raster, including the .tif extension.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;By default, this parameter is set to add an _RGB.tif tag to the input directory name. You can amend the name, or enter an entirely different filename if desired.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input directory after this parameter is populated, it does not automatically update to match the new input directory information. Delete the outdated filename and press tab or click away from the field to reset the parameter to reflect the new input directory if necessary.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="out_yn" displayname="Add output to map" type="Required" direction="Input" datatype="Boolean" expression="out_yn"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;P&gt;&lt;SPAN&gt;Select this option to automatically add the output raster to the map. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;This option is selected by default. Remove the check if you do not want the output raster added to the map.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;</dialogReference></param></parameters><summary>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool generates an RGB Decomposition raster from a dual-pol RTC dataset. It was designed for use with HyP3 RTC outputs, but can be used with any dual-pol RTC dataset that is in either power or amplitude scale. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The parameters are populated with default values once you select the input directory containing the RTC datasets. You can amend any of the auto-populated outputs or set them to something completely different if desired. Note that if you change your input directory, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For best results when viewing the output image, set the symbology to be an RGB Composite stretched to Minimum-Maximum with no gamma stretch applied. The default symbology is generally an RGB Composite stretched to a Percent Clip with a gamma stretch applied.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</summary><usage>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool generates an RGB Decomposition raster from a dual-pol RTC dataset. It was designed for use with HyP3 Sentinel-1 RTC outputs, but can be used with any dual-pol dataset that is in either power or amplitude scale. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The two input rasters (co-pol and dual-pol) must be in the same folder, with filenames ending in XX.tif where XX is the polarization (VV, VH, HV, HH). There can only be one co-pol and one cross-pol raster in the input directory. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The parameters will be set to default values once the input directory is selected. If you use a HyP3 RTC product folder as the input directory, all of the parameters will be automatically populated based on the information contained in the directory name. If you are not using a HyP3 product directory, or if the directory name has been changed, you will need to set the scale and primary polarization parameters manually. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The red/blue threshold can be adjusted if desired. The default is -24 dB, and the appropriate value range is generally -19 to -25 dB. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The output directory defaults to the input directory, and the output name defaults to the name of the directory tagged with _RGB.tif. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;You can amend any of the auto-populated outputs or set them to something completely different if desired. Note that if you change your input directory, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;----- &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For best results when viewing the output image, set the symbology to be an RGB Composite stretched to Minimum-Maximum with no gamma stretch applied. The default symbology is generally an RGB Composite stretched to a Percent Clip with a gamma stretch applied.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;In products generated using this tool, vegetated areas will generally appear more green, water (or desert sand) blue, and other areas such as urban landscapes more red. Where there are stronger cross-pol returns, indicating more volume scatter, the image will be more dominated by the green band, while areas with more surface scatter will have a greater contribution from the blue and red bands. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;Visit &lt;/SPAN&gt;&lt;A href="https://github.com/ASFHyP3/hyp3-lib/blob/develop/docs/rgb_decomposition.md" STYLE="text-decoration:underline;"&gt;&lt;SPAN&gt;https://github.com/ASFHyP3/hyp3-lib/blob/develop/docs/rgb_decomposition.md&lt;/SPAN&gt;&lt;/A&gt;&lt;SPAN&gt; for more information about interpreting RGB Decomposition images and the processing steps used to generate the color values.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</usage><scriptExamples><scriptExample><title>RGB Decomposition</title><code>class RGBDecomp(object):
     def __init__(self):
 
         """Generates an RGB image from co- and cross-pol RTC data"""
@@ -11,77 +12,77 @@
 
         # First parameter: input directory
         indir = arcpy.Parameter(
-            name = "indir",
-            displayName = "Input directory containing dual-pol RTC data",
-            datatype = "DEWorkspace",
-            parameterType = "Required",
-            direction = "Input")
+            name="indir",
+            displayName="Input directory containing dual-pol RTC data",
+            datatype="DEWorkspace",
+            parameterType="Required",
+            direction="Input")
 
         # Second parameter: scale of input dataset
         scale = arcpy.Parameter(
-            name = "scale",
-            displayName = "Scale of input RTC (Amplitude or Power)",
-            datatype = "GPString",
-            parameterType = "Required",
-            direction = "Input")
+            name="scale",
+            displayName="Scale of input RTC (Amplitude or Power)",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input")
 
         scale.filter.type = "ValueList"
         scale.filter.list = ["Power", "Amplitude"]
 
         # Third parameter: Primary polarization
         pol = arcpy.Parameter(
-            name = "pol",
-            displayName = "Primary polarization (V or H)",
-            datatype = "GPString",
-            parameterType = "Required",
-            direction = "Input")
+            name="pol",
+            displayName="Primary polarization (V or H)",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input")
 
         pol.filter.type = "ValueList"
         pol.filter.list = ["V", "H"]
 
         # Fourth parameter: R/B threshold in dB
         rb_thresh_db = arcpy.Parameter(
-            name = "rb_thresh_db",
-            displayName = "Threshold cutoff value for red/blue in dB (default: -24 dB)",
-            datatype = "GPLong",
-            parameterType = "Required",
-            direction = "Input")
+            name="rb_thresh_db",
+            displayName="Threshold cutoff value for red/blue in dB (default: -24.0 dB)",
+            datatype="GPDouble",
+            parameterType="Required",
+            direction="Input")
 
         # Fifth parameter: output directory for RGB file
         outdir = arcpy.Parameter(
-            name = "outdir",
-            displayName = "Output directory for new RGB file",
-            datatype = "DEWorkspace",
-            parameterType = "Required",
-            direction = "Input")
+            name="outdir",
+            displayName="Output directory for new RGB file",
+            datatype="DEWorkspace",
+            parameterType="Required",
+            direction="Input")
 
         # Sixth parameter: output name for RGB file
         outname = arcpy.Parameter(
-            name = "outname",
-            displayName = "Filename for new RGB raster",
-            datatype = "GPString",
-            parameterType = "Required",
-            direction = "Input")
+            name="outname",
+            displayName="Filename for new RGB raster",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input")
 
         # Seventh parameter: select if output is added to the map
-        outYN = arcpy.Parameter(
-            name = "outYN",
-            displayName = "Add output to map",
-            datatype = "GPBoolean",
-            parameterType = "Required",
-            direction = "Input")
+        out_yn = arcpy.Parameter(
+            name="out_yn",
+            displayName="Add output to map",
+            datatype="GPBoolean",
+            parameterType="Required",
+            direction="Input")
 
-        outYN.value = "true"
+        out_yn.value = "true"
 
         # Eighth parameter: output layer to add to project
         outlayer = arcpy.Parameter(
-            name = "outlayer",
-            displayName = "Derived output for final product raster",
-            datatype = "GPRasterLayer",
-            parameterType = "Derived",
-            direction = "Output")
+            name="outlayer",
+            displayName="Derived output for final product raster",
+            datatype="GPRasterLayer",
+            parameterType="Derived",
+            direction="Output")
 
-        params = [indir, scale, pol, rb_thresh_db, outdir, outname, outYN, outlayer]
+        params = [indir, scale, pol, rb_thresh_db, outdir, outname, out_yn, outlayer]
         return params
 
     def isLicensed(self):
@@ -100,7 +101,9 @@
                 else:
                     arcpy.AddMessage("Spatial Analyst Extension is not available for use.")
         except Exception:
-            arcpy.AddMessage("Spatial Analyst extension is not available for use. Check your licensing to make sure you have access to this extension.")
+            arcpy.AddMessage(
+                "Spatial Analyst extension is not available for use. Check your licensing to make sure you have "
+                "access to this extension.")
             return False
 
         return True
@@ -112,7 +115,7 @@
 
         # Set the default scale for the input file to be selected based on the indir name
         if parameters[0].value:
-            indirbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
+            indirbase = os.path.basename(parameters[0].value.value)
             inscale = indirbase[36]
             if inscale == 'a':
                 insc = 'Amplitude'
@@ -126,8 +129,12 @@
         # Set the default primary polarization
         if parameters[0].value:
             pol = indirbase[24]
-            if not parameters[2].altered:
-                parameters[2].value = pol
+            if pol in ("V", "H"):
+                if not parameters[2].altered:
+                    parameters[2].value = pol
+            else:
+                if not parameters[2].altered:
+                    parameters[2].value = ''
 
         # Set the default R/B threshold value
         if not parameters[3].altered:
@@ -160,15 +167,10 @@
         indir = parameters[0].valueAsText
         scale = parameters[1].valueAsText
         pol = parameters[2].valueAsText
-        rb_thresh_db = parameters[3].valueAsText
+        rb_thresh_db = parameters[3].value
         outdir = parameters[4].valueAsText
         outname = parameters[5].valueAsText
-        outYN = parameters[6].valueAsText
-
-        outmsg1 = "Parameters accepted. Generating RGB Decomposition %s..." %outname
-        messages.addMessage(outmsg1)
-
-        # Run the code to generate the RGB Decomposition file
+        out_yn = parameters[6].valueAsText
 
         arcpy.AddMessage("Input parameters have been defined. Preparing workspace...")
 
@@ -176,7 +178,7 @@
         arcpy.env.workspace = indir
         indirbase = os.path.basename(indir)
         # Create a scratch directory for intermediate files
-        scratch = arcpy.CreateFolder_management(indir, "temp")
+        arcpy.CreateFolder_management(indir, "temp")
         scratchpath = os.path.join(indir, "temp")
 
         arcpy.AddMessage("Workspace has been prepared. Defining input rasters...")
@@ -206,7 +208,7 @@
             arcpy.AddMessage("Co-pol dataset: %s" % hh_tif)
             hv_tif = arcpy.ListRasters('*HV.tif')[0]
             xp = os.path.join(indir, hv_tif)
-            arcpy.AddMessage("Cross-pol dataset: %s" % vh_tif)
+            arcpy.AddMessage("Cross-pol dataset: %s" % hv_tif)
 
         # Convert the scale to power if necessary
         if scale == 'Amplitude':
@@ -225,104 +227,97 @@
 
         arcpy.AddMessage("Input rasters have been defined. Running pixel cleanup routine...")
 
-        # Peform pixel cleanup on VV and VH RTC images, using -48 dB as cutoff for valid pixels
+        # Perform pixel cleanup on VV and VH RTC images, using -48 dB as cutoff for valid pixels
         pc_thresh = math.pow(10, -4.8)
         wc_pc = "VALUE &lt; %s" % (pc_thresh)
-        #OR: wc_pc = "VALUE &lt; " + str(pc_thresh)
         cp0 = arcpy.sa.Con(cps, 0, cps, wc_pc)
         xp0 = arcpy.sa.Con(xps, 0, xps, wc_pc)
 
         arcpy.AddMessage("Pixel cleanup complete. Generating spatial masks...")
 
         # Generate spatial masks based on red/blue threshold
-        rb_thresh = math.pow(10, -2.4)
+        rb_thresh = math.pow(10, rb_thresh_db / 10)
 
-        # MB = xp0 &lt; k
-        remap_mb = "0 %s 1;%s 100000 0" %(rb_thresh, rb_thresh)
-        MB = arcpy.sa.Reclassify(xp0, "VALUE", remap_mb, "DATA")
+        # mb = xp0 &lt; k
+        remap_mb = "0 %s 1;%s 100000 0" % (rb_thresh, rb_thresh)
+        mb = arcpy.sa.Reclassify(xp0, "VALUE", remap_mb, "DATA")
 
-        # MR = xp0 &gt; k
-        remap_mr = "0 %s 0;%s 100000 1" %(rb_thresh, rb_thresh)
-        MR = arcpy.sa.Reclassify(xp0, "VALUE", remap_mr, "DATA")
+        # mr = xp0 &gt; k
+        remap_mr = "0 %s 0;%s 100000 1" % (rb_thresh, rb_thresh)
+        mr = arcpy.sa.Reclassify(xp0, "VALUE", remap_mr, "DATA")
 
-        # MX = SXP &gt; 0
-        MX = arcpy.sa.Con(xp0, "1", "0", "VALUE &gt; 0")
+        # mx = SXP &gt; 0
+        mx = arcpy.sa.Con(xp0, "1", "0", "VALUE &gt; 0")
 
         arcpy.AddMessage("Spatial masks generated. Deriving red and blue components of surface scatter...")
 
         # The surface scattering component is divided into red and blue sections
         # Negative values are set to zero
-        PR = arcpy.sa.Con((cp0 - (3*xp0)), "0", (cp0 - (3*xp0)), "VALUE &lt; 0")
-        PB = arcpy.sa.Con(((3*xp0) - cp0), "0", ((3*xp0) - cp0), "VALUE &lt; 0")
+        pr = arcpy.sa.Con((cp0 - (3 * xp0)), "0", (cp0 - (3 * xp0)), "VALUE &lt; 0")
+        pb = arcpy.sa.Con(((3 * xp0) - cp0), "0", ((3 * xp0) - cp0), "VALUE &lt; 0")
 
         # Calculate the difference between the co- and cross-pol values
         # Negative values are set to zero
         sd = arcpy.sa.Con((cp0 - xp0), "0", (cp0 - xp0), "VALUE &lt; 0")
 
-        arcpy.AddMessage("Red and blue components have been derived. Applying spatial masks and scalars for each band...")
+        arcpy.AddMessage(
+            "Red and blue components have been derived. Applying spatial masks and scalars for each band...")
 
         # Apply spatial masks and specific scalars to stretch the values for each band from 1 to 255
-        z = 2 / math.pi * MB * arcpy.sa.ATan(arcpy.sa.SquareRoot(sd))
-        iR = 254 * MX * (2 * MR * arcpy.sa.SquareRoot(PR) + z) + 1
-        iG = 254 * MX * (3 * MR * arcpy.sa.SquareRoot(xp0) + (2 * z)) + 1
-        iB = 254 * MX * (2 * arcpy.sa.SquareRoot(PB) + (5 * z)) + 1
+        z = 2 / math.pi * mb * arcpy.sa.ATan(arcpy.sa.SquareRoot(sd))
+        ir = 254 * mx * (2 * mr * arcpy.sa.SquareRoot(pr) + z) + 1
+        ig = 254 * mx * (3 * mr * arcpy.sa.SquareRoot(xp0) + (2 * z)) + 1
+        ib = 254 * mx * (2 * arcpy.sa.SquareRoot(pb) + (5 * z)) + 1
 
-        arcpy.AddMessage("Spatial masks and scalars have been applied. Converting bands to 8-bit unsigned integer GeoTIFFs...")
+        arcpy.AddMessage(
+            "Spatial masks and scalars have been applied. Converting bands to 8-bit unsigned integer GeoTIFFs...")
 
         # Create empty list for RGB bands
-        bandList = []
+        band_list = []
 
         # Remove negative values and convert each band to an integer raster
-        aR = arcpy.sa.Int(arcpy.sa.Con(iR, "255", iR, "VALUE &gt; 255"))
-        aG = arcpy.sa.Int(arcpy.sa.Con(iG, "255", iG, "VALUE &gt; 255"))
-        aB = arcpy.sa.Int(arcpy.sa.Con(iB, "255", iB, "VALUE &gt; 255"))
+        ar = arcpy.sa.Int(arcpy.sa.Con(ir, "255", ir, "VALUE &gt; 255"))
+        ag = arcpy.sa.Int(arcpy.sa.Con(ig, "255", ig, "VALUE &gt; 255"))
+        ab = arcpy.sa.Int(arcpy.sa.Con(ib, "255", ib, "VALUE &gt; 255"))
 
         # Save bands as GeoTIFF rasters in the scratch folder
-        aRpath = os.path.join(scratchpath, "aR.tif")
-        aR.save(aRpath)
-        bandList.append(aRpath)
+        arpath = os.path.join(scratchpath, "ar.tif")
+        ar.save(arpath)
+        band_list.append(arpath)
 
-        aGpath = os.path.join(scratchpath, "aG.tif")
-        aG.save(aGpath)
-        bandList.append(aGpath)
+        agpath = os.path.join(scratchpath, "ag.tif")
+        ag.save(agpath)
+        band_list.append(agpath)
 
-        aBpath = os.path.join(scratchpath, "aB.tif")
-        aB.save(aBpath)
-        bandList.append(aBpath)
+        abpath = os.path.join(scratchpath, "ab.tif")
+        ab.save(abpath)
+        band_list.append(abpath)
 
-        arcpy.AddMessage("GeoTIFF files for each band have been saved. Combining single-band rasters to generate RGB image...")
+        arcpy.AddMessage(
+            "GeoTIFF files for each band have been saved. Combining single-band rasters to generate RGB image...")
 
         # Combine the aRGB bands into a composite raster
         outpath = os.path.join(outdir, outname)
-        arcpy.CompositeBands_management(bandList, outpath)
+        arcpy.CompositeBands_management(band_list, outpath)
+        arcpy.AddMessage("RGB Decomposition product has been generated: %s." % outpath)
+
+        # Indicate process is complete
+        arcpy.AddMessage("RGB Decomposition process is complete.")
 
         # Add the output product to the map
-        if outYN == "true":
+        if out_yn == "true":
             dispname = os.path.splitext(outname)[0]
             arcpy.MakeRasterLayer_management(outpath, dispname)
             arcpy.SetParameterAsText(7, dispname)
             arcpy.AddMessage("Added RGB raster layer to map display.")
         else:
-            arcpy.AddMessage("Option to add output layer to map was not selected. Output can be added manually if desired: %s" % outpath)
-
-        arcpy.AddMessage("RGB Decomposition product has been generated: %s. Cleaning up..." % outpath)
-
-        # Delete temporary files
-        # The deletion of the temp folder could be set as an option, if there's any chance that users might
-        # want to have access to the individual color bands. I don't think that's likely, though.
-
-        # This does not currently work in the Python Toolbox environment. I don't know why
-        # If I run the same command in the python window, it behaves as expected. ???
-        # The setting of the workspace is probably redundant; it was a hail mary attempt to get it to work.
-        arcpy.env.workspace = indir # delete this if proven to be redundant
-        arcpy.Delete_management("temp")
+            arcpy.AddMessage(
+                "Option to add output layer to map was not selected. "
+                "Output can be added manually if desired: %s" % outpath)
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
-        messages.addMessage("The Spatial Analyst Extension is in %s status." %status)
-
-        # Indicate process is complete
-        arcpy.AddMessage("RGB Decomposition process is complete.")
+        arcpy.AddMessage("The Spatial Analyst Extension is in %s status." % status)
 
         return</code><para>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the code for the RGBDecomp tool class within the ASF_Tools.pyt script&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</para></scriptExample></scriptExamples></tool><dataIdInfo><idCitation><resTitle>RGB Decomposition</resTitle></idCitation><idAbs>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool generates an RGB Decomposition raster from a dual-pol RTC dataset. It was designed for use with HyP3 RTC outputs, but can be used with any dual-pol RTC dataset that is in either power or amplitude scale. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The parameters are populated with default values once you select the input directory containing the RTC datasets. You can amend any of the auto-populated outputs or set them to something completely different if desired. Note that if you change your input directory, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For best results when viewing the output image, set the symbology to be an RGB Composite stretched to Minimum-Maximum with no gamma stretch applied. The default symbology is generally an RGB Composite stretched to a Percent Clip with a gamma stretch applied.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</idAbs><searchKeys><keyword>ASF</keyword><keyword>Alaska Satellite Facility</keyword><keyword>SAR</keyword><keyword>Synthetic Aperture Radar</keyword><keyword>RGB Decomposition</keyword></searchKeys><idCredit>Alaska Satellite Facility</idCredit><dataLang><languageCode value="eng"/></dataLang><dataChar><CharSetCd value="004"/></dataChar><idPoC xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role></idPoC></dataIdInfo><distInfo><distributor><distorFormat><formatName>ArcToolbox Tool</formatName></distorFormat></distributor></distInfo><mdHrLv><ScopeCd value="005"/></mdHrLv><mdContact xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><editorSave>False</editorSave><displayName>Heidi Kristenson</displayName></mdContact><Binary><Thumbnail><Data EsriPropertyType="PictureX">/9j/4AAQSkZJRgABAQEAHgAeAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK
 CwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQU
@@ -838,518 +833,4 @@ mTcZJZGYwvFv3ENlcAWdc/Y78H+JPFfjjxDqGp6q2oeLNKvNHu2tLfT7MxW9yFEmHgtUknYBVCtd
 NMVxxyST7vRQ/ed35/juNNx1Xl+Gx4p4Z/ZP8K+GtL0nS11bXNQ0vSvEN54is7O8ltykct1FcRzQ
 EpCrNCftUzAMS4JHz7RtrN0n9jTwpp8enLd+I/FGtPpX9lxaXJqF1blrC0sLtLq3tI9kChozJGgZ
 pA8rBQDJwDXvtFUpNSUk9dH81s/l+r7slq6cXtt8m7v8dfW3ZHLfD74d6d8N9P1az0ye6ni1LV73
-WpjdurMs11O00irtVcIGchQckDGSetdTRRU9Eu1l92iHu2++v36s/9k=</Data></Thumbnail><Enclosure rel="side-panel-help"><Data EsriPropertyType="Image" OriginalFileName="thumbnail.jpg">/9j/4AAQSkZJRgABAQEAHgAeAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK
-CwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQU
-FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAD/AUoDASIA
-AhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQA
-AAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3
-ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWm
-p6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEA
-AwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSEx
-BhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElK
-U1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3
-uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9U6KK
-KACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoooo
-AKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAor8u9Q/4KhfFPUtQurvQdI8HwaHcStLY
-RajpV09yluxJiWVkvQrSBCoYqACc4AFV/wDh5t8aP+gb4D/8E97/APJ1fTf6vYzq0vm/8j5+WfZf
-FtOpt5P/ACP1Mor8vdK/4KhfFDT9WsbrxFpPhGXw9DcRyammmaTdLdm0DgzeQXvSnm+Xu27vl3Yz
-xmv1AjkWWNXRg6MMqynIIPcV5mNy6vgOX2tveva3l/w56OEx2Hx0XKhK9vVfmOooqpq2rWWhaZd6
-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</Data></Enclosure></Binary></metadata>
+WpjdurMs11O00irtVcIGchQckDGSetdTRRU9Eu1l92iHu2++v36s/9k=</Data></Thumbnail></Binary><mdDateSt Sync="TRUE">20201002</mdDateSt></metadata>

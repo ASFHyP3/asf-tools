@@ -1,6 +1,7 @@
-<metadata xml:lang="en"><Esri><CreaDate>20191114</CreaDate><CreaTime>15052200</CreaTime><ArcGISFormat>1.0</ArcGISFormat><ArcGISstyle>North American Profile of ISO19115 2003</ArcGISstyle><SyncOnce>TRUE</SyncOnce><ModDate>20200921</ModDate><ModTime>18035400</ModTime><scaleRange><minScale>150000000</minScale><maxScale>5000</maxScale></scaleRange><ArcGISProfile>NAP</ArcGISProfile><DataProperties><itemProps><imsContentType export="False"/></itemProps></DataProperties></Esri><tool name="LogDiff" displayname="Calculate Log Difference" toolboxalias="ASF Tools" xmlns=""><arcToolboxHelpPath>c:\program files (x86)\arcgis\desktop10.7\Help\gp</arcToolboxHelpPath><parameters><param name="date2" displayname="Comparison raster (i.e. most recent SAR acquisition)" type="Required" direction="Input" datatype="Raster Dataset" expression="date2"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the raster that will be compared to the reference raster, or enter the full path by typing or pasting. You can also drag and drop a raster from the Catalog window.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For comparisons through time, select the most recent raster as the comparison raster.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="date1" displayname="Reference raster (i.e. oldest SAR acquisition)" type="Required" direction="Input" datatype="Raster Dataset" expression="date1"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the reference raster to be compared against, or enter the full path by typing or pasting. You can also drag and drop a raster from the Catalog window.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For comparisons through time, select the earlier acquisition of the two images to be the reference raster.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outdir" displayname="Destination folder for output file" type="Required" direction="Input" datatype="Workspace" expression="outdir"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the destination directory where the output will be saved.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The default value is the directory where the most recent raster (the later acquisition date) is located, but you can navigate to a different directory or amend the path as desired.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input reference raster after the default directory populates, the output directory parameter does not automatically update. Delete the outdated filename and press tab or click away from the field to reset the output directory to reflect the new input reference raster.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outname" displayname="File name for output log difference file (including valid raster file extension)" type="Required" direction="Input" datatype="String" expression="outname"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Enter the filename for the output difference raster. You must include a valid raster file extension (such as .tif) if you are not saving the raster to a geodatabase.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The default value is comprised of the base filename of the earlier acquisition followed by the base filename of the later acquisition, tagged with _LogDiff, and including a .tif file extension.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input rasters after the default filename populates, the output filename parameter does not automatically update. Delete the outdated filename and press tab or click away from the field to reset the filename to reflect the new input rasters.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outYN" displayname="Add output to map" type="Required" direction="Input" datatype="Boolean" expression="outYN"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Select this option to automatically add the output raster to the map. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;This option is selected by default. Remove the check if you do not want the output raster added to the map.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param></parameters><summary>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool calculates the log difference between two rasters. It was designed to work with a 2-point time series of Radiometric Terrain Corrected (RTC) SAR products in amplitude scale, but can be used to look for differences between any two single-band rasters. Note that the threshold values expected for significant change will be different if the input rasters are in power or amplitude, and the input rasters must both be in the same scale. Avoid using this approach with datasets in dB scale, which is already in a log scale.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;The output directory and filename are automatically populated using the input raster parameters. You can amend the auto-populated outputs or set them to something completely different if desired. Note that if you change your input files, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</summary><usage>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool calculates the log difference between two rasters. It was designed to calculate differences through time between two RTC products in amplitude scale, but can be used to look for differences between any two single-band rasters. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;Negative values indicate a decrease in pixel value. For RTC images, these pixels have lower detected radar backscatter on the second date than the first. By default, the pixels of strongest negative change are displayed in black.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;Positive values indicate an increase in pixel value. For RTC images, these pixels have higher detected radar backscatter on the second date than the first. By default, the pixels of strongest positive change are displayed in white.&lt;/SPAN&gt;&lt;/P&gt;&lt;P STYLE="margin:1 1 1 20;"&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Consider classifying the output image to highlight areas of the most extreme change. In the Symbology tab of the Raster Properties, select Classifed and compute the histogram when prompted. Select the number of classes you want to delineate and click the Classify button to adjust the break points in the range of values. Note that values close to 0 (either positive or negative) underwent little change.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</usage><scriptExamples><scriptExample><title>ASF_Tools.pyt LogDiff</title><para>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the code for the LogDiff tool class within the ASF_Tools.pyt script.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</para><code>class LogDiff(object):
+<?xml version="1.0"?>
+<metadata xml:lang="en"><Esri><CreaDate>20191114</CreaDate><CreaTime>15052200</CreaTime><ArcGISFormat>1.0</ArcGISFormat><ArcGISstyle>North American Profile of ISO19115 2003</ArcGISstyle><SyncOnce>TRUE</SyncOnce><ModDate>20201002</ModDate><ModTime>14504300</ModTime><scaleRange><minScale>150000000</minScale><maxScale>5000</maxScale></scaleRange><ArcGISProfile>NAP</ArcGISProfile><DataProperties><itemProps><imsContentType export="False"/></itemProps></DataProperties></Esri><tool name="LogDiff" displayname="Calculate Log Difference" toolboxalias="ASF Tools" xmlns=""><arcToolboxHelpPath>c:\program files\arcgis\pro\Resources\Help\gp</arcToolboxHelpPath><parameters><param name="date2" displayname="Comparison raster (i.e. most recent SAR acquisition)" type="Required" direction="Input" datatype="Raster Dataset" expression="date2"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the raster that will be compared to the reference raster, or enter the full path by typing or pasting. You can also drag and drop a raster from the Catalog window.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For comparisons through time, select the most recent raster as the comparison raster.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;ArcGIS Pro tip: Select the raster file as the input, not Band_1. While Pro allows you to navigate to the band level, it is not a valid input for this tool.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="date1" displayname="Reference raster (i.e. oldest SAR acquisition)" type="Required" direction="Input" datatype="Raster Dataset" expression="date1"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the reference raster to be compared against, or enter the full path by typing or pasting. You can also drag and drop a raster from the Catalog window.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;For comparisons through time, select the earlier acquisition of the two images to be the reference raster.&lt;/SPAN&gt;&lt;/P&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;ArcGIS Pro tip: Select the raster file as the input, not Band_1. While Pro allows you to navigate to the band level, it is not a valid input for this tool.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;P&gt;&lt;SPAN /&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outdir" displayname="Destination folder for output file" type="Required" direction="Input" datatype="Workspace" expression="outdir"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the destination directory where the output will be saved.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The default value is the directory where the most recent raster (the later acquisition date) is located, but you can navigate to a different directory or amend the path as desired.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input reference raster after the default directory populates, the output directory parameter does not automatically update. Delete the outdated filename and press tab or click away from the field to reset the output directory to reflect the new input reference raster.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outname" displayname="File name for output log difference file (including valid raster file extension)" type="Required" direction="Input" datatype="String" expression="outname"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Enter the filename for the output difference raster. You must include a valid raster file extension (such as .tif) if you are not saving the raster to a geodatabase.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The default value is comprised of the base filename of the earlier acquisition followed by the base filename of the later acquisition, tagged with _LogDiff, and including a .tif file extension.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input rasters after the default filename populates, the output filename parameter does not automatically update. Delete the outdated filename and press tab or click away from the field to reset the filename to reflect the new input rasters.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="out_yn" displayname="Add output to map" type="Required" direction="Input" datatype="Boolean" expression="out_yn"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Select this option to automatically add the output raster to the map. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;This option is selected by default. Remove the check if you do not want the output raster added to the map.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param></parameters><summary>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool calculates the log difference between two rasters. It was designed to work with a 2-point time series of Radiometric Terrain Corrected (RTC) SAR products in amplitude scale, but can be used to look for differences between any two single-band rasters. Note that the threshold values expected for significant change will be different if the input rasters are in power or amplitude, and the input rasters must both be in the same scale. Avoid using this approach with datasets in dB scale, which is already in a log scale.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;The output directory and filename are automatically populated using the input raster parameters. You can amend the auto-populated outputs or set them to something completely different if desired. Note that if you change your input files, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</summary><usage>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool calculates the log difference between two rasters. It was designed to calculate differences through time between two RTC products in amplitude scale, but can be used to look for differences between any two single-band rasters. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;Negative values indicate a decrease in pixel value. For RTC images, these pixels have lower detected radar backscatter on the second date than the first. By default, the pixels of strongest negative change are displayed in black.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;Positive values indicate an increase in pixel value. For RTC images, these pixels have higher detected radar backscatter on the second date than the first. By default, the pixels of strongest positive change are displayed in white.&lt;/SPAN&gt;&lt;/P&gt;&lt;P STYLE="margin:1 1 1 20;"&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Consider classifying the output image to highlight areas of the most extreme change. In the Symbology tab of the Raster Properties, select Classified and compute the histogram when prompted. Select the number of classes you want to delineate and click the Classify button to adjust the break points in the range of values. Note that values close to 0 (either positive or negative) underwent little change.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</usage><scriptExamples><scriptExample><title>ASF_Tools.pyt LogDiff</title><para>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the code for the LogDiff tool class within the ASF_Tools.pyt script.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</para><code>class LogDiff(object):
     def __init__(self):
-        
+
         """Calculates the Log Difference between two RTC products"""
         self.label = "Calculate Log Difference"
         self.description = "This tool calculates the log difference between two RTC products."
@@ -11,55 +12,55 @@
 
         # First parameter: most recent RTC file
         date2 = arcpy.Parameter(
-            name = "date2",
-            displayName = "Comparison raster (i.e. most recent SAR acquisition)",
-            datatype = "DERasterDataset",
-            parameterType = "Required",
-            direction = "Input")
+            name="date2",
+            displayName="Comparison raster (i.e. most recent SAR acquisition)",
+            datatype="DERasterDataset",
+            parameterType="Required",
+            direction="Input")
 
         # Second parameter: oldest RTC file
         date1 = arcpy.Parameter(
-            name = "date1",
-            displayName = "Reference raster (i.e. oldest SAR acquisition)",
-            datatype = "DERasterDataset",
-            parameterType = "Required",
-            direction = "Input")
+            name="date1",
+            displayName="Reference raster (i.e. oldest SAR acquisition)",
+            datatype="DERasterDataset",
+            parameterType="Required",
+            direction="Input")
 
         # Third parameter: output path for log difference file
         outdir = arcpy.Parameter(
-            name = "outdir",
-            displayName = "Destination folder for output file",
-            datatype = "DEWorkspace",
-            parameterType = "Required",
-            direction = "Input")
+            name="outdir",
+            displayName="Destination folder for output file",
+            datatype="DEWorkspace",
+            parameterType="Required",
+            direction="Input")
 
         # Fourth parameter: output file name for log difference file
         outname = arcpy.Parameter(
-            name = "outname",
-            displayName = "File name for output log difference file (including valid raster file extension)",
-            datatype = "GPString",
-            parameterType = "Required",
-            direction = "Input")
+            name="outname",
+            displayName="File name for output log difference file (including valid raster file extension)",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input")
 
         # Fifth parameter: select if output is added to the map
-        outYN = arcpy.Parameter(
-            name = "outYN",
-            displayName = "Add output to map",
-            datatype = "GPBoolean",
-            parameterType = "Required",
-            direction = "Input")
+        out_yn = arcpy.Parameter(
+            name="out_yn",
+            displayName="Add output to map",
+            datatype="GPBoolean",
+            parameterType="Required",
+            direction="Input")
 
-        outYN.value = "true"
+        out_yn.value = "true"
 
         # Sixth parameter: output layer to add to project
         outlayer = arcpy.Parameter(
-            name = "outlayer",
-            displayName = "Derived output for final product raster",
-            datatype = "GPRasterLayer",
-            parameterType = "Derived",
-            direction = "Output")
+            name="outlayer",
+            displayName="Derived output for final product raster",
+            datatype="GPRasterLayer",
+            parameterType="Derived",
+            direction="Output")
 
-        params = [date2, date1, outdir, outname, outYN, outlayer]
+        params = [date2, date1, outdir, outname, out_yn, outlayer]
         return params
 
     def isLicensed(self):
@@ -78,9 +79,11 @@
                 else:
                     arcpy.AddMessage("Spatial Analyst Extension is not available for use.")
         except Exception:
-            arcpy.AddMessage("Spatial Analyst extension is not available for use. Check your licensing to make sure you have access to this extension.")
+            arcpy.AddMessage(
+                "Spatial Analyst extension is not available for use. "
+                "Check your licensing to make sure you have access to this extension.")
             return False
-    
+
         return True
 
     def updateParameters(self, parameters):
@@ -94,14 +97,14 @@
             if not parameters[2].altered:
                 parameters[2].value = workspace
 
-        # Set the default value for outname to be a combination of the input base filenames with a LogDiff tag 
+        # Set the default value for outname to be a combination of the input base filenames with a LogDiff tag
         if parameters[0].value and parameters[1].value:
             d2base = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
             d1base = os.path.splitext(os.path.basename(parameters[1].value.value))[0]
-            outflnm = str(d1base+'_'+d2base+'_LogDiff.tif')
+            outflnm = str(d1base + '_' + d2base + '_LogDiff.tif')
             if not parameters[3].altered:
                 parameters[3].value = outflnm
-        
+
         return
 
     def updateMessages(self, parameters):
@@ -114,38 +117,40 @@
 
         # Check licensing
         self.isLicensed()
-        
+
         # Define parameters
         date2 = parameters[0].valueAsText
         date1 = parameters[1].valueAsText
         outdir = parameters[2].valueAsText
         outname = parameters[3].valueAsText
-        outYN = parameters[4].valueAsText
+        out_yn = parameters[4].valueAsText
 
-        arcpy.AddMessage("Parameters accepted. Generating Log Difference file %s..." %outname)
- 
+        arcpy.AddMessage("Parameters accepted. Generating Log Difference file %s..." % outname)
+
         # Run the code to calculate the log difference
-        outLogDiff = str(outdir+'\\'+outname)
-        outLog10 = arcpy.sa.Log10(arcpy.sa.Divide(date2, date1))
-        outLog10.save(outLogDiff)
+        out_logdiff = os.path.join(outdir, outname)
+        out_log10 = arcpy.sa.Log10(arcpy.sa.Divide(date2, date1))
+        out_log10.save(out_logdiff)
 
         # Indicate process is complete
-        arcpy.AddMessage("Log Difference raster %s generated." %outname)
+        arcpy.AddMessage("Log Difference raster %s generated." % outname)
 
         # Add the output product to the map
-        if outYN == "true":
+        if out_yn == "true":
             dispname = os.path.splitext(outname)[0]
-            arcpy.MakeRasterLayer_management(outLogDiff, dispname)
+            arcpy.MakeRasterLayer_management(out_logdiff, dispname)
             arcpy.SetParameterAsText(5, dispname)
             arcpy.AddMessage("Added Log Difference raster layer to map display.")
         else:
-            arcpy.AddMessage("Option to add output layer to map was not selected. Output can be added manually if desired: %s" % outLogDiff)
+            arcpy.AddMessage(
+                "Option to add output layer to map was not selected. "
+                "Output can be added manually if desired: %s" % out_logdiff)
 
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
-        messages.addMessage("The Spatial Analyst Extension is in %s status." %status)
+        arcpy.AddMessage("The Spatial Analyst Extension is in %s status." % status)
 
-        return</code></scriptExample></scriptExamples></tool><dataIdInfo><idCitation xmlns=""><resTitle>Calculate Log Difference</resTitle><date><createDate>2019-11-14T00:00:00</createDate><pubDate>2019-11-14T00:00:00</pubDate><adoptDate>2019-11-14T00:00:00</adoptDate></date><resEd>ASF_Tools_191114</resEd><resEdDate>20191114</resEdDate><citId xmlns=""><identCode>ASF_Tools_LogDiff_191114</identCode><identAuth xmlns=""><resTitle>ASF Tools LogDiff</resTitle><date><createDate>2019-11-14T00:00:00</createDate><adoptDate>2019-11-14T00:00:00</adoptDate></date></identAuth></citId></idCitation><idCredit>Alaska Satellite Facility</idCredit><searchKeys><keyword>ASF</keyword><keyword>Alaska Satellite Facility</keyword><keyword>SAR</keyword><keyword>Synthetic Aperture Radar</keyword><keyword>Log Difference</keyword></searchKeys><idPoC xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo><displayName>Heidi Kristenson</displayName></idPoC><idAbs>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool calculates the log difference between two rasters. It was designed to work with a 2-point time series of Radiometric Terrain Corrected (RTC) SAR products in amplitude scale, but can be used to look for differences between any two single-band rasters. Note that the threshold values expected for significant change will be different if the input rasters are in power or amplitude, and the input rasters must both be in the same scale. Avoid using this approach with datasets in dB scale, which is already in a log scale.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;The output directory and filename are automatically populated using the input raster parameters. You can amend the auto-populated outputs or set them to something completely different if desired. Note that if you change your input files, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</idAbs><productKeys xmlns=""><keyword>Synthetic Aperture Radar</keyword></productKeys><dataChar><CharSetCd value="004"/></dataChar><dataLang><languageCode value="eng"/><countryCode value="US"/></dataLang><tpCat><TopicCatCd value="007"/></tpCat><tpCat><TopicCatCd value="008"/></tpCat></dataIdInfo><distInfo xmlns=""><distributor xmlns=""><distorFormat xmlns=""><formatName>ArcToolbox Tool</formatName><formatVer>10.6.1</formatVer></distorFormat></distributor></distInfo><mdHrLv><ScopeCd value="013"/></mdHrLv><Binary><Thumbnail><Data EsriPropertyType="PictureX">/9j/4AAQSkZJRgABAQEAHgAeAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK
+        return</code></scriptExample></scriptExamples></tool><dataIdInfo><idCitation xmlns=""><resTitle>Calculate Log Difference</resTitle><date><createDate>2019-11-14T00:00:00</createDate><pubDate>2019-11-14T00:00:00</pubDate><adoptDate>2019-11-14T00:00:00</adoptDate></date><resEd>ASF_Tools_191114</resEd><resEdDate>20191114</resEdDate><citId xmlns=""><identCode>ASF_Tools_LogDiff_191114</identCode><identAuth xmlns=""><resTitle>ASF Tools LogDiff</resTitle><date><createDate>2019-11-14T00:00:00</createDate><adoptDate>2019-11-14T00:00:00</adoptDate></date></identAuth></citId></idCitation><idCredit>Alaska Satellite Facility</idCredit><searchKeys><keyword>ASF</keyword><keyword>Alaska Satellite Facility</keyword><keyword>SAR</keyword><keyword>Synthetic Aperture Radar</keyword><keyword>Log Difference</keyword></searchKeys><idPoC xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo><displayName>Heidi Kristenson</displayName></idPoC><idAbs>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool calculates the log difference between two rasters. It was designed to work with a 2-point time series of Radiometric Terrain Corrected (RTC) SAR products in amplitude scale, but can be used to look for differences between any two single-band rasters. Note that the threshold values expected for significant change will be different if the input rasters are in power or amplitude, and the input rasters must both be in the same scale. Avoid using this approach with datasets in dB scale, which is already in a log scale.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;The output directory and filename are automatically populated using the input raster parameters. You can amend the auto-populated outputs or set them to something completely different if desired. Note that if you change your input files, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</idAbs><productKeys xmlns=""><keyword>Synthetic Aperture Radar</keyword></productKeys><dataChar><CharSetCd value="004"/></dataChar><dataLang><languageCode value="eng"/><countryCode value="US"/></dataLang><tpCat><TopicCatCd value="007"/></tpCat><tpCat><TopicCatCd value="008"/></tpCat></dataIdInfo><distInfo xmlns=""><distributor xmlns=""><distorFormat xmlns=""><formatName>ArcToolbox Tool</formatName><formatVer>10.6.1</formatVer></distorFormat></distributor></distInfo><mdHrLv><ScopeCd value="013"/></mdHrLv><mdContact xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo></mdContact><dataIdInfo><idAbs>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool calculates the log difference between two SAR granules. It was designed to work with RTC products in amplitude scale, but can be used to look for differences between any two rasters. &lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;</idAbs><idCitation><resTitle>Calculate Log Difference</resTitle></idCitation><tpCatBag><TopicCatCd_001 value="False"/><TopicCatCd_002 value="False"/><TopicCatCd_003 value="False"/><TopicCatCd_004 value="False"/><TopicCatCd_005 value="False"/><TopicCatCd_006 value="False"/><TopicCatCd_007 value="False"/><TopicCatCd_008 value="False"/><TopicCatCd_009 value="False"/><TopicCatCd_010 value="False"/><TopicCatCd_011 value="False"/><TopicCatCd_012 value="False"/><TopicCatCd_013 value="False"/><TopicCatCd_014 value="False"/><TopicCatCd_015 value="False"/><TopicCatCd_016 value="False"/><TopicCatCd_017 value="False"/><TopicCatCd_018 value="False"/><TopicCatCd_019 value="False"/></tpCatBag><dataChar><CharSetCd value="004"/></dataChar></dataIdInfo><mdChar><CharSetCd value="004"/></mdChar><mdFileID>EC760E3D-6129-4105-BFB8-EBD28ADF7F9D</mdFileID><mdLang><languageCode value="eng"/><countryCode value="US"/></mdLang><mdDateSt Sync="TRUE">20201002</mdDateSt><Binary><Thumbnail><Data EsriPropertyType="PictureX">/9j/4AAQSkZJRgABAQEAHgAeAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK
 CwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQU
 FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAD/AUoDASIA
 AhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQA
@@ -583,442 +588,4 @@ fTGW58OaTcSsltEZJbGJmKW8hkt1yV6ROS6D+BjlcGs/WPg34B8RWtrbat4H8Oapb2l3JqFvDe6T
 bzJDcyOXknQMhCyMxLM45JOSc12FFAHPX3w78Kapp+t2N74Z0e7sdccS6rbT2ETx6g4VUDTqVxKd
 qIuXzwijsKp6f8IfAuk6e1hY+C/D1lYNHbxNa2+lQRxFIJTLApUJjEcjM6D+FmLDBOa62igDmIPh
 f4Ntdb1jWYfCehxavrMRg1PUE06EXF9GRgpPIF3SLjsxIq14O8CeGvh3pP8AZXhTw9pXhnS/MaX7
-Do9lFaQbzjLbI1C5OBk47Vu0UAFFFFAH/9k=</Data></Thumbnail><Enclosure rel="side-panel-help"><Data EsriPropertyType="Image" OriginalFileName="thumbnail.jpg">/9j/4AAQSkZJRgABAQEAHgAeAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK
-CwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQU
-FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAD/AUoDASIA
-AhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQA
-AAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3
-ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWm
-p6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEA
-AwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSEx
-BhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElK
-U1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3
-uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9U6KK
-KACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoooo
-AKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigApK+Hf2pv27fF3wd+MWpeD/DGkaNPa6bB
-ALibVoJZHeaSMS5QxzINgSSMYIzkNzjFeSf8POPin/0BPCX/AIB3X/yTXt0snxdaCqRjo9dz5+tn
-mCo1JU5N3Wmx+n1FfmD/AMPOPin/ANATwl/4B3X/AMk1+i3wv8eWfxQ+Hvh7xXY+Wtvq1nHcmKKY
-TCFyvzxFxwWR9yNwMFSCARiuXFZfiMGlKsrJnXg8zw+ObjReqOooopK849UKWvlj47f8FAvB3wi8
-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
-Do9lFaQbzjLbI1C5OBk47Vu0UAFFFFAH/9k=</Data></Enclosure></Binary><mdContact xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo></mdContact><dataIdInfo><idAbs>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool calculates the log difference between two SAR granules. It was designed to work with RTC products in amplitude scale, but can be used to look for differences between any two rasters. &lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;</idAbs><idCitation><resTitle>Calculate Log Difference</resTitle></idCitation><tpCatBag><TopicCatCd_001 value="False"/><TopicCatCd_002 value="False"/><TopicCatCd_003 value="False"/><TopicCatCd_004 value="False"/><TopicCatCd_005 value="False"/><TopicCatCd_006 value="False"/><TopicCatCd_007 value="False"/><TopicCatCd_008 value="False"/><TopicCatCd_009 value="False"/><TopicCatCd_010 value="False"/><TopicCatCd_011 value="False"/><TopicCatCd_012 value="False"/><TopicCatCd_013 value="False"/><TopicCatCd_014 value="False"/><TopicCatCd_015 value="False"/><TopicCatCd_016 value="False"/><TopicCatCd_017 value="False"/><TopicCatCd_018 value="False"/><TopicCatCd_019 value="False"/></tpCatBag><dataChar><CharSetCd value="004"/></dataChar></dataIdInfo><mdChar><CharSetCd value="004"/></mdChar><mdFileID>EC760E3D-6129-4105-BFB8-EBD28ADF7F9D</mdFileID><mdLang><languageCode value="eng"/><countryCode value="US"/></mdLang><mdDateSt>20191114</mdDateSt></metadata>
+Do9lFaQbzjLbI1C5OBk47Vu0UAFFFFAH/9k=</Data></Thumbnail></Binary></metadata>
