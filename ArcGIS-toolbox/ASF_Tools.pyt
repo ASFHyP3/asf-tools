@@ -1,15 +1,16 @@
-#################################
-#   ASF ArcGIS Toolbox          #
-#   Heidi Kristenson            #
-#   Alaska Satellite Facility   #
-#   18 September 2020           #
-#################################
+############################################
+#   ASF ArcGIS Toolbox                     #
+#   Heidi Kristenson, ASF Tools Team       #
+#   uaf-asf-apd@alaska.edu                 #
+#   Alaska Satellite Facility              #
+#   https://github.com/ASFHyP3/GIS-tools   #
+############################################
 import math
 import os
 import sys
 import zipfile
 
-import arcpy  # noqa import neccesary but arcpy only available in arcgis environment
+import arcpy  # noqa import necessary but arcpy only available in arcgis environment
 
 
 class Toolbox(object):
@@ -320,7 +321,7 @@ class ReclassifyRTC(object):
 
         """Reclassifies Raster to apply pixel value of 1 to pixels with original values below a threshold"""
         self.label = "Reclassify RTC"
-        self.description = "This tool generates a reclassifed raster based on a threshold value."
+        self.description = "This tool generates a reclassified raster based on a threshold value."
         self.canRunInBackground = True
 
     def getParameterInfo(self):
@@ -329,7 +330,7 @@ class ReclassifyRTC(object):
         # First parameter: input RTC file to be reclassified
         in_rtc = arcpy.Parameter(
             name="in_rtc",
-            displayName="Raster to be reclassifed",
+            displayName="Raster to be reclassified",
             datatype="DERasterDataset",
             parameterType="Required",
             direction="Input")
@@ -848,7 +849,7 @@ class RGBDecomp(object):
 
         arcpy.AddMessage("Input rasters have been defined. Running pixel cleanup routine...")
 
-        # Peform pixel cleanup on VV and VH RTC images, using -48 dB as cutoff for valid pixels
+        # Perform pixel cleanup on VV and VH RTC images, using -48 dB as cutoff for valid pixels
         pc_thresh = math.pow(10, -4.8)
         wc_pc = "VALUE < %s" % (pc_thresh)
         cp0 = arcpy.sa.Con(cps, 0, cps, wc_pc)
