@@ -10,22 +10,22 @@ The Toolbox is distributed as a zipped archive including the .pyt Toolbox script
 ### Toolbox Contents
 
 #### Unzip Files Tool 
-This tool assists in file management when downloading .zip files from ASF. It could be used to extract to a specified location any zip files with an additional internal directory containing the individual files. The tool deletes the original zip files once they are extracted, and is especially helpful when dealing with filenames that are so long that they are beyond the maximum allowed in default Windows unzip utilities.
+This tool assists in file management when downloading .zip files from ASF. It could be used to extract to a specified location any zip files with an additional internal directory containing the individual files. The tool deletes the original zip files once they are extracted, and is especially helpful when dealing with file paths that are so long that they are beyond the maximum allowed in default Windows unzip utilities.
 
 #### Scale Conversion Tool 
 This tool converts pixel values in calibrated SAR datasets (such as RTC rasters) from power or amplitude scale into power, amplitude or dB scale. This is an application specific to SAR data values/scales.
 
 #### Reclassify RTC Tool
-This tool generates a raster that includes only those pixels below a user-defined threshold value, and is designed for isolating water pixels. This tool could be used for any application where the user is interested in generating a spatial mask for values below a given threshold.
+This tool generates a raster that includes only those pixels below a user-defined threshold value, and is designed for isolating water pixels. While intended for RTC files in dB scale, this tool could be used for any application where the user is interested in generating a spatial mask for values below a given threshold in a single-band raster.
 
 #### Log Difference Tool 
-This tool compares two rasters by calculating the log difference on a pixel-by-pixel basis to identify areas where backscatter values have changed over time. This tool could be used to compare the pixel values of any two single-band rasters, as long as there are no negative values (NoData values will be returned for pixels with a negative number in either of the datasets).
+This tool compares two rasters by calculating the log difference on a pixel-by-pixel basis to identify areas where backscatter values have changed over time. While intended for RTC files in amplitude scale, this tool could be used to compare the pixel values of any two single-band rasters, as long as there are no negative values (NoData values will be returned for pixels with a negative number in either of the datasets).
 
 #### RGB Decomposition Tool
-This tool generates an RGB image using the co- and cross-polarized datasets from an RTC product. Input datasets can be in either amplitude or power scale, and the primary polarization can be either vertical (VV/VH) or horizontal (HH/HV).  
+This tool generates an RGB image using the co- and cross-polarized datasets from an RTC product. Input datasets can be in either amplitude or power scale, and the primary polarization can be either vertical (VV/VH) or horizontal (HH/HV). Visit https://github.com/ASFHyP3/hyp3-lib/blob/develop/docs/rgb_decomposition.md for more information about interpreting RGB Decomposition images and the processing steps used to generate the color values.
 
 ### Prerequisites
-Users must have either ArcGIS Desktop (ArcMap) or ArcGIS Pro installed and licensed on their computer. The Toolbox has been tested with Desktop versions 10.6.1 and 10.7.1 and Pro versions 2.4.2 and 2.5, but it may work with earlier versions as well.
+Users must have either ArcGIS Desktop (ArcMap) or ArcGIS Pro installed and licensed on their computer. The Toolbox has been tested with Desktop versions 10.6.1 and 10.7.1 and Pro versions 2.4.2, 2.5.x and 2.6.1, but it may work with earlier versions as well.
 
 Note that several of the tools require the Spatial Analyst extension. Users who do not have licensing for this extension in ArcGIS will not be able to use many of the included tools.
 

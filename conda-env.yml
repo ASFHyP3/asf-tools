@@ -1,0 +1,12 @@
+name: GIS-tools
+channels:
+  - conda-forge
+  # - esri  # windows only
+  - nodefaults
+dependencies:
+  - python=3.7
+  # - arcpy  # windows only
+  - flake8
+  - flake8-import-order
+  - flake8-blind-except
+  - flake8-builtins

@@ -1,9 +1,11 @@
-<metadata xml:lang="en"><Esri><CreaDate>20190110</CreaDate><CreaTime>11564900</CreaTime><ArcGISFormat>1.0</ArcGISFormat><ArcGISstyle>North American Profile of ISO19115 2003</ArcGISstyle><SyncOnce>TRUE</SyncOnce><ModDate>20200921</ModDate><ModTime>18084800</ModTime><scaleRange><minScale>150000000</minScale><maxScale>5000</maxScale></scaleRange><ArcGISProfile>NAP</ArcGISProfile><DataProperties><itemProps><imsContentType export="False"/></itemProps></DataProperties></Esri><tool name="UnzipFiles" displayname="Unzip Files" toolboxalias="ASF Tools" xmlns=""><arcToolboxHelpPath>c:\program files (x86)\arcgis\desktop10.7\Help\gp</arcToolboxHelpPath><parameters><param name="ziplocation" displayname="Location of .zip files" type="Required" direction="Input" datatype="Workspace" expression="ziplocation"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Click the browse icon to navigate to and select the directory folder containing the downloaded .zip files. For most Windows users, this will be the default Downloads folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;UL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Note that ALL files with a .zip extension in the ziplocation directory will be extracted. Make sure that you want all of the .zip files available in the ziplocation directory to be extracted to the same destination.&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/UL&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;To set default values for this parameter, click on the Tool Help button at the bottom of the tool dialog box to display instructions (refer to Python Reference section).&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference><pythonReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;If you would like to set a default value for this parameter, you may edit the ASF_Tools.pyt script to add in your default download folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;OL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Right-click on the ASF_Tools.pyt toolbox in ArcCatalog (or the Catalog window in ArcMap) and select Edit...&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Scroll down to ziplocation.value (line 43) and enter your download folder path between the single quotes (refer to comments in the script for an example)&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Save the script (select Save from the File menu in the script editor), then close the editor window&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Double-click the ASF_Tools.pyt toolbox in ArcCatalog (or the Catalog window in ArcMap) to expand the toolbox, and open the Unzip Files tool&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;If you have double-clicked the toolbox and the change is not reflected in the tool dialog, close and re-open your ArcGIS application (ArcMap or ArcCatalog)&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/OL&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</pythonReference></param><param name="outlocation" displayname="Destination folder for extracted products" type="Required" direction="Input" datatype="Workspace" expression="outlocation"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Click the browse icon to navigate to and select the destination directory for the extracted product folders.&lt;/SPAN&gt;&lt;/P&gt;&lt;UL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Note that each .zip file has a folder inside to keep all of the files for that product together, so the resulting extractions will be a set of folders (one for each product) in the destination directory.&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/UL&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;To set default values for this parameter, click on the Tool Help button at the bottom of the tool dialog box to display instructions (refer to Python Reference section).&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference><pythonReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;If you would like to set a default value for this parameter, you may edit the ASF_Tools.pyt script to add in your default destination folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;OL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Right-click on the ASF_Tools.pyt toolbox in ArcCatalog (or the Catalog window in ArcMap) and select Edit...&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Scroll down to outlocation.value (line 57) and enter your download folder path between the single quotes (refer to comments in the script for an example)&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Save the script (select Save from the File menu in the script editor), then close the editor window&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Double-click the ASF_Tools.pyt toolbox in ArcCatalog (or the Catalog window in ArcMap) to expand the toolbox, and open the Unzip Files tool&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;If you have double-clicked the toolbox and the change is not reflected in the tool dialog, close and re-open your ArcGIS application (ArcMap or ArcCatalog)&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/OL&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</pythonReference></param></parameters><summary>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool unzips ASF products and saves the extracted folders in the desired destination folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;UL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;All .zip files in the download folder will be extracted&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Each product will have its own folder within the destination directory&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;The original .zip files in the download folder will each be deleted once file extraction is complete&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/UL&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;font-weight:bold;"&gt;NOTE: &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;"&gt;If you will be using the Sentinel-1 Toolbox (S1TBX) to process products, &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;font-weight:bold;"&gt;do not &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;"&gt;unzip the product downloads using this tool. S1TBX is designed to work within the .zip folder structure, and this tool deletes the .zip files once they are extracted.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</summary><usage>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Many ASF products are served as zip files. Each product zip file contains another folder inside, so when the files are extracted, the individual component product files will still be contained within a uniquely-named product folder. Because the zip file and folder names are so long, standard Windows zip utilities may encounter errors if the full product pathway contains more characters than is allowed. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;This tool offers a quick and easy way to extract multiple zip files to the desired destination folder. It extracts the contents of the downloaded zip files to the desired destination folder, then deletes the original zip files from the download folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;If you are using the Sentinel-1 Toolbox (S1TBX) to process the images, you will need to retain the .zip files. If you still want to use this tool to unzip the product files, make sure you've copied the original zip files to another folder first, because the .zip files will be deleted once extracted.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN /&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</usage><scriptExamples><scriptExample><title>ASF_Tools.pyt UnzipFiles</title><para>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the code for the UnzipFiles tool class within the ASF_Tools.pyt script.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</para><code>class UnzipFiles(object):
+<?xml version="1.0"?>
+<metadata xml:lang="en"><Esri><CreaDate>20190110</CreaDate><CreaTime>11564900</CreaTime><ArcGISFormat>1.0</ArcGISFormat><ArcGISstyle>North American Profile of ISO19115 2003</ArcGISstyle><SyncOnce>TRUE</SyncOnce><ModDate>20201002</ModDate><ModTime>15111700</ModTime><scaleRange><minScale>150000000</minScale><maxScale>5000</maxScale></scaleRange><ArcGISProfile>NAP</ArcGISProfile><DataProperties><itemProps><imsContentType export="False"/></itemProps></DataProperties></Esri><tool name="UnzipFiles" displayname="Unzip Files" toolboxalias="ASF Tools" xmlns=""><arcToolboxHelpPath>c:\program files\arcgis\pro\Resources\Help\gp</arcToolboxHelpPath><parameters><param name="ziplocation" displayname="Location of .zip files" type="Required" direction="Input" datatype="Workspace" expression="ziplocation"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Click the browse icon to navigate to and select the directory folder containing the downloaded .zip files. For most Windows users, this will be the default Downloads folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;UL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Note that ALL files with a .zip extension in the ziplocation directory will be extracted. Make sure that you want all of the .zip files available in the ziplocation directory to be extracted to the same destination.&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/UL&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;To set default values for this parameter, click on the Tool Help button at the bottom of the tool dialog box to display instructions (refer to Python Reference section).&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference><pythonReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;If you would like to set a default value for this parameter, you may edit the ASF_Tools.pyt script to add in your default download folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;OL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Right-click on the ASF_Tools.pyt toolbox in ArcCatalog (or the Catalog window in ArcMap) and select Edit...&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Scroll down to ziplocation.value (line 43) and enter your download folder path between the single quotes (refer to comments in the script for an example)&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Save the script (select Save from the File menu in the script editor), then close the editor window&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Double-click the ASF_Tools.pyt toolbox in ArcCatalog (or the Catalog window in ArcMap) to expand the toolbox, and open the Unzip Files tool&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;If you have double-clicked the toolbox and the change is not reflected in the tool dialog, close and re-open your ArcGIS application (ArcMap or ArcCatalog)&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/OL&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</pythonReference></param><param name="outlocation" displayname="Destination folder for extracted products" type="Required" direction="Input" datatype="Workspace" expression="outlocation"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Click the browse icon to navigate to and select the destination directory for the extracted product folders.&lt;/SPAN&gt;&lt;/P&gt;&lt;UL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Note that each .zip file has a folder inside to keep all of the files for that product together, so the resulting extractions will be a set of folders (one for each product) in the destination directory.&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/UL&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;To set default values for this parameter, click on the Tool Help button at the bottom of the tool dialog box to display instructions (refer to Python Reference section).&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference><pythonReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;If you would like to set a default value for this parameter, you may edit the ASF_Tools.pyt script to add in your default destination folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;OL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Right-click on the ASF_Tools.pyt toolbox in ArcCatalog (or the Catalog window in ArcMap) and select Edit...&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Scroll down to outlocation.value (line 57) and enter your download folder path between the single quotes (refer to comments in the script for an example)&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Save the script (select Save from the File menu in the script editor), then close the editor window&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Double-click the ASF_Tools.pyt toolbox in ArcCatalog (or the Catalog window in ArcMap) to expand the toolbox, and open the Unzip Files tool&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;If you have double-clicked the toolbox and the change is not reflected in the tool dialog, close and re-open your ArcGIS application (ArcMap or ArcCatalog)&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/OL&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</pythonReference></param></parameters><summary>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool unzips ASF products and saves the extracted folders in the desired destination folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;UL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;All .zip files in the download folder will be extracted&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Each product will have its own folder within the destination directory&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;The original .zip files in the download folder will each be deleted once file extraction is complete&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/UL&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;font-weight:bold;"&gt;NOTE: &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;"&gt;If you will be using the Sentinel-1 Toolbox (S1TBX) to process products, &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;font-weight:bold;"&gt;do not &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;"&gt;unzip the product downloads using this tool. S1TBX is designed to work within the .zip folder structure, and this tool deletes the .zip files once they are extracted.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</summary><usage>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Many ASF products are served as zip files. Each product zip file contains another folder inside, so when the files are extracted, the individual component product files will still be contained within a uniquely-named product folder. Because the zip file and folder names are so long, standard Windows zip utilities may encounter errors if the full product pathway contains more characters than is allowed. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;This tool offers a quick and easy way to extract multiple zip files to the desired destination folder. It extracts the contents of the downloaded zip files to the desired destination folder, then deletes the original zip files from the download folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;If you are using the Sentinel-1 Toolbox (S1TBX) to process the images, you will need to retain the .zip files. If you still want to use this tool to unzip the product files, make sure you've copied the original zip files to another folder first, because the .zip files will be deleted once extracted.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN /&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</usage><scriptExamples><scriptExample><title>ASF_Tools.pyt UnzipFiles</title><para>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the code for the UnzipFiles tool class within the ASF_Tools.pyt script.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</para><code>class UnzipFiles(object):
     def __init__(self):
-        
+
         """Unzips ASF products downloaded from Vertex or HyP3."""
         self.label = "Unzip Files"
-        self.description = "This tool unzips ASF products downloaded from Vertex or HyP3 and saves the extracted folders to the desired destination folder."
+        self.description = "This tool unzips ASF products downloaded from Vertex or HyP3 and saves the extracted " \
+                           "folders to the desired destination folder. "
         self.canRunInBackground = True
 
     def getParameterInfo(self):
@@ -11,32 +13,32 @@
 
         # First parameter: location of downloaded files
         ziplocation = arcpy.Parameter(
-            name = "ziplocation",
-            displayName = "Location of .zip files",
-            datatype = "DEWorkspace",
-            parameterType = "Required",
-            direction = "Input")
+            name="ziplocation",
+            displayName="Location of .zip files",
+            datatype="DEWorkspace",
+            parameterType="Required",
+            direction="Input")
 
         ziplocation.filter.list = ["File System"]
-        
-        # If you would like to set the value to your default download folder, enter the path between the single quotes below.
-        # Example: ziplocation.value = r'C:\Users\YourUserID\Downloads'
+
+        # If you would like to set the value to your default download folder, enter the path between the single
+        # quotes below. Example: ziplocation.value = r'C:\Users\YourUserID\Downloads'
         ziplocation.value = r''
 
         # Second parameter: destination folder for extracted products
         outlocation = arcpy.Parameter(
-            name = "outlocation",
-            displayName = "Destination folder for extracted products",
-            datatype = "DEWorkspace",
-            parameterType = "Required",
-            direction = "Input")
+            name="outlocation",
+            displayName="Destination folder for extracted products",
+            datatype="DEWorkspace",
+            parameterType="Required",
+            direction="Input")
 
         outlocation.filter.list = ["File System"]
-        
-        # If you would like to set a default value for your destination folder, enter the path between the single quotes below.
-        # Example: outlocation.value = r'F:\Projects\VertexData'
+
+        # If you would like to set a default value for your destination folder, enter the path between the single
+        # quotes below. Example: outlocation.value = r'F:\Projects\VertexData'
         outlocation.value = r''
-               
+
         params = [ziplocation, outlocation]
         return params
 
@@ -68,16 +70,16 @@
             if item.endswith('.zip'):
                 file_name = os.path.abspath(item)
                 zip_ref = zipfile.ZipFile(file_name)
-                messages.addMessage("Extracting files from "+file_name+"...")
+                arcpy.AddMessage("Extracting files from " + file_name + "...")
                 zip_ref.extractall(outlocation)
                 zip_ref.close()
-                messages.addMessage("Files extracted. Deleting zip folder "+file_name+" from original location...")
+                arcpy.AddMessage("Files extracted. Deleting zip folder " + file_name + " from original location...")
                 os.remove(file_name)
-                messages.addMessage("Unzip complete for "+file_name)
+                arcpy.AddMessage("Unzip complete for " + file_name)
 
-        messages.addMessage("All extractions complete.")
-        
-        return</code></scriptExample></scriptExamples></tool><dataIdInfo><idCitation xmlns=""><resTitle>Unzip Files</resTitle><date><createDate>2019-11-14T00:00:00</createDate><pubDate>2019-11-14T00:00:00</pubDate><adoptDate>2019-11-14T00:00:00</adoptDate></date><citId xmlns=""><identCode>ASF Tools Unzip</identCode></citId></idCitation><idAbs>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool unzips ASF products and saves the extracted folders in the desired destination folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;UL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;All .zip files in the download folder will be extracted&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Each product will have its own folder within the destination directory&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;The original .zip files in the download folder will each be deleted once file extraction is complete&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/UL&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;font-weight:bold;"&gt;NOTE: &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;"&gt;If you will be using the Sentinel-1 Toolbox (S1TBX) to process products, &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;font-weight:bold;"&gt;do not &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;"&gt;unzip the product downloads using this tool. S1TBX is designed to work within the .zip folder structure, and this tool deletes the .zip files once they are extracted.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</idAbs><idCredit>Alaska Satellite Facility</idCredit><dataChar><CharSetCd value="004"/></dataChar><idPoC xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo><displayName>Heidi Kristenson</displayName></idPoC><searchKeys><keyword>ASF</keyword><keyword>Alaska Satellite Facility</keyword><keyword>SAR</keyword><keyword>Synthetic Aperture Radar</keyword></searchKeys><productKeys xmlns=""><keyword>Synthetic Aperture Radar</keyword></productKeys><dataLang><languageCode value="eng"/><countryCode value="US"/></dataLang><tpCat><TopicCatCd value="007"/></tpCat><tpCat><TopicCatCd value="008"/></tpCat></dataIdInfo><distInfo xmlns=""><distributor xmlns=""><distorFormat xmlns=""><formatName>ArcToolbox Tool</formatName><formatVer>10.6.1</formatVer></distorFormat></distributor></distInfo><mdHrLv><ScopeCd value="013"/></mdHrLv><mdChar><CharSetCd value="004"/></mdChar><Binary><Thumbnail><Data EsriPropertyType="PictureX">/9j/4AAQSkZJRgABAQEAHgAeAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK
+        arcpy.AddMessage("All extractions complete.")
+
+        return</code></scriptExample></scriptExamples></tool><dataIdInfo><idCitation xmlns=""><resTitle>Unzip Files</resTitle><date><createDate>2019-11-14T00:00:00</createDate><pubDate>2019-11-14T00:00:00</pubDate><adoptDate>2019-11-14T00:00:00</adoptDate></date><citId xmlns=""><identCode>ASF Tools Unzip</identCode></citId></idCitation><idAbs>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool unzips ASF products and saves the extracted folders in the desired destination folder.&lt;/SPAN&gt;&lt;/P&gt;&lt;UL&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;All .zip files in the download folder will be extracted&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;Each product will have its own folder within the destination directory&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;LI&gt;&lt;P&gt;&lt;SPAN&gt;The original .zip files in the download folder will each be deleted once file extraction is complete&lt;/SPAN&gt;&lt;/P&gt;&lt;/LI&gt;&lt;/UL&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;font-weight:bold;"&gt;NOTE: &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;"&gt;If you will be using the Sentinel-1 Toolbox (S1TBX) to process products, &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;font-weight:bold;"&gt;do not &lt;/SPAN&gt;&lt;SPAN STYLE="font-style:italic;"&gt;unzip the product downloads using this tool. S1TBX is designed to work within the .zip folder structure, and this tool deletes the .zip files once they are extracted.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</idAbs><idCredit>Alaska Satellite Facility</idCredit><dataChar><CharSetCd value="004"/></dataChar><idPoC xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo><displayName>Heidi Kristenson</displayName></idPoC><searchKeys><keyword>ASF</keyword><keyword>Alaska Satellite Facility</keyword><keyword>SAR</keyword><keyword>Synthetic Aperture Radar</keyword></searchKeys><productKeys xmlns=""><keyword>Synthetic Aperture Radar</keyword></productKeys><dataLang><languageCode value="eng"/><countryCode value="US"/></dataLang><tpCat><TopicCatCd value="007"/></tpCat><tpCat><TopicCatCd value="008"/></tpCat></dataIdInfo><distInfo xmlns=""><distributor xmlns=""><distorFormat xmlns=""><formatName>ArcToolbox Tool</formatName><formatVer>10.6.1</formatVer></distorFormat></distributor></distInfo><mdHrLv><ScopeCd value="013"/></mdHrLv><mdChar><CharSetCd value="004"/></mdChar><mdContact xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo></mdContact><mdLang><languageCode value="eng"/><countryCode value="US"/></mdLang><mdDateSt Sync="TRUE">20201002</mdDateSt><dataSetFn><OnFunctCd value="002"/></dataSetFn><mdFileID>2FE3BA43-DCD7-43B9-8C69-235F9B640872</mdFileID><Binary><Thumbnail><Data EsriPropertyType="PictureX">/9j/4AAQSkZJRgABAQEAHgAeAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK
 CwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQU
 FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAD/AUoDASIA
 AhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQA
@@ -620,547 +622,4 @@ im+Geg6vrHiW+bUdTuNcgOpiS4Z5JGdEuTIsOWlckRBQcjIwq4fYrQ8ptf8Agpd4Nutc0fRV+GXx
 MTWdWJFvYSaTaLKn+nHT1M2bvEO69Vrf94VxIAG2hlJ9U/Zj/a48EftYaTr194Og1e0/sa4SG4h1
 i0ELujhvLmjKs6sjGOVcbtwMbblXK574fCPwMurpqo8GeH/7UX7t7/ZcHnj/AEv7bw+zd/x9f6R1
 /wBb+8+9zUngf4V+C/hjHeJ4O8IaD4TS8KtcroemQ2QnK52lxEq7sbmxnpk+tW3HWyM0n1Opoooq
-Cz//2Q==</Data></Thumbnail><Enclosure rel="side-panel-help"><Data EsriPropertyType="Image" OriginalFileName="thumbnail.jpg">/9j/4AAQSkZJRgABAQEAHgAeAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK
-CwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQU
-FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAD/AUoDASIA
-AhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQA
-AAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3
-ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWm
-p6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEA
-AwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSEx
-BhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElK
-U1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3
-uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9U6KK
-KACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoooo
-AKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigApK+Hf2pv27fF3wd+MWpeD/DGkaNPa6bB
-ALibVoJZHeaSMS5QxzINgSSMYIzkNzjFeSf8POPin/0BPCX/AIB3X/yTXt0snxdaCqRjo9dz5+tn
-mCo1JU5N3Wmx+n1FfmD/AMPOPin/ANATwl/4B3X/AMk1+i3wv8eWfxQ+Hvh7xXY+Wtvq1nHcmKKY
-TCFyvzxFxwWR9yNwMFSCARiuXFZfiMGlKsrJnXg8zw+ObjReqOooopK849UKWvlj47f8FAvB3wi8
-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
-Cz//2Q==</Data></Enclosure></Binary><mdContact xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo></mdContact><mdLang><languageCode value="eng"/><countryCode value="US"/></mdLang><mdDateSt>20191114</mdDateSt><dataSetFn><OnFunctCd value="002"/></dataSetFn><mdFileID>2FE3BA43-DCD7-43B9-8C69-235F9B640872</mdFileID></metadata>
+Cz//2Q==</Data></Thumbnail></Binary></metadata>
