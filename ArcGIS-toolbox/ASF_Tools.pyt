@@ -851,7 +851,7 @@ class RGBDecomp(object):
 
         # Perform pixel cleanup on VV and VH RTC images, using -48 dB as cutoff for valid pixels
         pc_thresh = math.pow(10, -4.8)
-        wc_pc = "VALUE < %s" % (pc_thresh)
+        wc_pc = "VALUE < %s" % pc_thresh
         cp0 = arcpy.sa.Con(cps, 0, cps, wc_pc)
         xp0 = arcpy.sa.Con(xps, 0, xps, wc_pc)
 
@@ -960,6 +960,7 @@ class RGBDecomp(object):
 
         return
 
+
 class RGBWaterMask(object):
     def __init__(self):
 
@@ -1026,14 +1027,14 @@ class RGBWaterMask(object):
             direction="Input")
 
         # Seventh parameter: select if output is added to the map
-        outYN = arcpy.Parameter(
-            name="outYN",
+        out_yn = arcpy.Parameter(
+            name="out_yn",
             displayName="Add output to map",
             datatype="GPBoolean",
             parameterType="Required",
             direction="Input")
 
-        outYN.value = "true"
+        out_yn.value = "true"
 
         # Eighth parameter: output layer to add to project
         outlayer = arcpy.Parameter(
@@ -1043,7 +1044,7 @@ class RGBWaterMask(object):
             parameterType="Derived",
             direction="Output")
 
-        params = [inras, bluecut, greencut, redcut, outdir, outname, outYN, outlayer]
+        params = [inras, bluecut, greencut, redcut, outdir, outname, out_yn, outlayer]
         return params
 
     def isLicensed(self):
@@ -1105,7 +1106,7 @@ class RGBWaterMask(object):
         redcut = parameters[3].valueAsText
         outdir = parameters[4].valueAsText
         outname = parameters[5].valueAsText
-        outYN = parameters[6].valueAsText
+        out_yn = parameters[6].valueAsText
 
         outmsg1 = "Parameters accepted. Generating Water Mask %s..." % outname
         messages.addMessage(outmsg1)
@@ -1118,25 +1119,25 @@ class RGBWaterMask(object):
         indir = os.path.dirname(inras)
         arcpy.env.workspace = indir
 
-        aB = os.path.join(inras, 'Band_3')
-        aG = os.path.join(inras, 'Band_2')
-        aR = os.path.join(inras, 'Band_1')
+        ab = os.path.join(inras, 'Band_3')
+        ag = os.path.join(inras, 'Band_2')
+        ar = os.path.join(inras, 'Band_1')
 
         bc = "Value > %s" % bluecut
         gc = "Value < %s" % greencut
         rc = "Value > %s" % redcut
 
-        conB = arcpy.sa.Con(aB, 1, 0, bc)
-        conG = arcpy.sa.Con(aG, 1, 0, gc)
-        conR = arcpy.sa.Con(aR, 1, 0, rc)
+        con_b = arcpy.sa.Con(ab, 1, 0, bc)
+        con_g = arcpy.sa.Con(ag, 1, 0, gc)
+        con_r = arcpy.sa.Con(ar, 1, 0, rc)
 
-        wm = conB*conG*conR
+        wm = con_b*con_g*con_r
         wm0 = arcpy.sa.SetNull(wm, wm, "Value = 0")
         outpath = os.path.join(outdir, outname)
         wm0.save(outpath)
 
         # Add the output product to the map
-        if outYN == "true":
+        if out_yn == "true":
             dispname = os.path.splitext(outname)[0]
             arcpy.MakeRasterLayer_management(outpath, dispname)
             arcpy.SetParameterAsText(7, dispname)
