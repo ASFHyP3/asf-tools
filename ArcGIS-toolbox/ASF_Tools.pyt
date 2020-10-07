@@ -1108,14 +1108,9 @@ class RGBWaterMask(object):
         outname = parameters[5].valueAsText
         out_yn = parameters[6].valueAsText
 
-        outmsg1 = "Parameters accepted. Generating Water Mask %s..." % outname
-        messages.addMessage(outmsg1)
-
-        # Run the code to generate the RGB Decomposition file
-
         arcpy.AddMessage("Input parameters have been defined. Preparing workspace...")
 
-        # Set the working directory containing the RTC images
+        # Set the working directory containing the RGB image
         indir = os.path.dirname(inras)
         arcpy.env.workspace = indir
 
@@ -1136,6 +1131,8 @@ class RGBWaterMask(object):
         outpath = os.path.join(outdir, outname)
         wm0.save(outpath)
 
+        arcpy.AddMessage("Water Mask has been generated: %s" % outname)
+
         # Add the output product to the map
         if out_yn == "true":
             dispname = os.path.splitext(outname)[0]
@@ -1147,13 +1144,8 @@ class RGBWaterMask(object):
                 "Option to add output layer to map was not selected. "
                 "Output can be added manually if desired: %s" % outpath)
 
-        arcpy.AddMessage("Water Mask has been generated: %s." % outpath)
-
         # Check In Spatial Analyst Extension
         status = arcpy.CheckInExtension("Spatial")
-        messages.addMessage("The Spatial Analyst Extension is in %s status." % status)
-
-        # Indicate process is complete
-        arcpy.AddMessage("Water Mask process is complete.")
+        arcpy.AddMessage("The Spatial Analyst Extension is in %s status." % status)
 
         return
