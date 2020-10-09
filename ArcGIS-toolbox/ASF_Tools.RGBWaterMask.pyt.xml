@@ -1,0 +1,189 @@
+<metadata xml:lang="en"><Esri><CreaDate>20201008</CreaDate><CreaTime>10223100</CreaTime><ArcGISFormat>1.0</ArcGISFormat><ArcGISstyle>North American Profile of ISO19115 2003</ArcGISstyle><SyncOnce>TRUE</SyncOnce><ModDate>20201009</ModDate><ModTime>15562500</ModTime><scaleRange><minScale>150000000</minScale><maxScale>5000</maxScale></scaleRange><ArcGISProfile>NAP</ArcGISProfile><DataProperties><itemProps><imsContentType export="False"/></itemProps></DataProperties></Esri><tool name="RGBWaterMask" displayname="Water Mask from RGB" toolboxalias="ASF Tools" xmlns=""><arcToolboxHelpPath>c:\program files (x86)\arcgis\desktop10.7\Help\gp</arcToolboxHelpPath><parameters><param name="inras" displayname="RGB Decomposition raster to be used to generate water mask" type="Required" direction="Input" datatype="Raster Dataset" expression="inras"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the RGB Decomposition product (GeoTIFF) to be used for masking. &lt;/SPAN&gt;&lt;SPAN&gt;You can also enter the path by typing or pasting it, or by dragging and dropping the file from the Catalog window.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN /&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="bluecut" displayname="Cutoff value for blue (default: &gt;25)" type="Required" direction="Input" datatype="Long" expression="bluecut"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the threshold applied to the blue band. The default is to include blue values &amp;gt;25, but you can adjust the threshold if necessary to improve your results.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="greencut" displayname="Cutoff value for green (default: &lt;105)" type="Required" direction="Input" datatype="Long" expression="greencut"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the threshold applied to the green band. The default is to include green values &amp;lt;105, but you can adjust the threshold if necessary to improve your results.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="redcut" displayname="Cutoff value for red (default: &gt;1)" type="Required" direction="Input" datatype="Long" expression="redcut"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the threshold applied to the red band. The default is to include red values &amp;gt;1, but you can adjust the threshold if necessary to improve your results.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outdir" displayname="Output directory for new water mask file" type="Required" direction="Input" datatype="Workspace" expression="outdir"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Navigate to the destination directory where the output will be saved. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;By default this is set to be the same as the directory containing the input raster. You can amend the path, or click the folder icon to navigate to a different output directory if desired.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input raster after the default directory populates, the output directory parameter does not automatically update. Delete the outdated directory and press tab or click away from the field to reset the output directory to reflect the home directory of the new input raster.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="outname" displayname="Filename for new RGB raster" type="Required" direction="Input" datatype="String" expression="outname"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Enter the filename for the output raster, including the .tif extension.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;By default, this parameter is set to add an _WaterMask.tif tag to the basename of the RGB input file. You can amend the name, or enter an entirely different filename if desired.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN STYLE="font-style:italic;"&gt;Note that if you change the input raster after this parameter is populated, it does not automatically update to match the new input raster information. Delete the outdated filename and press tab or click away from the field to reset the parameter to reflect the new input raster if necessary.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param><param name="out_yn" displayname="Add output to map" type="Required" direction="Input" datatype="Boolean" expression="out_yn"><dialogReference>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;Select this option to automatically add the output raster to the map. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;This option is selected by default. Remove the check if you do not want the output raster added to the map.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</dialogReference></param></parameters><summary>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool generates a water mask from an RGB Decomposition image. The expected input is a 3-band GeoTIFF generated using the RGB Decomposition tool in this toolbox, though any RGB Decomposition GeoTIFF generated using ASF's calculation method can be used.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;There are default cutoff values set for each color band which should work well for most inputs, but adjustments may need to be made to the values to accommodate specific locations and water conditions if the default values don't peform well. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The output file parameters are populated with default values once you select the input RGB image. You can amend any of the auto-populated outputs or set them to something completely different if desired. Note that if you change your input file, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</summary><usage>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool generates a water mask based on the values in the bands of an RGB Decomposition product generated using ASF's decomposition workflow. It was designed to work with outputs generated by the RGB Decomposition tool in the ASF ArcGIS Toolbox, but will also accept RGB Decomposition products generated by HyP3, or GeoTIFFS generated manually using the approach outlined in &lt;/SPAN&gt;&lt;A href="https://github.com/ASFHyP3/hyp3-lib/blob/develop/docs/rgb_decomposition.md"&gt;&lt;SPAN&gt;ASF's RGB Decomposition documentation&lt;/SPAN&gt;&lt;/A&gt;&lt;SPAN&gt;. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;Because the RGB Decomposition images integrate the co- and cross-pol backscatter, using the characteristics of the three color bands to identify water can sometimes be a more robust approach than applying a threshold to a singl-pol RTC product (which is the approach taken in the Reclassify RTC tool in this toolbox). For example, it may be difficult to identify water in a VV image on a windy day, due to the brighter backscatter caused by the rough water. While VH images are less impacted by wind conditions, water is not always as well-differentiated from non-water pixels. By integrating the two polarizations in the RGB Decomposition, water may be more clearly visualized. If the water conditions are very rough, however, you may see red patches in the waterbodies. In such cases, you will most likely need to adjust the blue and red thresholds used for this tool, and in extreme cases you may not have good success applying this tool. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;Take care when interpreting the RGB Decomposition images. Refer to the documentation linked above, or look at the Metadata/Item Description for the RGB Decomposition toolbox for more information on the false color rendering. In general, blue indicates surface water, but dry sand exhibits a backscatter signature similar to water, which can make interpretation difficult in desert regions. Because the water mask only considers the RGB pixel values, deserts and waterbodies meeting the criteria for pixel values will both be masked.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The default values indicate the thresholds for inclusion; the blue values should be high, the green values low, and the red values greater than 1. The optimal cutoff values for the thresholds may vary depending on the characteristics of a particular scene, so if the default values do not produce a map that meets expectations, try inspecting the pixel values where you would expect there to be a water mask but the pixel values did not meet the conditions. You may find that by making minor adjustments to the thresholds you can get a better fit.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The default output parameters will be set once you select the input image. By default, the output product will be saved in the same directory as the input product, and the default output filename will be the same as the basename of the input file, but tagged with _WaterMask.tif. You can amend any of the auto-populated outputs or set them to something completely different if desired. Note that if you change your input directory, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN /&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</usage><scriptExamples><scriptExample><title>Water Mask from RGB</title><para>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This is the code for the RGBWaterMask tool class within the ASF_Tools.pyt script&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;</para><code>class RGBWaterMask(object):
+    def __init__(self):
+
+        """Generates a water mask from an RGB Decomposition product"""
+        self.label = "Water Mask from RGB"
+        self.description = "This tool generates a water mask from an RGB Decomposition product."
+        self.canRunInBackground = True
+
+    def getParameterInfo(self):
+        """Define parameter definitions"""
+
+        # First parameter: input raster dataset
+        inras = arcpy.Parameter(
+            name="inras",
+            displayName="RGB Decomposition raster to be used to generate water mask",
+            datatype="DERasterDataset",
+            parameterType="Required",
+            direction="Input")
+
+        # Second parameter: blue cutoff
+        bluecut = arcpy.Parameter(
+            name="bluecut",
+            displayName="Cutoff value for blue (default: &gt;25)",
+            datatype="GPLong",
+            parameterType="Required",
+            direction="Input")
+
+        bluecut.value = 25
+
+        # Third parameter: green cutoff
+        greencut = arcpy.Parameter(
+            name="greencut",
+            displayName="Cutoff value for green (default: &lt;105)",
+            datatype="GPLong",
+            parameterType="Required",
+            direction="Input")
+
+        greencut.value = 105
+
+        # Fourth parameter: red cutoff
+        redcut = arcpy.Parameter(
+            name="redcut",
+            displayName="Cutoff value for red (default: &gt;1)",
+            datatype="GPLong",
+            parameterType="Required",
+            direction="Input")
+
+        redcut.value = 1
+
+        # Fifth parameter: output directory for water mask file
+        outdir = arcpy.Parameter(
+            name="outdir",
+            displayName="Output directory for new water mask file",
+            datatype="DEWorkspace",
+            parameterType="Required",
+            direction="Input")
+
+        # Sixth parameter: output name for water mask file
+        outname = arcpy.Parameter(
+            name="outname",
+            displayName="Filename for new RGB raster",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input")
+
+        # Seventh parameter: select if output is added to the map
+        out_yn = arcpy.Parameter(
+            name="out_yn",
+            displayName="Add output to map",
+            datatype="GPBoolean",
+            parameterType="Required",
+            direction="Input")
+
+        out_yn.value = "true"
+
+        # Eighth parameter: output layer to add to project
+        outlayer = arcpy.Parameter(
+            name="outlayer",
+            displayName="Derived output for final product raster",
+            datatype="GPRasterLayer",
+            parameterType="Derived",
+            direction="Output")
+
+        params = [inras, bluecut, greencut, redcut, outdir, outname, out_yn, outlayer]
+        return params
+
+    def isLicensed(self):
+        """This tool requires the Spatial Analyst Extension"""
+        arcpy.AddMessage("Checking Spatial Analyst Extension status...")
+        try:
+            if arcpy.CheckExtension("Spatial") != "Available":
+                raise Exception
+            else:
+                arcpy.AddMessage("Spatial Analyst Extension is available.")
+                if arcpy.CheckOutExtension("Spatial") == "CheckedOut":
+                    arcpy.AddMessage("Spatial Analyst Extension is checked out and ready for use.")
+                elif arcpy.CheckOutExtension("Spatial") == "NotInitialized":
+                    arcpy.CheckOutExtension("Spatial")
+                    arcpy.AddMessage("Spatial Analyst Extension has been checked out.")
+                else:
+                    arcpy.AddMessage("Spatial Analyst Extension is not available for use.")
+        except Exception:
+            arcpy.AddMessage(
+                "Spatial Analyst extension is not available for use. Check your licensing to make sure you have "
+                "access to this extension.")
+            return False
+
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+
+        # Set the default output directory to be the same as the home directory of the RGB Decomp input
+        if parameters[0].value:
+            if not parameters[4].altered:
+                parameters[4].value = os.path.dirname(parameters[0].value.value)
+
+        # Set the default output filename to be the basename_RGB.tif
+        if parameters[0].value:
+            if not parameters[5].altered:
+                inrasbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
+                parameters[5].value = ("%s_WaterMask.tif" % inrasbase)
+
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter.  This method is called after internal validation."""
+        return
+
+    def execute(self, parameters, messages):
+        """The source code of the tool."""
+
+        # Check licensing
+        self.isLicensed()
+
+        # Define parameters
+        inras = parameters[0].valueAsText
+        bluecut = parameters[1].valueAsText
+        greencut = parameters[2].valueAsText
+        redcut = parameters[3].valueAsText
+        outdir = parameters[4].valueAsText
+        outname = parameters[5].valueAsText
+        out_yn = parameters[6].valueAsText
+
+        arcpy.AddMessage("Input parameters have been defined. Preparing workspace...")
+
+        # Set the working directory containing the RGB image
+        indir = os.path.dirname(inras)
+        arcpy.env.workspace = indir
+
+        ab = os.path.join(inras, 'Band_3')
+        ag = os.path.join(inras, 'Band_2')
+        ar = os.path.join(inras, 'Band_1')
+
+        bc = "Value &gt; %s" % bluecut
+        gc = "Value &lt; %s" % greencut
+        rc = "Value &gt; %s" % redcut
+
+        con_b = arcpy.sa.Con(ab, 1, 0, bc)
+        con_g = arcpy.sa.Con(ag, 1, 0, gc)
+        con_r = arcpy.sa.Con(ar, 1, 0, rc)
+
+        wm = con_b*con_g*con_r
+        wm0 = arcpy.sa.SetNull(wm, wm, "Value = 0")
+        outpath = os.path.join(outdir, outname)
+        wm0.save(outpath)
+
+        arcpy.AddMessage("Water Mask has been generated: %s" % outname)
+
+        # Add the output product to the map
+        if out_yn == "true":
+            dispname = os.path.splitext(outname)[0]
+            arcpy.MakeRasterLayer_management(outpath, dispname)
+            arcpy.SetParameterAsText(7, dispname)
+            arcpy.AddMessage("Added water mask layer to map display.")
+        else:
+            arcpy.AddMessage(
+                "Option to add output layer to map was not selected. "
+                "Output can be added manually if desired: %s" % outpath)
+
+        # Check In Spatial Analyst Extension
+        status = arcpy.CheckInExtension("Spatial")
+        arcpy.AddMessage("The Spatial Analyst Extension is in %s status." % status)
+
+        return
+</code></scriptExample></scriptExamples></tool><dataIdInfo><idCitation xmlns=""><resTitle>Water Mask from RGB</resTitle></idCitation><idAbs>&lt;DIV STYLE="text-align:Left;"&gt;&lt;DIV&gt;&lt;DIV&gt;&lt;P&gt;&lt;SPAN&gt;This tool generates a water mask from an RGB Decomposition image. The expected input is a 3-band GeoTIFF generated using the RGB Decomposition tool in this toolbox, though any RGB Decomposition GeoTIFF generated using ASF's calculation method can be used.&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;There are default cutoff values set for each color band which should work well for most inputs, but adjustments may need to be made to the values to accommodate specific locations and water conditions if the default values don't peform well. &lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;-----&lt;/SPAN&gt;&lt;/P&gt;&lt;P&gt;&lt;SPAN&gt;The output file parameters are populated with default values once you select the input RGB image. You can amend any of the auto-populated outputs or set them to something completely different if desired. Note that if you change your input file, the default values will not automatically change. You can reset the auto-populated outputs based on the new parameters by deleting the default string and pressing tab or clicking away from the field.&lt;/SPAN&gt;&lt;/P&gt;&lt;/DIV&gt;&lt;/DIV&gt;&lt;/DIV&gt;</idAbs><searchKeys><keyword>Alaska Satellite Facility</keyword><keyword>Synthetic Aperture Radar</keyword><keyword>Flood Mapping</keyword></searchKeys><idCredit>Alaska Satellite Facility</idCredit><dataLang><languageCode value="eng"/><countryCode value="US"/></dataLang><dataChar><CharSetCd value="004"/></dataChar><idPoC xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo></idPoC></dataIdInfo><distInfo><distributor><distorFormat><formatName>ArcToolbox Tool</formatName></distorFormat></distributor></distInfo><mdHrLv><ScopeCd value="005"/></mdHrLv><mdLang><languageCode value="eng"/><countryCode value="US"/></mdLang><mdChar><CharSetCd value="004"/></mdChar><mdContact xmlns=""><rpIndName>Heidi Kristenson</rpIndName><rpOrgName>Alaska Satellite Facility</rpOrgName><rpPosName>GIS Specialist</rpPosName><role><RoleCd value="011"/></role><rpCntInfo xmlns=""><cntAddress addressType=""><eMailAdd>hjkristenson@alaska.edu</eMailAdd></cntAddress></rpCntInfo></mdContact></metadata>
