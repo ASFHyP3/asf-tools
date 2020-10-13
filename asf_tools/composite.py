@@ -176,9 +176,11 @@ def reproject_to_median_utm(files, pol, resolution=None):
     return new_files
 
 
-def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
+def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None, clamp=(0.0,1.0)):
 
-    logging.info(f"make_composite: {outfile} {infiles} {path} {pol} {resolution}")
+    '''Create a composite mosaic of infiles using inverse area weighting to adjust backscatter'''
+
+    logging.info(f"make_composite: {outfile} {infiles} {path} {pol} {resolution} {clamp}")
     if pol is None:
         pol = "VV"
 
@@ -252,7 +254,12 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
             # tmpfile = f"composite_{fi}"
             # saa.write_gdal_file_float(tmpfile,trans,proj,outputs,nodata=0)
 
-    outputs /= weights            
+    outputs /= weights 
+
+    # clamp data values from 0 to 1
+    outputs[outputs>clamp[1]] = clamp[1] 
+    outputs[outputs<clamp[0]] = clamp[0]
+
 
     # write out composite
     logging.info("Writing output files")
@@ -282,6 +289,7 @@ if __name__ == "__main__":
     parser.add_argument("--pol", choices=['VV', 'VH', 'HH', 'HV'], help="When using multi-pol data, only mosaic given "
                                                                         "polarization", default='VV')
     parser.add_argument("-r", "--resolution", help="Desired output resolution", type=float)
+    parser.add_argument("-c", "--clamp", help="Clamping values", nargs=2, type=float, metavar=("lo","hi"), default=(0.0,1.0))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-p", "--path", help="Name of directory where input stack is located\n")
     group.add_argument("-i", "--infiles", nargs='*', help="Names of input series files")
@@ -293,4 +301,4 @@ if __name__ == "__main__":
     logging.getLogger().addHandler(logging.StreamHandler())
     logging.info("Starting run")
 
-    make_composite(args.outfile, args.infiles, args.path, args.pol, args.resolution)
+    make_composite(args.outfile, args.infiles, args.path, args.pol, args.resolution, args.clamp)
