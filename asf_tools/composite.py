@@ -3,7 +3,9 @@
 
    Path vs infiles:
      If path is passed, code assumes files are in an ASF HyP3 RTC Stacking arrangement.
-     i.e  {path}/20*/PRODUCT/ contains the input RTC data and the area maps.
+     i.e  {path}/20*/PRODUCT/ contains the input RTC data and the area maps or
+          {path}/S1?_IW_*RTC*/ contains the input RTC data and the area maps
+         
 
 """
 
@@ -139,38 +141,36 @@ def reproject_to_median_utm(files, pol, resolution=None):
     logging.info("Checking projections")
     new_files = []
     for fi in files:
+        fi_name = os.path.split(fi)[1]
         my_zone = get_zone_from_proj(fi)
-        name = fi.replace(".tif", "_reproj.tif")
-        afi = fi.replace(f"_flat_{pol}.tif", "_area_map.tif")
-        aname = fi.replace(f"_flat_{pol}.tif", "_area_map_reproj.tif")
-        if my_zone != home_zone:
-            logging.info(f"Reprojecting {fi} to {name}")
-            if hemi == "N":
-                proj = ('EPSG:326%02d' % int(home_zone))
-            else:
-                proj = ('EPSG:327%02d' % int(home_zone))
-            gdal.Warp(name, fi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,
-                      resampleAlg=GRIORA_Cubic)
-            gdal.Warp(aname, afi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True,
-                      resampleAlg=GRIORA_Cubic)
-            new_files.append(name)
-        else:
-            # May need to reproject to desired resolution
+        name = fi_name.replace(".tif", "_reproj.tif")
+        afi = fi.replace(f"_{pol}.tif", "_area_map.tif")
+        aname = fi_name.replace(f"_{pol}.tif", "_area_map_reproj.tif")
+        if not os.path.isfile(name):
             x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
-            if x < pix_size:
+            if my_zone != home_zone:
+                logging.info(f"Reprojecting {fi} to {name}")
+                if hemi == "N":
+                    proj = ('EPSG:326%02d' % int(home_zone))
+                else:
+                    proj = ('EPSG:327%02d' % int(home_zone))
+                gdal.Warp(name, fi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
+                gdal.Warp(aname, afi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
+                new_files.append(name)
+            elif x < pix_size:
+                # Need to reproject to desired resolution
                 logging.info(f"Changing resolution of {fi} to {pix_size}")
-                gdal.Warp(name, fi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True, resampleAlg=GRIORA_Cubic)
-                gdal.Warp(aname, afi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True, resampleAlg=GRIORA_Cubic)
+                gdal.Warp(name, fi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
+                gdal.Warp(aname, afi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
                 new_files.append(name)
             else:
-                if not os.path.isfile(fi):
-                    logging.info(f"Linking {fi} to {name}")
-                    os.symlink(fi, name)
-                    os.symlink(afi, aname)
-                    new_files.append(name)
-                else:
-                    logging.info(f"Found previous reproj file {fi} - taking no action")
-                    new_files.append(fi)
+                logging.info(f"No reprojection needed; Linking {fi} to {name}")
+                os.symlink(fi, name)
+                os.symlink(afi, aname)
+                new_files.append(name)
+        else:
+            logging.info(f"Found previous reproj file {fi} - taking no action")
+            new_files.append(fi)
 
     logging.info("All files completed")
     return new_files
@@ -187,14 +187,25 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None, 
     # Establish input file list
     if path:
         logging.info("Searching for list of files to process")
-        infiles = glob.glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif"))
+
+        # New format directory names
+        infiles_new = glob.glob(os.path.join(path, f"20*/S1?_IW_*RTC*/*{pol}.tif"))
+
+        # Old format diretory names
+        infiles_old = glob.glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif"))
+
+        infiles = infiles_new
+        infiles.extend(infiles_old)
+        cnt = len(infiles)
+        logging.info(f"Found {cnt} files to process")
     else:
-        logging.info("Found list of input files to process")
+        cnt = len(infiles)
+        logging.info("Found list of {cnt} input files to process")
     infiles.sort()
     logging.debug(f"Input files: {infiles}")
 
     # resample infiles to maximum resolution & common UTM zone
-    resampled_files = reproject_to_median_utm(infiles, resolution)
+    resampled_files = reproject_to_median_utm(infiles, pol, resolution=resolution)
     if len(resampled_files) == 0:
         Exception("Unable to resample files")
 
@@ -229,7 +240,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None, 
             logging.info(f"File covers {x_max,y_min} to {x_min,y_max}")
 
             logging.info("Reading areas")
-            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace(f"_flat_{pol}_reproj",
+            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace(f"_{pol}_reproj",
                                                                                                   "_area_map_reproj")))
 
             logging.info("Reading values")
@@ -257,8 +268,8 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None, 
     outputs /= weights 
 
     # clamp data values from 0 to 1
-    outputs[outputs>clamp[1]] = clamp[1] 
-    outputs[outputs<clamp[0]] = clamp[0]
+#    outputs[outputs>clamp[1]] = clamp[1] 
+#    outputs[outputs<clamp[0]] = clamp[0]
 
 
     # write out composite
