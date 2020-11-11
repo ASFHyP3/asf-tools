@@ -256,10 +256,12 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None, 
 
             temp = 1.0/areas 
             temp[values == 0] = 0
+            mask = np.ones((xsize,ysize),dtype = np.uint8)
+            mask[values == 0] = 0
 
             outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * temp
             weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += temp
-            counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += 1
+            counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += mask 
              
             # write out composite
             # tmpfile = f"composite_{fi}"
