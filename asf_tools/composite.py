@@ -144,8 +144,8 @@ def reproject_to_median_utm(files, pol, resolution=None):
         fi_name = os.path.split(fi)[1]
         my_zone = get_zone_from_proj(fi)
         name = fi_name.replace(".tif", "_reproj.tif")
-        afi = fi.replace(f"_{pol}.tif", "_area_map.tif")
-        aname = fi_name.replace(f"_{pol}.tif", "_area_map_reproj.tif")
+        afi = fi.replace(f"_{pol}.tif", "_area.tif")
+        aname = fi_name.replace(f"_{pol}.tif", "_area_reproj.tif")
         if not os.path.isfile(name):
             x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
             if my_zone != home_zone:
@@ -241,7 +241,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
             logging.info("Reading areas")
             x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace(f"_{pol}_reproj",
-                                                                                                  "_area_map_reproj")))
+                                                                                                  "_area_reproj")))
 
             logging.info("Reading values")
             x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
@@ -263,10 +263,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
             weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += temp
             counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += mask 
              
-            # write out composite
-            # tmpfile = f"composite_{fi}"
-            # saa.write_gdal_file_float(tmpfile,trans,proj,outputs,nodata=0)
-
+    # Divide by the total weight applied 
     outputs /= weights 
 
     # write out composite
