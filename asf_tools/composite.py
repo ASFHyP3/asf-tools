@@ -5,7 +5,7 @@
      If path is passed, code assumes files are in an ASF HyP3 RTC Stacking arrangement.
      i.e  {path}/20*/PRODUCT/ contains the input RTC data and the area maps or
           {path}/S1?_IW_*RTC*/ contains the input RTC data and the area maps
-         
+
 
 """
 
@@ -15,9 +15,7 @@ import os
 import re
 import argparse
 import glob
-# from hyp3lib import saa_func_lib as saa
-# import hyp3lib.saa_func_lib as saa
-import saa_func_lib as saa
+from hyp3lib import saa_func_lib as saa
 from osgeo import gdal
 from osgeo.gdalconst import GRIORA_Cubic
 
@@ -33,7 +31,7 @@ def get_pol(infile):
     elif "HV" in infile:
         pol = "HV"
     else:
-        raise Exception("Could not determine polarization of file " + infile)  
+        raise Exception("Could not determine polarization of file " + infile)
     return pol
 
 
@@ -56,7 +54,7 @@ def frange(start, stop=None, step=None):
 def get_full_extent(corners):
     """"Calculate the union of corners"""
     min_ulx = 50000000
-    max_lrx = 0 
+    max_lrx = 0
     max_uly = 0
     min_lry = 50000000
 
@@ -121,7 +119,7 @@ def reproject_to_median_utm(files, pol, resolution=None):
        Use either the given resolution or the largest resolution in the stack"""
 
     if len(files) < 2:
-        return None 
+        return None
 
     # Set the pixel size
     if resolution:
@@ -212,7 +210,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     # Get pixel size
     x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(resampled_files[0]))
     pixel_size_x = trans[1]
-    pixel_size_y = trans[5] 
+    pixel_size_y = trans[5]
     logging.info(f"{resampled_files[0]} x = {pixel_size_x} y = {pixel_size_y}")
 
     # Get extent of union of all images
@@ -223,7 +221,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     ulx, lrx, uly, lry = get_full_extent(extents)
 
     logging.info(f"Full extent of mosaic is {ulx,uly} to {lrx,lry}")
-   
+
     x_pixels = abs(int((ulx - lrx) / pixel_size_x))
     y_pixels = abs(int((lry - uly) / pixel_size_y))
 
@@ -254,17 +252,17 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
             logging.info(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} "
                          f"and {int(out_loc_y)}:{int(end_loc_y)}")
 
-            temp = 1.0/areas 
+            temp = 1.0/areas
             temp[values == 0] = 0
             mask = np.ones((y_size,x_size),dtype = np.uint8)
             mask[values == 0] = 0
 
             outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * temp
             weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += temp
-            counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += mask 
-             
-    # Divide by the total weight applied 
-    outputs /= weights 
+            counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += mask
+
+    # Divide by the total weight applied
+    outputs /= weights
 
     # write out composite
     logging.info("Writing output files")
