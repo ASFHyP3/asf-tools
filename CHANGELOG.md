@@ -9,16 +9,16 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
-* This repository moved from `ASFHyP3/GIS-tools` to [`ASFHyP3/ASF-tools`](https://github.com/ASFHyP3/ASF-tools) 
+* This repository moved from `ASFHyP3/GIS-tools` to [`ASFHyP3/asf-tools`](https://github.com/ASFHyP3/asf-tools) 
   due to the broadening scope of the tools contained here
 
-## [0.1.1](https://github.com/ASFHyP3/ASF-tools/compare/v0.0.0...v0.1.0)
+## [0.1.1](https://github.com/ASFHyP3/asf-tools/compare/v0.0.0...v0.1.0)
 
 ### Added
 * Information and links to [On Demand RTC Processing](https://asfhyp3.github.io/using/vertex/) 
   in [Data Search - Vertex](https://search.asf.alaska.edu/) added to documentation
 
-## [0.1.0](https://github.com/ASFHyP3/ASF-tools/compare/v0.0.0...v0.1.0)
+## [0.1.0](https://github.com/ASFHyP3/asf-tools/compare/v0.0.0...v0.1.0)
 
 ### Added
 * RGB Decomposition tool to generate a color image from dual-pol SAR data, which 
