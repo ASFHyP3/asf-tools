@@ -1,4 +1,4 @@
-name: GIS-tools
+name: ASF-tools
 channels:
   - conda-forge
   # - esri  # windows only

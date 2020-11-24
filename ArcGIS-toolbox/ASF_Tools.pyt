@@ -3,7 +3,7 @@
 #   Heidi Kristenson, ASF Tools Team       #
 #   uaf-asf-apd@alaska.edu                 #
 #   Alaska Satellite Facility              #
-#   https://github.com/ASFHyP3/GIS-tools   #
+#   https://github.com/ASFHyP3/ASF-tools   #
 ############################################
 import math
 import os
