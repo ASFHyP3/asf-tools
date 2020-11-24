@@ -8,6 +8,10 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+* The `asf_tools` python package for working with Synthetic Aperture Radar (SAR) data. 
+  See the [README](asf_tools/README.md)
+
 ### Changed
 * This repository moved from `ASFHyP3/GIS-tools` to [`ASFHyP3/asf-tools`](https://github.com/ASFHyP3/asf-tools) 
   due to the broadening scope of the tools contained here
