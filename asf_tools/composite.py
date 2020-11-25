@@ -19,22 +19,6 @@ from hyp3lib import saa_func_lib as saa
 from osgeo import gdal
 
 
-def frange(start, stop=None, step=None):
-    """Return a floating point number ranging from start to stop, adding step"""
-    if not stop:
-        stop = start + 0.0
-        start = 0.0
-    if not step:
-        step = 1.0
-    while True:
-        if step > 0 and start >= stop:
-            break
-        elif step < 0 and start <= stop:
-            break
-        yield ("%g" % start)  # return float number
-        start = start + step
-
-
 def get_full_extent(corners):
     """"Calculate the union of corners"""
     min_ulx = 50000000
