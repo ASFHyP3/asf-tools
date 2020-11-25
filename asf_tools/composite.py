@@ -42,8 +42,10 @@ def get_epsg_code(file_name):
 
 def get_target_epsg_code(files):
     epsg_codes = [get_epsg_code(f) for f in files]
-    target_epsg_code = np.median(epsg_codes)
-    return int(target_epsg_code)
+    zones = [epsg_code % 100 for epsg_code in epsg_codes]
+    target_zone = int(np.median(zones))
+    target_epsg_code = epsg_codes[0] - epsg_codes[0] % 100 + target_zone
+    return target_epsg_code
 
 
 def frange(start, stop=None, step=None):
