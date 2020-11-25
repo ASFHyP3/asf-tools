@@ -37,14 +37,14 @@ def get_epsg_code(file_name):
     info = gdal.Info(file_name, format='json')
     proj = osr.SpatialReference(info['coordinateSystem']['wkt'])
     epsg_code = proj.GetAttrValue('AUTHORITY', 1)
-    return int(epsg_code)
+    return f'EPSG:{epsg_code}'
 
 
 def get_target_epsg_code(files):
     epsg_codes = [get_epsg_code(f) for f in files]
-    zones = [epsg_code % 100 for epsg_code in epsg_codes]
+    zones = [int(epsg_code[-2:]) for epsg_code in epsg_codes]
     target_zone = int(np.median(zones))
-    target_epsg_code = epsg_codes[0] - epsg_codes[0] % 100 + target_zone
+    target_epsg_code = epsg_codes[0][:-2] + str(target_zone)
     return target_epsg_code
 
 
@@ -127,9 +127,8 @@ def reproject_to_median_utm(files, pol, resolution=None):
             x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
             if my_epsg_code != target_epsg_code:
                 logging.info(f"Reprojecting {fi} to {name}")
-                srs = f'EPSG:{target_epsg_code}'
-                gdal.Warp(name, fi, dstSRS=srs, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
-                gdal.Warp(aname, afi, dstSRS=srs, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
+                gdal.Warp(name, fi, dstSRS=target_epsg_code, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
+                gdal.Warp(aname, afi, dstSRS=target_epsg_code, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
                 new_files.append(name)
             elif x < pix_size:
                 # Need to reproject to desired resolution
