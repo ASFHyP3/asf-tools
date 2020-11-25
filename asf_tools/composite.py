@@ -18,21 +18,6 @@ from hyp3lib import saa_func_lib as saa
 from osgeo import gdal, osr
 
 
-def get_pol(infile):
-    """Return the polarization of infile"""
-    if "VV" in infile:
-        pol = "VV"
-    elif "VH" in infile:
-        pol = "VH"
-    elif "HH" in infile:
-        pol = "HH"
-    elif "HV" in infile:
-        pol = "HV"
-    else:
-        raise Exception("Could not determine polarization of file " + infile)
-    return pol
-
-
 def get_epsg_code(file_name):
     info = gdal.Info(file_name, format='json')
     proj = osr.SpatialReference(info['coordinateSystem']['wkt'])
