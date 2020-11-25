@@ -980,7 +980,19 @@ class RGBWaterMask(object):
             parameterType="Required",
             direction="Input")
 
-        # Second parameter: blue cutoff
+        # Second parameter: waterbody type
+        watertype = arcpy.Parameter(
+            name="watertype",
+            displayName="Type of waterbody to be delineated (choose primary waterbody type of interest from dropdown)",
+            datatype="String",
+            parameterType="Required",
+            direction="Input")
+
+        watertype.filter.type = "ValueList"
+        watertype.filter.list = ["Small Lakes and Ponds", "Large Lake or Ocean", "High Wind Conditions"]
+        watertype.value = "Small Lakes and Ponds"
+
+        # Third parameter: blue cutoff
         bluecut = arcpy.Parameter(
             name="bluecut",
             displayName="Cutoff value for blue (default: >25)",
@@ -988,9 +1000,9 @@ class RGBWaterMask(object):
             parameterType="Required",
             direction="Input")
 
-        bluecut.value = 25
+        #bluecut.value = 25
 
-        # Third parameter: green cutoff
+        # Fourth parameter: green cutoff
         greencut = arcpy.Parameter(
             name="greencut",
             displayName="Cutoff value for green (default: <105)",
@@ -998,9 +1010,9 @@ class RGBWaterMask(object):
             parameterType="Required",
             direction="Input")
 
-        greencut.value = 105
+        #greencut.value = 105
 
-        # Fourth parameter: red cutoff
+        # Fifth parameter: red cutoff
         redcut = arcpy.Parameter(
             name="redcut",
             displayName="Cutoff value for red (default: >1)",
@@ -1008,9 +1020,9 @@ class RGBWaterMask(object):
             parameterType="Required",
             direction="Input")
 
-        redcut.value = 1
+        #redcut.value = 1
 
-        # Fifth parameter: output directory for water mask file
+        # Sixth parameter: output directory for water mask file
         outdir = arcpy.Parameter(
             name="outdir",
             displayName="Output directory for new water mask file",
@@ -1018,7 +1030,7 @@ class RGBWaterMask(object):
             parameterType="Required",
             direction="Input")
 
-        # Sixth parameter: output name for water mask file
+        # Seventh parameter: output name for water mask file
         outname = arcpy.Parameter(
             name="outname",
             displayName="Filename for new RGB raster",
@@ -1026,7 +1038,7 @@ class RGBWaterMask(object):
             parameterType="Required",
             direction="Input")
 
-        # Seventh parameter: select if output is added to the map
+        # Eighth parameter: select if output is added to the map
         out_yn = arcpy.Parameter(
             name="out_yn",
             displayName="Add output to map",
@@ -1036,7 +1048,7 @@ class RGBWaterMask(object):
 
         out_yn.value = "true"
 
-        # Eighth parameter: output layer to add to project
+        # Ninth parameter: output layer to add to project
         outlayer = arcpy.Parameter(
             name="outlayer",
             displayName="Derived output for final product raster",
@@ -1044,7 +1056,7 @@ class RGBWaterMask(object):
             parameterType="Derived",
             direction="Output")
 
-        params = [inras, bluecut, greencut, redcut, outdir, outname, out_yn, outlayer]
+        params = [inras, watertype, bluecut, greencut, redcut, outdir, outname, out_yn, outlayer]
         return params
 
     def isLicensed(self):
@@ -1075,16 +1087,49 @@ class RGBWaterMask(object):
         validation is performed.  This method is called whenever a parameter
         has been changed."""
 
+        # Set the default values based on waterbody type
+        if parameters[1].value == "Small Lakes and Ponds":
+            if not parameters[2].altered:
+                parameters[2].value = 25
+            if not parameters[3].altered:
+                parameters[3].value = 105
+            if not parameters[4].altered:
+                parameters[4].value = 1
+
+        elif parameters[1].value == "Large Lake or Ocean":
+            if not parameters[2].altered:
+                parameters[2].value = 25
+            if not parameters[3].altered:
+                parameters[3].value = 65
+            if not parameters[4].altered:
+                parameters[4].value = 0
+
+        elif parameters[1].value == "High Wind Conditions":
+            if not parameters[2].altered:
+                parameters[2].value = 0
+            if not parameters[3].altered:
+                parameters[3].value = 65
+            if not parameters[4].altered:
+                parameters[4].value = 0
+
+        else:
+            if not parameters[2].altered:
+                parameters[2].value = 25
+            if not parameters[3].altered:
+                parameters[3].value = 105
+            if not parameters[4].altered:
+                parameters[4].value = 1
+
         # Set the default output directory to be the same as the home directory of the RGB Decomp input
         if parameters[0].value:
-            if not parameters[4].altered:
-                parameters[4].value = os.path.dirname(parameters[0].value.value)
+            if not parameters[5].altered:
+                parameters[5].value = os.path.dirname(parameters[0].value.value)
 
         # Set the default output filename to be the basename_RGB.tif
         if parameters[0].value:
-            if not parameters[5].altered:
+            if not parameters[6].altered:
                 inrasbase = os.path.splitext(os.path.basename(parameters[0].value.value))[0]
-                parameters[5].value = ("%s_WaterMask.tif" % inrasbase)
+                parameters[6].value = ("%s_WaterMask.tif" % inrasbase)
 
         return
 
@@ -1101,12 +1146,13 @@ class RGBWaterMask(object):
 
         # Define parameters
         inras = parameters[0].valueAsText
-        bluecut = parameters[1].valueAsText
-        greencut = parameters[2].valueAsText
-        redcut = parameters[3].valueAsText
-        outdir = parameters[4].valueAsText
-        outname = parameters[5].valueAsText
-        out_yn = parameters[6].valueAsText
+        watertype = parameters[1].valueAsText
+        bluecut = parameters[2].valueAsText
+        greencut = parameters[3].valueAsText
+        redcut = parameters[4].valueAsText
+        outdir = parameters[5].valueAsText
+        outname = parameters[6].valueAsText
+        out_yn = parameters[7].valueAsText
 
         arcpy.AddMessage("Input parameters have been defined. Preparing workspace...")
 
