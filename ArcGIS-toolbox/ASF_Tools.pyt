@@ -983,14 +983,14 @@ class RGBWaterMask(object):
         # Second parameter: waterbody type
         watertype = arcpy.Parameter(
             name="watertype",
-            displayName="Type of waterbody to be delineated (choose primary waterbody type of interest from dropdown)",
+            displayName="Type of waterbody to be masked (choose primary waterbody type of interest from dropdown "
+                        "to set different default thresholds, or select custom to adjust values as desired)",
             datatype="String",
-            parameterType="Required",
+            parameterType="Optional",
             direction="Input")
 
         watertype.filter.type = "ValueList"
-        watertype.filter.list = ["Small Lakes and Ponds", "Large Lake or Ocean", "High Wind Conditions"]
-        watertype.value = "Small Lakes and Ponds"
+        watertype.filter.list = ["Small Lakes and Ponds", "Large Lake or Ocean", "High Wind Conditions", "Custom"]
 
         # Third parameter: blue cutoff
         bluecut = arcpy.Parameter(
@@ -1089,28 +1089,19 @@ class RGBWaterMask(object):
 
         # Set the default values based on waterbody type
         if parameters[1].value == "Small Lakes and Ponds":
-            if not parameters[2].altered:
-                parameters[2].value = 25
-            if not parameters[3].altered:
-                parameters[3].value = 105
-            if not parameters[4].altered:
-                parameters[4].value = 1
+            parameters[2].value = 25
+            parameters[3].value = 105
+            parameters[4].value = 1
 
         elif parameters[1].value == "Large Lake or Ocean":
-            if not parameters[2].altered:
-                parameters[2].value = 25
-            if not parameters[3].altered:
-                parameters[3].value = 65
-            if not parameters[4].altered:
-                parameters[4].value = 0
+            parameters[2].value = 25
+            parameters[3].value = 65
+            parameters[4].value = 0
 
         elif parameters[1].value == "High Wind Conditions":
-            if not parameters[2].altered:
-                parameters[2].value = 0
-            if not parameters[3].altered:
-                parameters[3].value = 65
-            if not parameters[4].altered:
-                parameters[4].value = 0
+            parameters[2].value = 0
+            parameters[3].value = 65
+            parameters[4].value = 0
 
         else:
             if not parameters[2].altered:
