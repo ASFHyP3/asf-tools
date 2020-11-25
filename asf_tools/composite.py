@@ -42,8 +42,12 @@ def get_epsg_code(file_name):
 
 def get_target_epsg_code(files):
     epsg_codes = [get_epsg_code(f) for f in files]
+
+    # use median east/west UTM zone of all files, regardless of hemisphere
     zones = [int(epsg_code[-2:]) for epsg_code in epsg_codes]
     target_zone = int(np.median(zones))
+
+    # use north/south hemisphere of first file
     target_epsg_code = epsg_codes[0][:-2] + str(target_zone).zfill(2)
     return target_epsg_code
 
@@ -110,7 +114,6 @@ def reproject_to_median_utm(files, pol, resolution=None):
         pix_size = get_max_pixel_size(files)
         logging.info(f"Using maximum pixel size {pix_size}")
 
-    # Get the median EPSG code of all input files
     target_epsg_code = get_target_epsg_code(files)
     logging.info(f"Target EPSG code is {target_epsg_code}")
 
