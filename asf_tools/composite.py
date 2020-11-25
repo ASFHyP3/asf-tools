@@ -44,7 +44,7 @@ def get_target_epsg_code(files):
     epsg_codes = [get_epsg_code(f) for f in files]
     zones = [int(epsg_code[-2:]) for epsg_code in epsg_codes]
     target_zone = int(np.median(zones))
-    target_epsg_code = epsg_codes[0][:-2] + str(target_zone)
+    target_epsg_code = epsg_codes[0][:-2] + str(target_zone).zfill(2)
     return target_epsg_code
 
 
