@@ -30,9 +30,11 @@ setup(
 
     python_requires='~=3.8',
 
-    # install_requires=[
-    #     'hyp3lib',
-    # ],
+    install_requires=[
+        'hyp3lib==1.6.2',
+        'numpy',
+        'gdal',
+    ],
 
     extras_require={
         'develop': [
@@ -48,10 +50,11 @@ setup(
 
     packages=find_packages(),
 
-    # entry_points={'console_scripts': [
-    #         'asf_tools = asf_tools.__main__:main',
-    #     ]
-    # },
+    entry_points={
+        'console_scripts': [
+            'make_composite.py = asf_tools.composite:main',
+        ]
+    },
 
     zip_safe=False,
 )
