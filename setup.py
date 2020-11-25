@@ -52,7 +52,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'asf_tools = asf_tools.__main__:main',
+            'make_composite.py = asf_tools.composite:main',
         ]
     },
 
