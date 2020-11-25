@@ -8,15 +8,15 @@
 
 """
 
-import numpy as np
+import argparse
+import glob
 import logging
 import os
 import re
-import argparse
-import glob
+
+import numpy as np
 from hyp3lib import saa_func_lib as saa
 from osgeo import gdal
-from osgeo.gdalconst import GRIORA_Cubic
 
 
 def get_pol(infile):
@@ -88,7 +88,7 @@ def get_hemisphere(fi):
     p1 = dst.GetProjection()
     ptr = p1.find("UTM zone ")
     if ptr != -1:
-        (zone, hemi) = [t(s) for t, s in zip((int, str), re.search('(\d+)(.)', p1[ptr:]).groups())]
+        (zone, hemi) = [t(s) for t, s in zip((int, str), re.search(r'(\d+)(.)', p1[ptr:]).groups())]
     return hemi
 
 
@@ -99,7 +99,7 @@ def get_zone_from_proj(fi):
     p1 = dst.GetProjection()
     ptr = p1.find("UTM zone ")
     if ptr != -1:
-        (zone, hemi) = [t(s) for t, s in zip((int, str), re.search("(\d+)(.)", p1[ptr:]).groups())]
+        (zone, hemi) = [t(s) for t, s in zip((int, str), re.search(r"(\d+)(.)", p1[ptr:]).groups())]
     return zone
 
 
@@ -197,7 +197,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
         logging.info(f"Found {cnt} files to process")
     else:
         cnt = len(infiles)
-        logging.info("Found list of {cnt} input files to process")
+        logging.info(f"Found list of {cnt} input files to process")
     infiles.sort()
     logging.debug(f"Input files: {infiles}")
 
@@ -253,7 +253,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
             temp = 1.0/areas
             temp[values == 0] = 0
-            mask = np.ones((y_size,x_size),dtype = np.uint8)
+            mask = np.ones((y_size, x_size), dtype=np.uint8)
             mask[values == 0] = 0
 
             outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * temp
@@ -282,18 +282,21 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="make_composite.py",
-                                     description="Create a weighted composite mosaic from a set of S-1 RTC products",
-                                     epilog='''Output pixel values calculated using weights that are the inverse of 
-                                     the area.''')
+    parser = argparse.ArgumentParser(
+        prog="make_composite.py",
+        description="Create a weighted composite mosaic from a set of S-1 RTC products",
+        epilog="Output pixel values calculated using weights that are the inverse of the area."
+    )
 
     parser.add_argument("outfile", help="Name of output weighted mosaic geotiff file")
-    parser.add_argument("--pol", choices=['VV', 'VH', 'HH', 'HV'], help="When using multi-pol data, only mosaic given "
-                                                                        "polarization", default='VV')
-    parser.add_argument("-r", "--resolution", help="Desired output resolution", type=float)
+    parser.add_argument("--pol", choices=['VV', 'VH', 'HH', 'HV'], default='VV',
+                        help="When using multi-pol data, only mosaic given polarization")
+    parser.add_argument("-r", "--resolution", type=float, help="Desired output resolution")
+
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-p", "--path", help="Name of directory where input stack is located\n")
+    group.add_argument("-p", "--path", help="Name of directory where input stack is located")
     group.add_argument("-i", "--infiles", nargs='*', help="Names of input series files")
+
     args = parser.parse_args()
 
     logFile = "make_composite_{}.log".format(os.getpid())
