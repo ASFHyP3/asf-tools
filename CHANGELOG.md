@@ -11,6 +11,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 * The `asf_tools` python package for working with Synthetic Aperture Radar (SAR) data. 
   See the [README](asf_tools/README.md)
+* `asf_tools.composite` and an associated `make_composite.py` entrypoint for making
+  mosaics using local resolution weighting (à la [David Smalls, 2012](https://doi.org/10.1109/IGARSS.2012.6350465))
 
 ### Changed
 * This repository moved from `ASFHyP3/GIS-tools` to [`ASFHyP3/asf-tools`](https://github.com/ASFHyP3/asf-tools) 
