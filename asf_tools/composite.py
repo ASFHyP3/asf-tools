@@ -12,11 +12,10 @@ import argparse
 import glob
 import logging
 import os
-import re
 
 import numpy as np
 from hyp3lib import saa_func_lib as saa
-from osgeo import gdal
+from osgeo import gdal, osr
 
 
 def get_pol(infile):
@@ -32,6 +31,19 @@ def get_pol(infile):
     else:
         raise Exception("Could not determine polarization of file " + infile)
     return pol
+
+
+def get_epsg_code(file_name):
+    info = gdal.Info(file_name, format='json')
+    proj = osr.SpatialReference(info['coordinateSystem']['wkt'])
+    epsg_code = proj.GetAttrValue('AUTHORITY', 1)
+    return int(epsg_code)
+
+
+def get_target_epsg_code(files):
+    epsg_codes = [get_epsg_code(f) for f in files]
+    target_epsg_code = np.median(epsg_codes)
+    return int(target_epsg_code)
 
 
 def frange(start, stop=None, step=None):
@@ -81,38 +93,6 @@ def get_max_pixel_size(files):
     return pix_size
 
 
-def get_hemisphere(fi):
-    """Return hemisphere of UTM zone - North or South"""
-    hemi = None
-    dst = gdal.Open(fi)
-    p1 = dst.GetProjection()
-    ptr = p1.find("UTM zone ")
-    if ptr != -1:
-        (zone, hemi) = [t(s) for t, s in zip((int, str), re.search(r'(\d+)(.)', p1[ptr:]).groups())]
-    return hemi
-
-
-def get_zone_from_proj(fi):
-    """Return the UTM zone of given file"""
-    zone = None
-    dst = gdal.Open(fi)
-    p1 = dst.GetProjection()
-    ptr = p1.find("UTM zone ")
-    if ptr != -1:
-        (zone, hemi) = [t(s) for t, s in zip((int, str), re.search(r"(\d+)(.)", p1[ptr:]).groups())]
-    return zone
-
-
-def parse_zones(files):
-    """Return the zone numbers of all files given"""
-    zones = []
-    for fi in files:
-        zone = get_zone_from_proj(fi)
-        if zone:
-            zones.append(zone)
-    return np.asarray(zones, dtype=np.int8)
-
-
 def reproject_to_median_utm(files, pol, resolution=None):
     """Reproject a bunch of UTM geotiffs to the median UTM zone.
        Use either the given resolution or the largest resolution in the stack"""
@@ -128,31 +108,26 @@ def reproject_to_median_utm(files, pol, resolution=None):
         pix_size = get_max_pixel_size(files)
         logging.info(f"Using maximum pixel size {pix_size}")
 
-    # Get the median UTM zone and hemisphere
-    home_zone = np.median(parse_zones(files))
-    logging.info(f"Home zone is {home_zone}")
-    hemi = get_hemisphere(files[0])
-    logging.info(f"Hemisphere is {hemi}")
+    # Get the median EPSG code of all input files
+    target_epsg_code = get_target_epsg_code(files)
+    logging.info(f"Target EPSG code is {target_epsg_code}")
 
     # Reproject files as needed
     logging.info("Checking projections")
     new_files = []
     for fi in files:
         fi_name = os.path.split(fi)[1]
-        my_zone = get_zone_from_proj(fi)
+        my_epsg_code = get_epsg_code(fi)
         name = fi_name.replace(".tif", "_reproj.tif")
         afi = fi.replace(f"_{pol}.tif", "_area.tif")
         aname = fi_name.replace(f"_{pol}.tif", "_area_reproj.tif")
         if not os.path.isfile(name):
             x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
-            if my_zone != home_zone:
+            if my_epsg_code != target_epsg_code:
                 logging.info(f"Reprojecting {fi} to {name}")
-                if hemi == "N":
-                    proj = ('EPSG:326%02d' % int(home_zone))
-                else:
-                    proj = ('EPSG:327%02d' % int(home_zone))
-                gdal.Warp(name, fi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
-                gdal.Warp(aname, afi, dstSRS=proj, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
+                srs = f'EPSG:{target_epsg_code}'
+                gdal.Warp(name, fi, dstSRS=srs, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
+                gdal.Warp(aname, afi, dstSRS=srs, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
                 new_files.append(name)
             elif x < pix_size:
                 # Need to reproject to desired resolution
