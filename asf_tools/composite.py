@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Create S1 SAR Composite Mosaic using inverse area weighting ala David Small.
 
    Path vs infiles:
@@ -282,7 +281,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     logging.info("Program successfully completed")
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(prog="make_composite.py",
                                      description="Create a weighted composite mosaic from a set of S-1 RTC products",
                                      epilog='''Output pixel values calculated using weights that are the inverse of 
