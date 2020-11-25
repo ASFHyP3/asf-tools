@@ -1137,7 +1137,6 @@ class RGBWaterMask(object):
 
         # Define parameters
         inras = parameters[0].valueAsText
-        watertype = parameters[1].valueAsText
         bluecut = parameters[2].valueAsText
         greencut = parameters[3].valueAsText
         redcut = parameters[4].valueAsText
@@ -1174,7 +1173,7 @@ class RGBWaterMask(object):
         if out_yn == "true":
             dispname = os.path.splitext(outname)[0]
             arcpy.MakeRasterLayer_management(outpath, dispname)
-            arcpy.SetParameterAsText(7, dispname)
+            arcpy.SetParameterAsText(8, dispname)
             arcpy.AddMessage("Added water mask layer to map display.")
         else:
             arcpy.AddMessage(
