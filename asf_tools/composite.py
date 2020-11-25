@@ -20,21 +20,6 @@ from osgeo import gdal
 from osgeo.gdalconst import GRIORA_Cubic
 
 
-def get_pol(infile):
-    """Return the polarization of infile"""
-    if "VV" in infile:
-        pol = "VV"
-    elif "VH" in infile:
-        pol = "VH"
-    elif "HH" in infile:
-        pol = "HH"
-    elif "HV" in infile:
-        pol = "HV"
-    else:
-        raise Exception("Could not determine polarization of file " + infile)
-    return pol
-
-
 def frange(start, stop=None, step=None):
     """Return a floating point number ranging from start to stop, adding step"""
     if not stop:
