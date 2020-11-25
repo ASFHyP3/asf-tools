@@ -185,8 +185,8 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
         rds = None
 
         # FIXME: This is gross
-        if '_repoj' in raster:
-            suffix = '_repoj'
+        if '_reproj' in raster:
+            suffix = '_reproj'
         else:
             suffix = ''
         area_raster = '_'.join(raster.replace('_reproj', '').split('_')[:-1] + [f'area{suffix}.tif'])
@@ -198,7 +198,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
 
         ulx, uly = info['cornerCoordinates']['upperLeft']
         # FIXME: rounding?
-        y_index_start = int((uly - full_ul[1]) // resolution)
+        y_index_start = int((full_ul[1] - uly) // resolution)
         y_index_end = y_index_start + values.shape[0]
 
         x_index_start = int((ulx - full_ul[0]) // resolution)
