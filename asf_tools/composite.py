@@ -197,7 +197,6 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
         ads = None
 
         ulx, uly = info['cornerCoordinates']['upperLeft']
-        # FIXME: rounding?
         y_index_start = int((full_ul[1] - uly) // resolution)
         y_index_end = y_index_start + values.shape[0]
 
