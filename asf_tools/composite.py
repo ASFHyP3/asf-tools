@@ -46,7 +46,11 @@ def get_target_epsg_code(codes: List[int]) -> int:
     hemispheres = code_array // 100 * 100
     zones = code_array % 100
 
-    target_zone = int(statistics.median(zones))
+    # handle antimeridian
+    target_zone = int(statistics.median(zones % 60))
+    if target_zone == 0:
+        target_zone = 60
+
     target_hemisphere = int(statistics.mode(hemispheres))
 
     return target_hemisphere + target_zone
@@ -101,7 +105,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
         resolution = info['geoTransform'][1]
         if epsg_code != target_epsg_code or resolution != target_resolution:
             logging.info(f"Reprojecting {raster}")
-            reprojected_raster = raster.replace('.tif', '_reproj.tif')
+            reprojected_raster = raster.replace('.tif', '.reproj.tif')
             gdal.Warp(
                 reprojected_raster, raster, dstSRS=f'EPSG:{target_epsg_code}',
                 xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
@@ -109,7 +113,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
 
             area_raster = '_'.join(raster.split('_')[:-1] + ['area.tif'])
             logging.info(f"Reprojecting {area_raster}")
-            reprojected_area_raster = area_raster.replace('.tif', '_reproj.tif')
+            reprojected_area_raster = area_raster.replace('.tif', '.reproj.tif')
             gdal.Warp(
                 reprojected_area_raster, area_raster, dstSRS=f'EPSG:{target_epsg_code}',
                 xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
@@ -122,6 +126,20 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
 
     return target_raster_info
 
+
+def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection: str,
+              dtype=gdal.GDT_Float32, nodata_value=None):
+    driver = gdal.GetDriverByName('GTiff')
+    out_raster = driver.Create(
+        outfile, data.shape[1], data.shape[0], 1, dtype,
+        options=["TILED=YES", "COMPRESS=LZW", "INTERLEAVE=BAND"]
+    )
+    out_raster.GetRasterBand(1).WriteArray(data)
+    if nodata_value is not None:
+        out_raster.GetRasterBand(1).SetNoDataValue(nodata_value)
+    out_raster.SetGeoTransform(transform)
+    out_raster.SetProjection(projection)
+    del out_raster  # How to close w/ gdal
 
 
 def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
@@ -139,7 +157,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
         # New format directory names
         infiles_new = glob.glob(os.path.join(path, f"S1?_IW_*RTC*/*{pol}.tif"))
 
-        # Old format diretory names
+        # Old format directory names
         infiles_old = glob.glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif"))
 
         infiles = infiles_new
@@ -182,19 +200,17 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
         logging.info(f"Reading raster values {raster}")
         rds = gdal.Open(raster)
         values = rds.GetRasterBand(1).ReadAsArray()
-        rds = None
+        del rds  # How to close w/ gdal
 
-        # FIXME: This is gross
-        if '_reproj' in raster:
-            suffix = '_reproj'
-        else:
-            suffix = ''
-        area_raster = '_'.join(raster.replace('_reproj', '').split('_')[:-1] + [f'area{suffix}.tif'])
+        raster_split = raster.split('_')
+        raster_pol = raster_split[-1].split('.')[0]
+        area_suffix = raster_split[-1].replace(raster_pol, 'area')
+        area_raster = '_'.join(raster_split[:-1] + [area_suffix])
 
         logging.info(f"Reading area raster {area_raster}")
         ads = gdal.Open(area_raster)
         areas = ads.GetRasterBand(1).ReadAsArray()
-        ads = None
+        del ads  # How to close w/ gdal
 
         ulx, uly = info['cornerCoordinates']['upperLeft']
         y_index_start = int((full_ul[1] - uly) // resolution)
@@ -219,21 +235,9 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     # Divide by the total weight applied
     outputs /= weights
 
-    # write out composite
     logging.info("Writing output files")
-
-    driver = gdal.GetDriverByName('GTiff')
-    out_raster = driver.Create(outfile, outputs.shape[1], outputs.shape[0], 1, gdal.GDT_Float32)
-    out_raster.GetRasterBand(1).WriteArray(outputs)
-    out_raster.GetRasterBand(1).SetNoDataValue(0)
-    out_raster.SetGeoTransform(full_trans)
-    out_raster.SetProjection(full_proj)
-
-    driver = gdal.GetDriverByName('GTiff')
-    out_raster = driver.Create(outfile.replace('.tif', '_counts.tif'), outputs.shape[1], outputs.shape[0], 1, gdal.GDT_Int16)
-    out_raster.GetRasterBand(1).WriteArray(counts)
-    out_raster.SetGeoTransform(full_trans)
-    out_raster.SetProjection(full_proj)
+    write_cog(outfile, outputs, full_trans, full_proj, nodata_value=0)
+    write_cog(outfile.replace('.tif', '_counts.tif'), counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
 
     logging.info("Program successfully completed")
 

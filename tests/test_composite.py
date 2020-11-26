@@ -18,34 +18,35 @@ def test_get_epsg_code():
 
 
 def test_get_target_epsg_code():
+    # Northern hemisphere
     assert composite.get_target_epsg_code([32601]) == 32601
-
-    assert composite.get_target_epsg_code([32760]) == 32760
-
     assert composite.get_target_epsg_code([32601, 32601]) == 32601
 
+    # both hemispheres
     assert composite.get_target_epsg_code([32601, 32702]) == 32601
-
     assert composite.get_target_epsg_code([32702, 32601]) == 32701
 
+    # Southern hemisphere
+    assert composite.get_target_epsg_code([32760]) == 32760
     assert composite.get_target_epsg_code([32730, 32732]) == 32731
+
+    # antimeridian
+    assert composite.get_target_epsg_code([32701, 32760]) == 32760
+    assert composite.get_target_epsg_code([32701, 32760, 32701]) == 32701
+    assert composite.get_target_epsg_code([32701, 32760, 32760]) == 32760
 
     assert composite.get_target_epsg_code(
         [32731, 32631, 32731, 32631, 32732, 32633, 32733, 32633, 32733]
     ) == 32732
 
+    # bounds
     with pytest.raises(ValueError):
         composite.get_target_epsg_code([32600])
-
     with pytest.raises(ValueError):
         composite.get_target_epsg_code([32661])
-
     with pytest.raises(ValueError):
         composite.get_target_epsg_code([32700])
-
     with pytest.raises(ValueError):
         composite.get_target_epsg_code([32761])
-
     with pytest.raises(ValueError):
         composite.get_target_epsg_code([32601, 99, 32760])
-
