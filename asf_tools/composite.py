@@ -141,7 +141,7 @@ def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection
 
 
 def make_composite(outfile, rasters, resolution=None):
-    '''Create a composite mosaic of rasters using inverse area weighting to adjust backscatter'''
+    """Create a composite mosaic of rasters using inverse area weighting to adjust backscatter"""
 
     logging.info(f"make_composite: {outfile} {rasters} {resolution}")
 
