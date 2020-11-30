@@ -56,22 +56,6 @@ def get_target_epsg_code(codes: List[int]) -> int:
     return target_hemisphere + target_zone
 
 
-def frange(start, stop=None, step=None):
-    """Return a floating point number ranging from start to stop, adding step"""
-    if not stop:
-        stop = start + 0.0
-        start = 0.0
-    if not step:
-        step = 1.0
-    while True:
-        if step > 0 and start >= stop:
-            break
-        elif step < 0 and start <= stop:
-            break
-        yield ("%g" % start)  # return float number
-        start = start + step
-
-
 def get_full_extent(raster_info: dict):
     upper_left_corners = [info['cornerCoordinates']['upperLeft'] for info in raster_info.values()]
     lower_right_corners = [info['cornerCoordinates']['lowerRight'] for info in raster_info.values()]
