@@ -140,8 +140,7 @@ def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection
     del out_raster  # How to close w/ gdal
 
 
-def make_composite(outfile, rasters=None, resolution=None):
-
+def make_composite(outfile, rasters, resolution=None):
     '''Create a composite mosaic of rasters using inverse area weighting to adjust backscatter'''
 
     logging.info(f"make_composite: {outfile} {rasters} {resolution}")
