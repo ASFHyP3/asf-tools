@@ -13,6 +13,7 @@ import glob
 import logging
 import os
 import statistics
+from tempfile import TemporaryDirectory
 from typing import List
 
 import numpy as np
@@ -81,7 +82,7 @@ def get_full_extent(raster_info: dict):
     return (ulx, uly), (lrx, lry), trans, proj
 
 
-def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float) -> dict:
+def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, dir: str) -> dict:
     logging.info("Checking projections")
     target_raster_info = {}
     for raster, info in raster_info.items():
@@ -89,7 +90,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
         resolution = info['geoTransform'][1]
         if epsg_code != target_epsg_code or resolution != target_resolution:
             logging.info(f"Reprojecting {raster}")
-            reprojected_raster = raster.replace('.tif', '.reproj.tif')
+            reprojected_raster = os.path.join(dir, os.path.basename(raster))
             gdal.Warp(
                 reprojected_raster, raster, dstSRS=f'EPSG:{target_epsg_code}',
                 xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
@@ -97,7 +98,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
 
             area_raster = '_'.join(raster.split('_')[:-1] + ['area.tif'])
             logging.info(f"Reprojecting {area_raster}")
-            reprojected_area_raster = area_raster.replace('.tif', '.reproj.tif')
+            reprojected_area_raster = os.path.join(dir, os.path.basename(area_raster))
             gdal.Warp(
                 reprojected_area_raster, area_raster, dstSRS=f'EPSG:{target_epsg_code}',
                 xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
@@ -163,58 +164,57 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
         resolution = max([info['geoTransform'][1] for info in raster_info.values()])
 
     # resample infiles to maximum resolution & common UTM zone
-    raster_info = reproject_to_target(raster_info, target_epsg_code=target_epsg_code, target_resolution=resolution)
+    with TemporaryDirectory() as temp_dir:
+        raster_info = reproject_to_target(raster_info, target_epsg_code=target_epsg_code, target_resolution=resolution,
+                                          dir=temp_dir)
 
-    # Get extent of union of all images
-    full_ul, full_lr, full_trans, full_proj = get_full_extent(raster_info)
+        # Get extent of union of all images
+        full_ul, full_lr, full_trans, full_proj = get_full_extent(raster_info)
 
-    nx = int(abs(full_ul[0] - full_lr[0]) // resolution)
-    ny = int(abs(full_ul[1] - full_lr[1]) // resolution)
+        nx = int(abs(full_ul[0] - full_lr[0]) // resolution)
+        ny = int(abs(full_ul[1] - full_lr[1]) // resolution)
 
-    outputs = np.zeros((ny, nx))
-    weights = np.zeros(outputs.shape)
-    counts = np.zeros(outputs.shape, dtype=np.int8)
+        outputs = np.zeros((ny, nx))
+        weights = np.zeros(outputs.shape)
+        counts = np.zeros(outputs.shape, dtype=np.int8)
 
-    logging.info("Calculating output values")
-    for raster, info in raster_info.items():
-        logging.info(f"Processing raster {raster}")
-        logging.info(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
-                     f"lower right: {info['cornerCoordinates']['lowerRight']}")
+        logging.info("Calculating output values")
+        for raster, info in raster_info.items():
+            logging.info(f"Processing raster {raster}")
+            logging.info(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
+                         f"lower right: {info['cornerCoordinates']['lowerRight']}")
 
-        logging.info(f"Reading raster values {raster}")
-        rds = gdal.Open(raster)
-        values = rds.GetRasterBand(1).ReadAsArray()
-        del rds  # How to close w/ gdal
+            logging.info(f"Reading raster values {raster}")
+            rds = gdal.Open(raster)
+            values = rds.GetRasterBand(1).ReadAsArray()
+            del rds  # How to close w/ gdal
 
-        raster_split = raster.split('_')
-        raster_pol = raster_split[-1].split('.')[0]
-        area_suffix = raster_split[-1].replace(raster_pol, 'area')
-        area_raster = '_'.join(raster_split[:-1] + [area_suffix])
+            area_raster = '_'.join(raster.split('_')[:-1] + ['area.tif'])
 
-        logging.info(f"Reading area raster {area_raster}")
-        ads = gdal.Open(area_raster)
-        areas = ads.GetRasterBand(1).ReadAsArray()
-        del ads  # How to close w/ gdal
+            logging.info(f"Reading area raster {area_raster}")
+            ads = gdal.Open(area_raster)
+            areas = ads.GetRasterBand(1).ReadAsArray()
+            del ads  # How to close w/ gdal
 
-        ulx, uly = info['cornerCoordinates']['upperLeft']
-        y_index_start = int((full_ul[1] - uly) // resolution)
-        y_index_end = y_index_start + values.shape[0]
+            ulx, uly = info['cornerCoordinates']['upperLeft']
+            y_index_start = int((full_ul[1] - uly) // resolution)
+            y_index_end = y_index_start + values.shape[0]
 
-        x_index_start = int((ulx - full_ul[0]) // resolution)
-        x_index_end = x_index_start + values.shape[1]
+            x_index_start = int((ulx - full_ul[0]) // resolution)
+            x_index_end = x_index_start + values.shape[1]
 
-        logging.info(
-            f"Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}"
-        )
+            logging.info(
+                f"Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}"
+            )
 
-        temp = 1.0/areas
-        temp[values == 0] = 0
-        mask = np.ones(values.shape, dtype=np.uint8)
-        mask[values == 0] = 0
+            temp = 1.0/areas
+            temp[values == 0] = 0
+            mask = np.ones(values.shape, dtype=np.uint8)
+            mask[values == 0] = 0
 
-        outputs[y_index_start:y_index_end, x_index_start:x_index_end] += values * temp
-        weights[y_index_start:y_index_end, x_index_start:x_index_end] += temp
-        counts[y_index_start:y_index_end, x_index_start:x_index_end] += mask
+            outputs[y_index_start:y_index_end, x_index_start:x_index_end] += values * temp
+            weights[y_index_start:y_index_end, x_index_start:x_index_end] += temp
+            counts[y_index_start:y_index_end, x_index_start:x_index_end] += mask
 
     # Divide by the total weight applied
     outputs /= weights
