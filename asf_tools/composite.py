@@ -9,10 +9,10 @@
 """
 
 import argparse
-import glob
 import logging
 import os
 import statistics
+from glob import glob
 from tempfile import TemporaryDirectory
 from typing import List
 
@@ -219,8 +219,8 @@ def make_composite(outfile, rasters=None, resolution=None):
 
 def get_rasters_from_path(path, pol):
     # Establish input file list
-    rasters = glob.glob(os.path.join(path, f"S1?_IW_*RTC*/*{pol}.tif"))
-    rasters.append(glob.glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif")))
+    rasters = glob(os.path.join(path, f"S1?_IW_*RTC*/*{pol}.tif"))
+    rasters.append(glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif")))
 
     return rasters
 
