@@ -41,8 +41,8 @@ def get_target_epsg_code(codes: List[int]) -> int:
     #   North: 326XX
     #   South: 327XX
     valid_codes = list(range(32601, 32661)) + list(range(32701, 32761))
-    if not all([c in valid_codes for c in codes]):
-        raise ValueError(f'Non UTM EPSG code encountered: {codes}')
+    if bad_codes := set(codes) - set(valid_codes):
+        raise ValueError(f'Non UTM EPSG code encountered: {bad_codes}')
 
     hemispheres = [c // 100 * 100 for c in codes]
     # if even modes, choose lowest (North)
