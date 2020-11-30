@@ -48,9 +48,9 @@ def get_target_epsg_code(codes: List[int]) -> int:
     # if even modes, choose lowest (North)
     target_hemisphere = min(multimode(hemispheres))
 
-    zones = [c % 100 for c in codes]
-    # if even modes, choose lowest
-    target_zone = min(multimode(zones))
+    zones = sorted([c % 100 for c in codes])
+    # if even length, choose fist of median two
+    target_zone = zones[len(zones) // 2]
 
     return target_hemisphere + target_zone
 
