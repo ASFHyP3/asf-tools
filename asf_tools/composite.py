@@ -125,6 +125,14 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
     return target_raster_info
 
 
+def read_as_array(raster: str, band: int = 1) -> np.array:
+    logging.info(f"Reading raster values from {raster}")
+    ds = gdal.Open(raster)
+    data = ds.GetRasterBand(band).ReadAsArray()
+    del ds  # How to close w/ gdal
+    return data
+
+
 def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection: str,
               dtype=gdal.GDT_Float32, nodata_value=None):
     driver = gdal.GetDriverByName('GTiff')
@@ -174,17 +182,10 @@ def make_composite(outfile, rasters, resolution=None):
             logging.info(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
                          f"lower right: {info['cornerCoordinates']['lowerRight']}")
 
-            logging.info(f"Reading raster values {raster}")
-            rds = gdal.Open(raster)
-            values = rds.GetRasterBand(1).ReadAsArray()
-            del rds  # How to close w/ gdal
+            values = read_as_array(raster)
 
             area_raster = get_area_raster(raster)
-
-            logging.info(f"Reading area raster {area_raster}")
-            ads = gdal.Open(area_raster)
-            areas = ads.GetRasterBand(1).ReadAsArray()
-            del ads  # How to close w/ gdal
+            areas = read_as_array(area_raster)
 
             ulx, uly = info['cornerCoordinates']['upperLeft']
             y_index_start = int((full_ul[1] - uly) // resolution)
