@@ -142,13 +142,13 @@ def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection
 
 def make_composite(outfile, rasters=None, resolution=None):
 
-    '''Create a composite mosaic of infiles using inverse area weighting to adjust backscatter'''
+    '''Create a composite mosaic of rasters using inverse area weighting to adjust backscatter'''
 
     logging.info(f"make_composite: {outfile} {rasters} {resolution}")
 
     raster_info = {}
-    for fi in rasters:
-        raster_info[fi] = gdal.Info(fi, format='json')
+    for raster in rasters:
+        raster_info[raster] = gdal.Info(raster, format='json')
 
     target_epsg_code = get_target_epsg_code([get_epsg_code(info) for info in raster_info.values()])
     if resolution is None:
