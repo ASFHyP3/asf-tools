@@ -57,6 +57,19 @@ def get_target_epsg_code(codes: List[int]) -> int:
     return target_hemisphere + target_zone
 
 
+def get_area_raster(raster: str) -> str:
+    '''Determine the path of the area raster for a given backscatter raster based on naming conventions for HyP3 RTC
+    products
+
+    Args:
+        raster: path of the backscatter raster, e.g. S1A_IW_20181102T155531_DVP_RTC30_G_gpuned_5685_VV.tif
+
+    Returns:
+        area_raster: path of the area raster, e.g. S1A_IW_20181102T155531_DVP_RTC30_G_gpuned_5685_area.tif
+    '''
+    return '_'.join(raster.split('_')[:-1] + ['area.tif'])
+
+
 def get_full_extent(raster_info: dict):
     upper_left_corners = [info['cornerCoordinates']['upperLeft'] for info in raster_info.values()]
     lower_right_corners = [info['cornerCoordinates']['lowerRight'] for info in raster_info.values()]
@@ -96,7 +109,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
                 xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
             )
 
-            area_raster = '_'.join(raster.split('_')[:-1] + ['area.tif'])
+            area_raster = get_area_raster(raster)
             logging.info(f"Reprojecting {area_raster}")
             reprojected_area_raster = os.path.join(directory, os.path.basename(area_raster))
             gdal.Warp(
@@ -189,7 +202,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
             values = rds.GetRasterBand(1).ReadAsArray()
             del rds  # How to close w/ gdal
 
-            area_raster = '_'.join(raster.split('_')[:-1] + ['area.tif'])
+            area_raster = get_area_raster(raster)
 
             logging.info(f"Reading area raster {area_raster}")
             ads = gdal.Open(area_raster)
