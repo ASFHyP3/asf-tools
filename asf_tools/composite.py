@@ -177,7 +177,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
         resolution = max([info['geoTransform'][1] for info in raster_info.values()])
 
     # resample infiles to maximum resolution & common UTM zone
-    with TemporaryDirectory() as temp_dir:
+    with TemporaryDirectory(prefix='reprojected_') as temp_dir:
         raster_info = reproject_to_target(raster_info, target_epsg_code=target_epsg_code, target_resolution=resolution,
                                           directory=temp_dir)
 
