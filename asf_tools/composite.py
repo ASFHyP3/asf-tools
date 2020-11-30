@@ -82,7 +82,7 @@ def get_full_extent(raster_info: dict):
     return (ulx, uly), (lrx, lry), trans, proj
 
 
-def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, dir: str) -> dict:
+def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, directory: str) -> dict:
     logging.info("Checking projections")
     target_raster_info = {}
     for raster, info in raster_info.items():
@@ -90,7 +90,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
         resolution = info['geoTransform'][1]
         if epsg_code != target_epsg_code or resolution != target_resolution:
             logging.info(f"Reprojecting {raster}")
-            reprojected_raster = os.path.join(dir, os.path.basename(raster))
+            reprojected_raster = os.path.join(directory, os.path.basename(raster))
             gdal.Warp(
                 reprojected_raster, raster, dstSRS=f'EPSG:{target_epsg_code}',
                 xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
@@ -98,7 +98,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
 
             area_raster = '_'.join(raster.split('_')[:-1] + ['area.tif'])
             logging.info(f"Reprojecting {area_raster}")
-            reprojected_area_raster = os.path.join(dir, os.path.basename(area_raster))
+            reprojected_area_raster = os.path.join(directory, os.path.basename(area_raster))
             gdal.Warp(
                 reprojected_area_raster, area_raster, dstSRS=f'EPSG:{target_epsg_code}',
                 xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
@@ -166,7 +166,7 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     # resample infiles to maximum resolution & common UTM zone
     with TemporaryDirectory() as temp_dir:
         raster_info = reproject_to_target(raster_info, target_epsg_code=target_epsg_code, target_resolution=resolution,
-                                          dir=temp_dir)
+                                          directory=temp_dir)
 
         # Get extent of union of all images
         full_ul, full_lr, full_trans, full_proj = get_full_extent(raster_info)
