@@ -31,7 +31,6 @@ setup(
     python_requires='~=3.8',
 
     install_requires=[
-        'hyp3lib==1.6.2',
         'numpy',
         'gdal',
     ],

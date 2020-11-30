@@ -18,7 +18,6 @@ dependencies:
   - pytest-console-scripts
   - pytest-cov
   # For running
-  - hyp3lib=1.6.2
   - numpy
   - gdal
   - pip:
