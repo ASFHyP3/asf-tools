@@ -140,43 +140,21 @@ def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection
     del out_raster  # How to close w/ gdal
 
 
-def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
+def make_composite(outfile, rasters=None, resolution=None):
 
     '''Create a composite mosaic of infiles using inverse area weighting to adjust backscatter'''
 
-    logging.info(f"make_composite: {outfile} {infiles} {path} {pol} {resolution}")
-    if pol is None:
-        pol = "VV"
-
-    # Establish input file list
-    if path:
-        logging.info("Searching for list of files to process")
-
-        # New format directory names
-        infiles_new = glob.glob(os.path.join(path, f"S1?_IW_*RTC*/*{pol}.tif"))
-
-        # Old format directory names
-        infiles_old = glob.glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif"))
-
-        infiles = infiles_new
-        infiles.extend(infiles_old)
-        cnt = len(infiles)
-        logging.info(f"Found {cnt} files to process")
-    else:
-        cnt = len(infiles)
-        logging.info(f"Found list of {cnt} input files to process")
-    infiles.sort()
-    logging.debug(f"Input files: {infiles}")
+    logging.info(f"make_composite: {outfile} {rasters} {resolution}")
 
     raster_info = {}
-    for fi in infiles:
+    for fi in rasters:
         raster_info[fi] = gdal.Info(fi, format='json')
 
     target_epsg_code = get_target_epsg_code([get_epsg_code(info) for info in raster_info.values()])
     if resolution is None:
         resolution = max([info['geoTransform'][1] for info in raster_info.values()])
 
-    # resample infiles to maximum resolution & common UTM zone
+    # resample rasters to maximum resolution & common UTM zone
     with TemporaryDirectory(prefix='reprojected_') as temp_dir:
         raster_info = reproject_to_target(raster_info, target_epsg_code=target_epsg_code, target_resolution=resolution,
                                           directory=temp_dir)
@@ -239,6 +217,14 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     logging.info("Program successfully completed")
 
 
+def get_rasters_from_path(path, pol):
+    # Establish input file list
+    rasters = glob.glob(os.path.join(path, f"S1?_IW_*RTC*/*{pol}.tif"))
+    rasters.append(glob.glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif")))
+
+    return rasters
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="make_composite.py",
@@ -263,4 +249,6 @@ def main():
     logging.getLogger().addHandler(logging.StreamHandler())
     logging.info("Starting run")
 
-    make_composite(args.outfile, args.infiles, args.path, args.pol, args.resolution)
+    rasters = get_rasters_from_path(args.path, args.pol) if args.path else args.infiles
+
+    make_composite(args.outfile, rasters, args.path)
