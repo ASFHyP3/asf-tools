@@ -50,3 +50,14 @@ def test_get_target_epsg_code():
         composite.get_target_epsg_code([32761])
     with pytest.raises(ValueError):
         composite.get_target_epsg_code([32601, 99, 32760])
+
+
+def test_get_area_raster():
+    raster = 'S1A_IW_20181102T155531_DVP_RTC30_G_gpuned_5685_VV.tif'
+    assert composite.get_area_raster(raster) == 'S1A_IW_20181102T155531_DVP_RTC30_G_gpuned_5685_area.tif'
+
+    raster = './foo/S1B_IW_20181104T030247_DVP_RTC30_G_gpuned_9F91_VH.tif'
+    assert composite.get_area_raster(raster) == './foo/S1B_IW_20181104T030247_DVP_RTC30_G_gpuned_9F91_area.tif'
+
+    raster = '/tmp/bar/S1B_IW_20181102T031956_DVP_RTC30_G_gpuned_1259_HH.tif'
+    assert composite.get_area_raster(raster) == '/tmp/bar/S1B_IW_20181102T031956_DVP_RTC30_G_gpuned_1259_area.tif'
