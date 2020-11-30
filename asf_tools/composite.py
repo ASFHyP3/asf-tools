@@ -58,7 +58,7 @@ def get_target_epsg_code(codes: List[int]) -> int:
 
 
 def get_area_raster(raster: str) -> str:
-    '''Determine the path of the area raster for a given backscatter raster based on naming conventions for HyP3 RTC
+    """Determine the path of the area raster for a given backscatter raster based on naming conventions for HyP3 RTC
     products
 
     Args:
@@ -66,7 +66,7 @@ def get_area_raster(raster: str) -> str:
 
     Returns:
         area_raster: path of the area raster, e.g. S1A_IW_20181102T155531_DVP_RTC30_G_gpuned_5685_area.tif
-    '''
+    """
     return '_'.join(raster.split('_')[:-1] + ['area.tif'])
 
 
@@ -219,7 +219,7 @@ def make_composite(outfile, rasters, resolution=None):
 def get_rasters_from_path(path, pol):
     # Establish input file list
     rasters = glob(os.path.join(path, f"S1?_IW_*RTC*/*{pol}.tif"))
-    rasters.append(glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif")))
+    rasters.extend(glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif")))
 
     return rasters
 
@@ -250,4 +250,4 @@ def main():
 
     rasters = get_rasters_from_path(args.path, args.pol) if args.path else args.infiles
 
-    make_composite(args.outfile, rasters, args.path)
+    make_composite(args.outfile, rasters, args.resolution)
