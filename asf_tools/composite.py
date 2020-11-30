@@ -50,7 +50,7 @@ def get_target_epsg_code(codes: List[int]) -> int:
 
     zones = sorted([c % 100 for c in codes])
     # if even length, choose fist of median two
-    target_zone = zones[len(zones) // 2]
+    target_zone = zones[(len(zones) - 1) // 2]
 
     return target_hemisphere + target_zone
 
