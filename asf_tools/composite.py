@@ -12,29 +12,48 @@ import argparse
 import glob
 import logging
 import os
+import statistics
+from typing import List
 
 import numpy as np
-from hyp3lib import saa_func_lib as saa
 from osgeo import gdal, osr
 
 
-def get_epsg_code(file_name):
-    info = gdal.Info(file_name, format='json')
+def get_epsg_code(info: dict) -> int:
+    """Get the EPSG code from a GDAL Info dictionary"""
     proj = osr.SpatialReference(info['coordinateSystem']['wkt'])
-    epsg_code = proj.GetAttrValue('AUTHORITY', 1)
-    return f'EPSG:{epsg_code}'
+    epsg_code = int(proj.GetAttrValue('AUTHORITY', 1))
+    return epsg_code
 
 
-def get_target_epsg_code(files):
-    epsg_codes = [get_epsg_code(f) for f in files]
+def get_target_epsg_code(codes: List[int]) -> int:
+    """Determine the target UTM EPSG projection for the output mosaic
 
+    Args:
+        codes: List of UTM EPSG codes
+
+    Returns:
+        target: UTM EPSG code
+    """
     # use median east/west UTM zone of all files, regardless of hemisphere
-    zones = [int(epsg_code[-2:]) for epsg_code in epsg_codes]
-    target_zone = int(np.median(zones))
+    # UTM EPSG codes for each hemisphere will look like:
+    #   North: 326XX
+    #   South: 327XX
+    code_array = np.array(codes)
+    valid_codes = np.concatenate([np.arange(32601, 32661), np.arange(32701, 32761)])
+    if not np.isin(code_array, valid_codes).all():
+        raise ValueError(f'Non UTM EPSG code encountered: {codes}')
+    hemispheres = code_array // 100 * 100
+    zones = code_array % 100
 
-    # use north/south hemisphere of first file
-    target_epsg_code = epsg_codes[0][:-2] + str(target_zone).zfill(2)
-    return target_epsg_code
+    # handle antimeridian
+    target_zone = int(statistics.median(zones % 60))
+    if target_zone == 0:
+        target_zone = 60
+
+    target_hemisphere = int(statistics.mode(hemispheres))
+
+    return target_hemisphere + target_zone
 
 
 def frange(start, stop=None, step=None):
@@ -53,88 +72,74 @@ def frange(start, stop=None, step=None):
         start = start + step
 
 
-def get_full_extent(corners):
-    """"Calculate the union of corners"""
-    min_ulx = 50000000
-    max_lrx = 0
-    max_uly = 0
-    min_lry = 50000000
+def get_full_extent(raster_info: dict):
+    upper_left_corners = [info['cornerCoordinates']['upperLeft'] for info in raster_info.values()]
+    lower_right_corners = [info['cornerCoordinates']['lowerRight'] for info in raster_info.values()]
 
-    for fi, ulx, lrx, lry, uly in corners:
-        logging.debug(f"{ulx,uly} {lrx,lry}")
-        min_ulx = min(ulx, min_ulx)
-        max_uly = max(uly, max_uly)
-        max_lrx = max(lrx, max_lrx)
-        min_lry = min(lry, min_lry)
+    ulx = min([ul[0] for ul in upper_left_corners])
+    uly = max([ul[1] for ul in upper_left_corners])
+    lrx = max([lr[0] for lr in lower_right_corners])
+    lry = min([lr[1] for lr in lower_right_corners])
 
-    logging.debug(f"Return is upper left: {min_ulx,max_uly}; lower right: {max_lrx,min_lry}")
-    return min_ulx, max_lrx, max_uly, min_lry
+    logging.debug(f"Full extent raster upper left: ({ulx, uly}); lower right: ({lrx, lry})")
 
+    trans = []
+    proj = ''
+    for info in raster_info.values():
+        # Only need info from any one raster
+        trans = info['geoTransform']
+        proj = info['coordinateSystem']['wkt']
+        break
 
-def get_max_pixel_size(files):
-    """Find maximum pixel size of given files"""
-    pix_size = -999
-    for fi in files:
-        (x1, y1, t1, p1) = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
-        tmp = t1[1]
-        pix_size = max(pix_size, tmp)
+    trans[0] = ulx
+    trans[3] = uly
 
-    if pix_size == -999:
-        raise Exception("No valid pixel sizes found")
-    return pix_size
+    return (ulx, uly), (lrx, lry), trans, proj
 
 
-def reproject_to_median_utm(files, pol, resolution=None):
-    """Reproject a bunch of UTM geotiffs to the median UTM zone.
-       Use either the given resolution or the largest resolution in the stack"""
-
-    if len(files) < 2:
-        return None
-
-    # Set the pixel size
-    if resolution:
-        pix_size = resolution
-        logging.info(f"Changing pixel size to {pix_size}")
-    else:
-        pix_size = get_max_pixel_size(files)
-        logging.info(f"Using maximum pixel size {pix_size}")
-
-    target_epsg_code = get_target_epsg_code(files)
-    logging.info(f"Target EPSG code is {target_epsg_code}")
-
-    # Reproject files as needed
+def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float) -> dict:
     logging.info("Checking projections")
-    new_files = []
-    for fi in files:
-        fi_name = os.path.split(fi)[1]
-        my_epsg_code = get_epsg_code(fi)
-        name = fi_name.replace(".tif", "_reproj.tif")
-        afi = fi.replace(f"_{pol}.tif", "_area.tif")
-        aname = fi_name.replace(f"_{pol}.tif", "_area_reproj.tif")
-        if not os.path.isfile(name):
-            x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(fi))
-            if my_epsg_code != target_epsg_code:
-                logging.info(f"Reprojecting {fi} to {name}")
-                gdal.Warp(name, fi, dstSRS=target_epsg_code, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
-                gdal.Warp(aname, afi, dstSRS=target_epsg_code, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
-                new_files.append(name)
-            elif x < pix_size:
-                # Need to reproject to desired resolution
-                logging.info(f"Changing resolution of {fi} to {pix_size}")
-                gdal.Warp(name, fi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
-                gdal.Warp(aname, afi, xRes=pix_size, yRes=pix_size, targetAlignedPixels=True)
-                new_files.append(name)
-            else:
-                logging.info(f"No reprojection needed; Linking {fi} to {name}")
-                os.symlink(fi, name)
-                os.symlink(afi, aname)
-                new_files.append(name)
-        else:
-            logging.info(f"Found previous reproj file {fi} - taking no action")
-            new_files.append(fi)
+    target_raster_info = {}
+    for raster, info in raster_info.items():
+        epsg_code = get_epsg_code(info)
+        resolution = info['geoTransform'][1]
+        if epsg_code != target_epsg_code or resolution != target_resolution:
+            logging.info(f"Reprojecting {raster}")
+            reprojected_raster = raster.replace('.tif', '.reproj.tif')
+            gdal.Warp(
+                reprojected_raster, raster, dstSRS=f'EPSG:{target_epsg_code}',
+                xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
+            )
 
-    logging.info("All files completed")
-    return new_files
+            area_raster = '_'.join(raster.split('_')[:-1] + ['area.tif'])
+            logging.info(f"Reprojecting {area_raster}")
+            reprojected_area_raster = area_raster.replace('.tif', '.reproj.tif')
+            gdal.Warp(
+                reprojected_area_raster, area_raster, dstSRS=f'EPSG:{target_epsg_code}',
+                xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
+            )
+
+            target_raster_info[reprojected_raster] = gdal.Info(reprojected_raster,  format='json')
+        else:
+            logging.info(f"No need to reproject {raster}")
+            target_raster_info[raster] = info
+
+    return target_raster_info
+
+
+def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection: str,
+              dtype=gdal.GDT_Float32, nodata_value=None):
+    driver = gdal.GetDriverByName('GTiff')
+    out_raster = driver.Create(
+        outfile, data.shape[1], data.shape[0], 1, dtype,
+        options=["TILED=YES", "COMPRESS=LZW", "INTERLEAVE=BAND"]
+    )
+    out_raster.GetRasterBand(1).WriteArray(data)
+    if nodata_value is not None:
+        out_raster.GetRasterBand(1).SetNoDataValue(nodata_value)
+    out_raster.SetGeoTransform(transform)
+    out_raster.SetProjection(projection)
+    del out_raster  # How to close w/ gdal
 
 
 def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
@@ -150,9 +155,9 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
         logging.info("Searching for list of files to process")
 
         # New format directory names
-        infiles_new = glob.glob(os.path.join(path, f"20*/S1?_IW_*RTC*/*{pol}.tif"))
+        infiles_new = glob.glob(os.path.join(path, f"S1?_IW_*RTC*/*{pol}.tif"))
 
-        # Old format diretory names
+        # Old format directory names
         infiles_old = glob.glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif"))
 
         infiles = infiles_new
@@ -165,82 +170,74 @@ def make_composite(outfile, infiles=None, path=None, pol=None, resolution=None):
     infiles.sort()
     logging.debug(f"Input files: {infiles}")
 
-    # resample infiles to maximum resolution & common UTM zone
-    resampled_files = reproject_to_median_utm(infiles, pol, resolution=resolution)
-    if len(resampled_files) == 0:
-        Exception("Unable to resample files")
+    raster_info = {}
+    for fi in infiles:
+        raster_info[fi] = gdal.Info(fi, format='json')
 
-    # Get pixel size
-    x, y, trans, proj = saa.read_gdal_file_geo(saa.open_gdal_file(resampled_files[0]))
-    pixel_size_x = trans[1]
-    pixel_size_y = trans[5]
-    logging.info(f"{resampled_files[0]} x = {pixel_size_x} y = {pixel_size_y}")
+    target_epsg_code = get_target_epsg_code([get_epsg_code(info) for info in raster_info.values()])
+    if resolution is None:
+        resolution = max([info['geoTransform'][1] for info in raster_info.values()])
+
+    # resample infiles to maximum resolution & common UTM zone
+    raster_info = reproject_to_target(raster_info, target_epsg_code=target_epsg_code, target_resolution=resolution)
 
     # Get extent of union of all images
-    extents = []
-    for fi in resampled_files:
-        ulx, lrx, lry, uly = saa.getCorners(fi)
-        extents.append([fi, ulx, lrx, lry, uly])
-    ulx, lrx, uly, lry = get_full_extent(extents)
+    full_ul, full_lr, full_trans, full_proj = get_full_extent(raster_info)
 
-    logging.info(f"Full extent of mosaic is {ulx,uly} to {lrx,lry}")
+    nx = int(abs(full_ul[0] - full_lr[0]) // resolution)
+    ny = int(abs(full_ul[1] - full_lr[1]) // resolution)
 
-    x_pixels = abs(int((ulx - lrx) / pixel_size_x))
-    y_pixels = abs(int((lry - uly) / pixel_size_y))
+    outputs = np.zeros((ny, nx))
+    weights = np.zeros(outputs.shape)
+    counts = np.zeros(outputs.shape, dtype=np.int8)
 
-    logging.info(f"Output size is {x_pixels} samples by {y_pixels} lines")
-
-    outputs = np.zeros((y_pixels, x_pixels))
-    weights = np.zeros((y_pixels, x_pixels))
-    counts = np.zeros((y_pixels, x_pixels), dtype=np.int8)
     logging.info("Calculating output values")
+    for raster, info in raster_info.items():
+        logging.info(f"Processing raster {raster}")
+        logging.info(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
+                     f"lower right: {info['cornerCoordinates']['lowerRight']}")
 
-    for fi, x_max, x_min, y_max, y_min in extents:
-        if pol in fi:
-            logging.info(f"Processing file {fi}")
-            logging.info(f"File covers {x_max,y_min} to {x_min,y_max}")
+        logging.info(f"Reading raster values {raster}")
+        rds = gdal.Open(raster)
+        values = rds.GetRasterBand(1).ReadAsArray()
+        del rds  # How to close w/ gdal
 
-            logging.info("Reading areas")
-            x_size, y_size, trans, proj, areas = saa.read_gdal_file(saa.open_gdal_file(fi.replace(f"_{pol}_reproj",
-                                                                                                  "_area_reproj")))
+        raster_split = raster.split('_')
+        raster_pol = raster_split[-1].split('.')[0]
+        area_suffix = raster_split[-1].replace(raster_pol, 'area')
+        area_raster = '_'.join(raster_split[:-1] + [area_suffix])
 
-            logging.info("Reading values")
-            x_size, y_size, trans, proj, values = saa.read_gdal_file(saa.open_gdal_file(fi))
+        logging.info(f"Reading area raster {area_raster}")
+        ads = gdal.Open(area_raster)
+        areas = ads.GetRasterBand(1).ReadAsArray()
+        del ads  # How to close w/ gdal
 
-            out_loc_x = (x_max - ulx) / pixel_size_x
-            out_loc_y = (y_min - uly) / pixel_size_y
-            end_loc_x = out_loc_x + x_size
-            end_loc_y = out_loc_y + y_size
+        ulx, uly = info['cornerCoordinates']['upperLeft']
+        y_index_start = int((full_ul[1] - uly) // resolution)
+        y_index_end = y_index_start + values.shape[0]
 
-            logging.info(f"Placing values in output grid at {int(out_loc_x)}:{int(end_loc_x)} "
-                         f"and {int(out_loc_y)}:{int(end_loc_y)}")
+        x_index_start = int((ulx - full_ul[0]) // resolution)
+        x_index_end = x_index_start + values.shape[1]
 
-            temp = 1.0/areas
-            temp[values == 0] = 0
-            mask = np.ones((y_size, x_size), dtype=np.uint8)
-            mask[values == 0] = 0
+        logging.info(
+            f"Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}"
+        )
 
-            outputs[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += values * temp
-            weights[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += temp
-            counts[int(out_loc_y):int(end_loc_y), int(out_loc_x):int(end_loc_x)] += mask
+        temp = 1.0/areas
+        temp[values == 0] = 0
+        mask = np.ones(values.shape, dtype=np.uint8)
+        mask[values == 0] = 0
+
+        outputs[y_index_start:y_index_end, x_index_start:x_index_end] += values * temp
+        weights[y_index_start:y_index_end, x_index_start:x_index_end] += temp
+        counts[y_index_start:y_index_end, x_index_start:x_index_end] += mask
 
     # Divide by the total weight applied
     outputs /= weights
 
-    # write out composite
     logging.info("Writing output files")
-
-    easting = ulx
-    weres = pixel_size_x
-    werotation = trans[2]
-    northing = uly
-    nsrotation = trans[4]
-    nsres = pixel_size_y
-
-    trans = (easting, weres, werotation, northing, nsrotation, nsres)
-
-    saa.write_gdal_file_float(outfile, trans, proj, outputs, nodata=0)
-    saa.write_gdal_file("counts.tif", trans, proj, counts.astype(np.int16))
+    write_cog(outfile, outputs, full_trans, full_proj, nodata_value=0)
+    write_cog(outfile.replace('.tif', '_counts.tif'), counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
 
     logging.info("Program successfully completed")
 
