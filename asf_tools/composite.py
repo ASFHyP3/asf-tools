@@ -133,7 +133,7 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
 
 def write_cog(file_name: str, data: np.ndarray, transform: List[float], projection: str,
               dtype=gdal.GDT_Float32, nodata_value=None):
-    logging.info(f"Writing {file_name}")
+    logging.info(f'Writing {file_name}')
 
     with NamedTemporaryFile() as temp_file:
         driver = gdal.GetDriverByName('GTiff')
@@ -145,7 +145,7 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
         temp_geotiff.SetProjection(projection)
 
         driver = gdal.GetDriverByName('COG')
-        driver.CreateCopy(file_name, temp_geotiff, options=["COMPRESS=LZW", "NUM_THREADS=ALL_CPUS"])
+        driver.CreateCopy(file_name, temp_geotiff, options=['COMPRESS=LZW', 'NUM_THREADS=ALL_CPUS', 'BIGTIFF=YES'])
 
         del temp_geotiff  # How to close w/ gdal
 
