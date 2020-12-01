@@ -21,6 +21,7 @@ from typing import List
 import numpy as np
 from osgeo import gdal, osr
 
+gdal.UseExceptions()
 log = logging.getLogger(__name__)
 
 
@@ -163,6 +164,8 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     raster_info = {}
     for raster in rasters:
         raster_info[raster] = gdal.Info(raster, format='json')
+        if not os.path.exists(area_raster := get_area_raster(raster)):
+            raise FileNotFoundError(f'Could not find area raster {area_raster}')
 
     target_epsg_code = get_target_epsg_code([get_epsg_code(info) for info in raster_info.values()])
     log.debug(f'Composite projection is EPSG:{target_epsg_code}')
