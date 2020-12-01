@@ -82,7 +82,7 @@ def get_full_extent(raster_info: dict):
     lrx = max([lr[0] for lr in lower_right_corners])
     lry = min([lr[1] for lr in lower_right_corners])
 
-    log.debug(f"Full extent raster upper left: ({ulx, uly}); lower right: ({lrx, lry})")
+    log.debug(f'Full extent raster upper left: ({ulx, uly}); lower right: ({lrx, lry})')
 
     trans = []
     proj = ''
@@ -99,13 +99,13 @@ def get_full_extent(raster_info: dict):
 
 
 def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, directory: str) -> dict:
-    log.info("Checking projections")
+    log.info('Checking projections')
     target_raster_info = {}
     for raster, info in raster_info.items():
         epsg_code = get_epsg_code(info)
         resolution = info['geoTransform'][1]
         if epsg_code != target_epsg_code or resolution != target_resolution:
-            log.info(f"Reprojecting {raster}")
+            log.info(f'Reprojecting {raster}')
             reprojected_raster = os.path.join(directory, os.path.basename(raster))
             gdal.Warp(
                 reprojected_raster, raster, dstSRS=f'EPSG:{target_epsg_code}',
@@ -113,7 +113,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
             )
 
             area_raster = get_area_raster(raster)
-            log.info(f"Reprojecting {area_raster}")
+            log.info(f'Reprojecting {area_raster}')
             reprojected_area_raster = os.path.join(directory, os.path.basename(area_raster))
             gdal.Warp(
                 reprojected_area_raster, area_raster, dstSRS=f'EPSG:{target_epsg_code}',
@@ -122,14 +122,14 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
 
             target_raster_info[reprojected_raster] = gdal.Info(reprojected_raster,  format='json')
         else:
-            log.info(f"No need to reproject {raster}")
+            log.info(f'No need to reproject {raster}')
             target_raster_info[raster] = info
 
     return target_raster_info
 
 
 def read_as_array(raster: str, band: int = 1) -> np.array:
-    log.debug(f"Reading raster values from {raster}")
+    log.debug(f'Reading raster values from {raster}')
     ds = gdal.Open(raster)
     data = ds.GetRasterBand(band).ReadAsArray()
     del ds  # How to close w/ gdal
@@ -191,7 +191,7 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
         counts = np.zeros(outputs.shape, dtype=np.int8)
 
         for raster, info in raster_info.items():
-            log.info(f"Processing raster {raster}")
+            log.info(f'Processing raster {raster}')
             log.debug(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
                       f"lower right: {info['cornerCoordinates']['lowerRight']}")
 
@@ -208,7 +208,7 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
             x_index_end = x_index_start + values.shape[1]
 
             log.debug(
-                f"Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}"
+                f'Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}'
             )
 
             mask = values == 0
