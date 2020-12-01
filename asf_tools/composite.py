@@ -197,20 +197,25 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
                 f"Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}"
             )
 
-            temp = 1.0/areas
-            temp[values == 0] = 0
-            mask = np.ones(values.shape, dtype=np.uint8)
-            mask[values == 0] = 0
+            mask = values == 0
+            raster_weights = 1.0 / areas
+            raster_weights[mask] = 0
 
-            outputs[y_index_start:y_index_end, x_index_start:x_index_end] += values * temp
-            weights[y_index_start:y_index_end, x_index_start:x_index_end] += temp
-            counts[y_index_start:y_index_end, x_index_start:x_index_end] += mask
+            outputs[y_index_start:y_index_end, x_index_start:x_index_end] += values * raster_weights
+            weights[y_index_start:y_index_end, x_index_start:x_index_end] += raster_weights
+            counts[y_index_start:y_index_end, x_index_start:x_index_end] += ~mask
+
+    del values, areas, mask, raster_weights
 
     # Divide by the total weight applied
     outputs /= weights
+    del weights
 
     write_cog(f'{out_name}.tif', outputs, full_trans, full_proj, nodata_value=0)
+    del outputs
+
     write_cog(f'{out_name}_counts.tif', counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
+    del counts
 
     logging.info("Program successfully completed")
 
