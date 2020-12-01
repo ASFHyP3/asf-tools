@@ -32,6 +32,12 @@ def get_epsg_code(info: dict) -> int:
     return epsg_code
 
 
+def epsg_to_wkt(epsg_code: int) -> str:
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(epsg_code)
+    return srs.ExportToWkt()
+
+
 def get_target_epsg_code(codes: List[int]) -> int:
     """Determine the target UTM EPSG projection for the output composite
 
@@ -82,20 +88,16 @@ def get_full_extent(raster_info: dict):
     lrx = max([lr[0] for lr in lower_right_corners])
     lry = min([lr[1] for lr in lower_right_corners])
 
-    log.debug(f"Full extent raster upper left: ({ulx, uly}); lower right: ({lrx, lry})")
+    return (ulx, uly), (lrx, lry)
 
-    trans = []
-    proj = ''
-    for info in raster_info.values():
-        # Only need info from any one raster
-        trans = info['geoTransform']
-        proj = info['coordinateSystem']['wkt']
-        break
 
-    trans[0] = ulx
-    trans[3] = uly
-
-    return (ulx, uly), (lrx, lry), trans, proj
+def reproject(reprojected_raster: str, raster: str, epsg_code: int, resolution: float) -> str:
+    log.info(f"Reprojecting {raster}")
+    gdal.Warp(
+        reprojected_raster, raster, dstSRS=f'EPSG:{epsg_code}',
+        xRes=resolution, yRes=resolution, targetAlignedPixels=True,
+    )
+    return reprojected_raster
 
 
 def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, directory: str) -> dict:
@@ -105,20 +107,12 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
         epsg_code = get_epsg_code(info)
         resolution = info['geoTransform'][1]
         if epsg_code != target_epsg_code or resolution != target_resolution:
-            log.info(f"Reprojecting {raster}")
             reprojected_raster = os.path.join(directory, os.path.basename(raster))
-            gdal.Warp(
-                reprojected_raster, raster, dstSRS=f'EPSG:{target_epsg_code}',
-                xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
-            )
+            reproject(reprojected_raster, raster, epsg_code, resolution)
 
             area_raster = get_area_raster(raster)
-            log.info(f"Reprojecting {area_raster}")
             reprojected_area_raster = os.path.join(directory, os.path.basename(area_raster))
-            gdal.Warp(
-                reprojected_area_raster, area_raster, dstSRS=f'EPSG:{target_epsg_code}',
-                xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
-            )
+            reproject(reprojected_area_raster, area_raster, epsg_code, resolution)
 
             target_raster_info[reprojected_raster] = gdal.Info(reprojected_raster,  format='json')
         else:
@@ -136,8 +130,8 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
     return data
 
 
-def write_cog(file_name: str, data: np.ndarray, transform: List[float], projection: str,
-              dtype=gdal.GDT_Float32, nodata_value=None):
+def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_code: int,
+              dtype=gdal.GDT_Float32, nodata_value=None) -> str:
     log.info(f'Creating {file_name}')
 
     with NamedTemporaryFile() as temp_file:
@@ -147,14 +141,29 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
         if nodata_value is not None:
             temp_geotiff.GetRasterBand(1).SetNoDataValue(nodata_value)
         temp_geotiff.SetGeoTransform(transform)
-        temp_geotiff.SetProjection(projection)
+        temp_geotiff.SetProjection(epsg_to_wkt(epsg_code))
 
         driver = gdal.GetDriverByName('COG')
         options = ['COMPRESS=LZW', 'OVERVIEW_RESAMPLING=AVERAGE', 'NUM_THREADS=ALL_CPUS', 'BIGTIFF=YES']
         driver.CreateCopy(file_name, temp_geotiff, options=options)
 
         del temp_geotiff  # How to close w/ gdal
-        return file_name
+
+    return file_name
+
+
+def get_raster_info(rasters: List[str]) -> dict:
+    raster_info = {}
+    for raster in rasters:
+        raster_info[raster] = gdal.Info(raster, format='json')
+        # make sure gdal can read the area raster
+        gdal.Info(get_area_raster(raster))
+    return raster_info
+
+
+def get_target_resolution(raster_info: dict) -> float:
+    resolutions = [info['geoTransform'][1] for info in raster_info.values()]
+    return max(resolutions)
 
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
@@ -162,17 +171,13 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     if not rasters:
         raise ValueError('Must specify at least one raster to composite')
 
-    raster_info = {}
-    for raster in rasters:
-        raster_info[raster] = gdal.Info(raster, format='json')
-        # make sure gdal can read the area raster
-        gdal.Info(get_area_raster(raster))
+    raster_info = get_raster_info(rasters)
 
     target_epsg_code = get_target_epsg_code([get_epsg_code(info) for info in raster_info.values()])
     log.debug(f'Composite projection is EPSG:{target_epsg_code}')
 
     if resolution is None:
-        resolution = max([info['geoTransform'][1] for info in raster_info.values()])
+        resolution = get_target_resolution(raster_info)
     log.debug(f'Composite resolution is {resolution} meters')
 
     # resample rasters to maximum resolution & common UTM zone
@@ -181,7 +186,7 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
                                           directory=temp_dir)
 
         # Get extent of union of all images
-        full_ul, full_lr, full_trans, full_proj = get_full_extent(raster_info)
+        full_ul, full_lr = get_full_extent(raster_info)
 
         nx = int(abs(full_ul[0] - full_lr[0]) // resolution)
         ny = int(abs(full_ul[1] - full_lr[1]) // resolution)
@@ -225,10 +230,12 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     outputs /= weights
     del weights
 
-    out_raster = write_cog(f'{out_name}.tif', outputs, full_trans, full_proj, nodata_value=0)
+    full_trans = raster_info[0]['geoTransform']
+
+    out_raster = write_cog(f'{out_name}.tif', outputs, full_trans, target_epsg_code, nodata_value=0)
     del outputs
 
-    out_counts_raster = write_cog(f'{out_name}_counts.tif', counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
+    out_counts_raster = write_cog(f'{out_name}_counts.tif', counts, full_trans, target_epsg_code, dtype=gdal.GDT_Int16)
     del counts
 
     return out_raster, out_counts_raster
