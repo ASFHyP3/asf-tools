@@ -97,7 +97,6 @@ def get_full_extent(raster_info: dict):
 
 
 def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, directory: str) -> dict:
-    log.info("Checking projections")
     target_raster_info = {}
     for raster, info in raster_info.items():
         epsg_code = get_epsg_code(info)
@@ -127,7 +126,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
 
 
 def read_as_array(raster: str, band: int = 1) -> np.array:
-    log.info(f"Reading raster values from {raster}")
+    log.debug(f"Reading raster values from {raster}")
     ds = gdal.Open(raster)
     data = ds.GetRasterBand(band).ReadAsArray()
     del ds  # How to close w/ gdal
@@ -136,7 +135,7 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
 
 def write_cog(file_name: str, data: np.ndarray, transform: List[float], projection: str,
               dtype=gdal.GDT_Float32, nodata_value=None):
-    log.info(f'Writing {file_name}')
+    log.info(f'Creating {file_name}')
 
     with NamedTemporaryFile() as temp_file:
         driver = gdal.GetDriverByName('GTiff')
@@ -161,8 +160,11 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
         raster_info[raster] = gdal.Info(raster, format='json')
 
     target_epsg_code = get_target_epsg_code([get_epsg_code(info) for info in raster_info.values()])
+    log.debug(f'Composite projection is EPSG:{target_epsg_code}')
+
     if resolution is None:
         resolution = max([info['geoTransform'][1] for info in raster_info.values()])
+    log.debug(f'Composite resolution is {resolution} meters')
 
     # resample rasters to maximum resolution & common UTM zone
     with TemporaryDirectory(prefix='reprojected_') as temp_dir:
@@ -179,11 +181,10 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
         weights = np.zeros(outputs.shape)
         counts = np.zeros(outputs.shape, dtype=np.int8)
 
-        log.info("Calculating output values")
         for raster, info in raster_info.items():
             log.info(f"Processing raster {raster}")
-            log.info(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
-                     f"lower right: {info['cornerCoordinates']['lowerRight']}")
+            log.debug(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
+                      f"lower right: {info['cornerCoordinates']['lowerRight']}")
 
             values = read_as_array(raster)
 
@@ -197,7 +198,7 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
             x_index_start = int((ulx - full_ul[0]) // resolution)
             x_index_end = x_index_start + values.shape[1]
 
-            log.info(
+            log.debug(
                 f"Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}"
             )
 
