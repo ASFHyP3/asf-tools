@@ -11,9 +11,9 @@
 import argparse
 import logging
 import os
+import sys
 from glob import glob
 from statistics import multimode
-from sys import argv
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import List
 
@@ -250,8 +250,8 @@ def main():
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=level)
-    log.debug(' '.join(argv))
+    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
+    log.debug(' '.join(sys.argv))
     log.info("Starting run")
 
     rasters = get_rasters_from_path(args.path, args.pol) if args.path else args.infiles
