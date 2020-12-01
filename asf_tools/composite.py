@@ -11,11 +11,10 @@
 import argparse
 import logging
 import os
-import statistics
 from glob import glob
+from statistics import multimode
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import List
-from datetime import datetime
 
 import numpy as np
 from osgeo import gdal, osr
@@ -41,19 +40,17 @@ def get_target_epsg_code(codes: List[int]) -> int:
     # UTM EPSG codes for each hemisphere will look like:
     #   North: 326XX
     #   South: 327XX
-    code_array = np.array(codes)
-    valid_codes = np.concatenate([np.arange(32601, 32661), np.arange(32701, 32761)])
-    if not np.isin(code_array, valid_codes).all():
-        raise ValueError(f'Non UTM EPSG code encountered: {codes}')
-    hemispheres = code_array // 100 * 100
-    zones = code_array % 100
+    valid_codes = list(range(32601, 32661)) + list(range(32701, 32761))
+    if bad_codes := set(codes) - set(valid_codes):
+        raise ValueError(f'Non UTM EPSG code encountered: {bad_codes}')
 
-    # handle antimeridian
-    target_zone = int(statistics.median(zones % 60))
-    if target_zone == 0:
-        target_zone = 60
+    hemispheres = [c // 100 * 100 for c in codes]
+    # if even modes, choose lowest (North)
+    target_hemisphere = min(multimode(hemispheres))
 
-    target_hemisphere = int(statistics.mode(hemispheres))
+    zones = sorted([c % 100 for c in codes])
+    # if even length, choose fist of median two
+    target_zone = zones[(len(zones) - 1) // 2]
 
     return target_hemisphere + target_zone
 
@@ -203,20 +200,25 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
                 f"Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}"
             )
 
-            temp = 1.0/areas
-            temp[values == 0] = 0
-            mask = np.ones(values.shape, dtype=np.uint8)
-            mask[values == 0] = 0
+            mask = values == 0
+            raster_weights = 1.0 / areas
+            raster_weights[mask] = 0
 
-            outputs[y_index_start:y_index_end, x_index_start:x_index_end] += values * temp
-            weights[y_index_start:y_index_end, x_index_start:x_index_end] += temp
-            counts[y_index_start:y_index_end, x_index_start:x_index_end] += mask
+            outputs[y_index_start:y_index_end, x_index_start:x_index_end] += values * raster_weights
+            weights[y_index_start:y_index_end, x_index_start:x_index_end] += raster_weights
+            counts[y_index_start:y_index_end, x_index_start:x_index_end] += ~mask
+
+    del values, areas, mask, raster_weights
 
     # Divide by the total weight applied
     outputs /= weights
+    del weights
 
     write_cog(f'{out_name}.tif', outputs, full_trans, full_proj, nodata_value=0)
+    del outputs
+
     write_cog(f'{out_name}_counts.tif', counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
+    del counts
 
     logging.info("Program successfully completed")
 

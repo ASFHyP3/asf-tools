@@ -24,14 +24,14 @@ def test_get_target_epsg_code():
 
     # both hemispheres
     assert composite.get_target_epsg_code([32601, 32702]) == 32601
-    assert composite.get_target_epsg_code([32702, 32601]) == 32701
+    assert composite.get_target_epsg_code([32702, 32601]) == 32601
 
     # Southern hemisphere
     assert composite.get_target_epsg_code([32760]) == 32760
-    assert composite.get_target_epsg_code([32730, 32732]) == 32731
+    assert composite.get_target_epsg_code([32730, 32732]) == 32730
 
     # antimeridian
-    assert composite.get_target_epsg_code([32701, 32760]) == 32760
+    assert composite.get_target_epsg_code([32701, 32760]) == 32701
     assert composite.get_target_epsg_code([32701, 32760, 32701]) == 32701
     assert composite.get_target_epsg_code([32701, 32760, 32760]) == 32760
 
