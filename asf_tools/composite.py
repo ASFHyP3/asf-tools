@@ -1,6 +1,6 @@
-"""Create a local resolution weighted composite from Sentinel-1 RTC products.
+"""Create a local-resolution-weighted composite from Sentinel-1 RTC products.
 
-Create a local resolution weighted composite from a set of Sentinel-1 RTC
+Create a local-resolution-weighted composite from a set of Sentinel-1 RTC
 products (D. Small, 2012). The local resolution, defined as the inverse of the
 local contributing (scattering) area, is used to weight each RTC products'
 contributions to the composite image on a pixel-by-pixel basis. The composite image
