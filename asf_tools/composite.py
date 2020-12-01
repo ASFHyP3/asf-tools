@@ -131,11 +131,12 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
     return data
 
 
-def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection: str,
+def write_cog(file_name: str, data: np.ndarray, transform: List[float], projection: str,
               dtype=gdal.GDT_Float32, nodata_value=None):
+    logging.info(f"Writing {file_name}")
     driver = gdal.GetDriverByName('GTiff')
     out_raster = driver.Create(
-        outfile, data.shape[1], data.shape[0], 1, dtype,
+        file_name, data.shape[1], data.shape[0], 1, dtype,
         options=["TILED=YES", "COMPRESS=LZW", "INTERLEAVE=BAND"]
     )
     out_raster.GetRasterBand(1).WriteArray(data)
@@ -146,10 +147,10 @@ def write_cog(outfile: str, data: np.ndarray, transform: List[float], projection
     del out_raster  # How to close w/ gdal
 
 
-def make_composite(outfile, rasters, resolution=None):
+def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     """Create a composite mosaic of rasters using inverse area weighting to adjust backscatter"""
 
-    logging.info(f"make_composite: {outfile} {rasters} {resolution}")
+    logging.info(f"make_composite: {out_name} {rasters} {resolution}")
 
     raster_info = {}
     for raster in rasters:
@@ -208,9 +209,8 @@ def make_composite(outfile, rasters, resolution=None):
     # Divide by the total weight applied
     outputs /= weights
 
-    logging.info("Writing output files")
-    write_cog(outfile, outputs, full_trans, full_proj, nodata_value=0)
-    write_cog(outfile.replace('.tif', '_counts.tif'), counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
+    write_cog(f'{out_name}.tif', outputs, full_trans, full_proj, nodata_value=0)
+    write_cog(f'{out_name}_counts.tif', counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
 
     logging.info("Program successfully completed")
 
@@ -230,7 +230,7 @@ def main():
         epilog="Output pixel values calculated using weights that are the inverse of the area."
     )
 
-    parser.add_argument("outfile", help="Name of output weighted mosaic geotiff file")
+    parser.add_argument("outname", help="Name of output weighted mosaic geotiff file (without extension)")
     parser.add_argument("--pol", choices=['VV', 'VH', 'HH', 'HV'], default='VV',
                         help="When using multi-pol data, only mosaic given polarization")
     parser.add_argument("-r", "--resolution", type=float, help="Desired output resolution")
@@ -249,4 +249,4 @@ def main():
 
     rasters = get_rasters_from_path(args.path, args.pol) if args.path else args.infiles
 
-    make_composite(args.outfile, rasters, args.resolution)
+    make_composite(args.outname, rasters, args.resolution)
