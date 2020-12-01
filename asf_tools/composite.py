@@ -2,7 +2,9 @@
 
 Create a composite mosaic from a set of Sentinel-1 RTC products using
 local area weighting (D. Small, 2012). Output pixel values are calculated using
-weights that are the inverse of the scattering area.
+weights that are the inverse of the scattering area. The mosaic is created as a
+Cloud Optimized GeoTIFF (COG). Additionally, a COG specifying the number of
+rasters contributing to each moasic pixel is created.
 
 References:
     David Small, 2012: https://doi.org/10.1109/IGARSS.2012.6350465
@@ -216,11 +218,15 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     outputs /= weights
     del weights
 
-    write_cog(f'{out_name}.tif', outputs, full_trans, full_proj, nodata_value=0)
+    out_raster = f'{out_name}.tif'
+    write_cog(out_raster, outputs, full_trans, full_proj, nodata_value=0)
     del outputs
 
-    write_cog(f'{out_name}_counts.tif', counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
+    out_counts_raster = f'{out_name}_counts.tif'
+    write_cog(out_counts_raster, counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
     del counts
+
+    return out_raster, out_counts_raster
 
 
 def main():
@@ -228,19 +234,20 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("out_name", help="Base name of output mosaic GeoTIFF (without extension)")
-    parser.add_argument("rasters", nargs='+', help="Sentinel-1 GeoTIFF rasters to mosaic")
-    parser.add_argument("-r", "--resolution", type=float,
-                        help="Desired output resolution in meters "
-                             "(default is the max resolution of all the input files)")
-    parser.add_argument("-v", "--verbose", action='store_true', help="Turn on verbose logging")
+    parser.add_argument('out_name', help='Base name of output mosaic GeoTIFF (without extension)')
+    parser.add_argument('rasters', nargs='+', help='Sentinel-1 GeoTIFF rasters to mosaic')
+    parser.add_argument('-r', '--resolution', type=float,
+                        help='Desired output resolution in meters '
+                             '(default is the max resolution of all the input files)')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
-    log.info("Starting run")
+    log.info(f'Creating mosaic of {len(args.rasters)} rasters')
 
-    make_composite(args.out_name, args.rasters, args.resolution)
+    raster, counts = make_composite(args.out_name, args.rasters, args.resolution)
 
-    log.info("Program successfully completed")
+    log.info(f'Moasic created successfully: {raster}')
+    log.info(f'Number of rasters contributing to each pixel: {counts}')
