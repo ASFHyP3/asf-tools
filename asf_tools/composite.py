@@ -1,10 +1,10 @@
-"""Create an inverse area weighted composite mosaic from Sentinel-1 RTC products.
+"""Create an inverse scattering area weighted composite from Sentinel-1 RTC products.
 
-Create a composite mosaic from a set of Sentinel-1 RTC products using
-local area weighting (D. Small, 2012). Output pixel values are calculated using
-weights that are the inverse of the scattering area. The mosaic is created as a
-Cloud Optimized GeoTIFF (COG). Additionally, a COG specifying the number of
-rasters contributing to each mosaic pixel is created.
+Create an inverse scattering area weighted composite from a set of Sentinel-1 RTC
+products (D. Small, 2012). Output pixel values are calculated using weights that
+are the inverse of the scattering area for that pixel. The composite image is
+created as a Cloud Optimized GeoTIFF (COG). Additionally, a COG specifying the
+number of rasters contributing to each composite pixel is created.
 
 References:
     David Small, 2012: https://doi.org/10.1109/IGARSS.2012.6350465
@@ -32,7 +32,7 @@ def get_epsg_code(info: dict) -> int:
 
 
 def get_target_epsg_code(codes: List[int]) -> int:
-    """Determine the target UTM EPSG projection for the output mosaic
+    """Determine the target UTM EPSG projection for the output composite
 
     Args:
         codes: List of UTM EPSG codes
@@ -156,9 +156,9 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
 
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
-    """Create a composite mosaic of rasters using inverse area weighting to adjust backscatter"""
+    """Create an inverse scattering area weighted composite from Sentinel-1 RTC products"""
     if not rasters:
-        raise ValueError('Must specify at least one raster to mosaic')
+        raise ValueError('Must specify at least one raster to composite')
 
     raster_info = {}
     for raster in rasters:
@@ -237,8 +237,8 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('out_name', help='Base name of output mosaic GeoTIFF (without extension)')
-    parser.add_argument('rasters', nargs='+', help='Sentinel-1 GeoTIFF rasters to mosaic')
+    parser.add_argument('out_name', help='Base name of output composite GeoTIFF (without extension)')
+    parser.add_argument('rasters', nargs='+', help='Sentinel-1 GeoTIFF rasters to composite')
     parser.add_argument('-r', '--resolution', type=float,
                         help='Desired output resolution in meters '
                              '(default is the max resolution of all the input files)')
@@ -248,9 +248,9 @@ def main():
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
-    log.info(f'Creating mosaic of {len(args.rasters)} rasters')
+    log.info(f'Creating a composite of {len(args.rasters)} rasters')
 
     raster, counts = make_composite(args.out_name, args.rasters, args.resolution)
 
-    log.info(f'Moasic created successfully: {raster}')
+    log.info(f'Composite created successfully: {raster}')
     log.info(f'Number of rasters contributing to each pixel: {counts}')
