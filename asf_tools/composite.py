@@ -154,6 +154,7 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
         driver.CreateCopy(file_name, temp_geotiff, options=options)
 
         del temp_geotiff  # How to close w/ gdal
+        return file_name
 
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
@@ -224,12 +225,10 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     outputs /= weights
     del weights
 
-    out_raster = f'{out_name}.tif'
-    write_cog(out_raster, outputs, full_trans, full_proj, nodata_value=0)
+    out_raster = write_cog(f'{out_name}.tif', outputs, full_trans, full_proj, nodata_value=0)
     del outputs
 
-    out_counts_raster = f'{out_name}_counts.tif'
-    write_cog(out_counts_raster, counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
+    out_counts_raster = write_cog(f'{out_name}_counts.tif', counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
     del counts
 
     return out_raster, out_counts_raster
