@@ -165,8 +165,8 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     raster_info = {}
     for raster in rasters:
         raster_info[raster] = gdal.Info(raster, format='json')
-        if not os.path.exists(area_raster := get_area_raster(raster)):
-            raise FileNotFoundError(f'Could not find area raster {area_raster}')
+        # make sure gdal can read the area raster
+        gdal.Info(get_area_raster(raster))
 
     target_epsg_code = get_target_epsg_code([get_epsg_code(info) for info in raster_info.values()])
     log.debug(f'Composite projection is EPSG:{target_epsg_code}')
