@@ -32,7 +32,7 @@ setup(
 
     install_requires=[
         'numpy',
-        'gdal',
+        'gdal>=3.2.0',
     ],
 
     extras_require={
