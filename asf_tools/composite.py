@@ -15,6 +15,7 @@ import statistics
 from glob import glob
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import List
+from datetime import datetime
 
 import numpy as np
 from osgeo import gdal, osr
@@ -147,7 +148,7 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
         temp_geotiff.SetProjection(projection)
 
         driver = gdal.GetDriverByName('COG')
-        driver.CreateCopy(file_name, temp_geotiff, options=["COMPRESS=LZW"])
+        driver.CreateCopy(file_name, temp_geotiff, options=["COMPRESS=LZW", "NUM_THREADS=ALL_CPUS"])
 
         del temp_geotiff  # How to close w/ gdal
 
