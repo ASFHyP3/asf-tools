@@ -4,7 +4,7 @@ Create a composite mosaic from a set of Sentinel-1 RTC products using
 local area weighting (D. Small, 2012). Output pixel values are calculated using
 weights that are the inverse of the scattering area. The mosaic is created as a
 Cloud Optimized GeoTIFF (COG). Additionally, a COG specifying the number of
-rasters contributing to each moasic pixel is created.
+rasters contributing to each mosaic pixel is created.
 
 References:
     David Small, 2012: https://doi.org/10.1109/IGARSS.2012.6350465
