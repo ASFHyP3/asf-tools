@@ -145,7 +145,8 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
         temp_geotiff.SetProjection(projection)
 
         driver = gdal.GetDriverByName('COG')
-        driver.CreateCopy(file_name, temp_geotiff, options=['COMPRESS=LZW', 'NUM_THREADS=ALL_CPUS', 'BIGTIFF=YES'])
+        options = ['COMPRESS=LZW', 'OVERVIEW_RESAMPLING=AVERAGE', 'NUM_THREADS=ALL_CPUS', 'BIGTIFF=YES']
+        driver.CreateCopy(file_name, temp_geotiff, options=options)
 
         del temp_geotiff  # How to close w/ gdal
 
