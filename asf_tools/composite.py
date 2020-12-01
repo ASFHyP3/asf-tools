@@ -1,18 +1,17 @@
-"""Create S1 SAR Composite Mosaic using inverse area weighting ala David Small.
+"""Create an inverse area weighted composite mosaic from Sentinel-1 RTC products.
 
-   Path vs infiles:
-     If path is passed, code assumes files are in an ASF HyP3 RTC Stacking arrangement.
-     i.e  {path}/20*/PRODUCT/ contains the input RTC data and the area maps or
-          {path}/S1?_IW_*RTC*/ contains the input RTC data and the area maps
+Create a composite mosaic from a set of Sentinel-1 RTC products using
+local area weighting (D. Small, 2012). Output pixel values are calculated using
+weights that are the inverse of the scattering area.
 
-
+References:
+    David Small, 2012: https://doi.org/10.1109/IGARSS.2012.6350465
 """
 
 import argparse
 import logging
 import os
 import sys
-from glob import glob
 from statistics import multimode
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import List
@@ -97,6 +96,7 @@ def get_full_extent(raster_info: dict):
 
 
 def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, directory: str) -> dict:
+    log.info("Checking projections")
     target_raster_info = {}
     for raster, info in raster_info.items():
         epsg_code = get_epsg_code(info)
@@ -223,31 +223,17 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     del counts
 
 
-def get_rasters_from_path(path, pol):
-    # Establish input file list
-    rasters = glob(os.path.join(path, f"S1?_IW_*RTC*/*{pol}.tif"))
-    rasters.extend(glob(os.path.join(path, f"20*/PRODUCT/*{pol}.tif")))
-
-    return rasters
-
-
 def main():
     parser = argparse.ArgumentParser(
-        prog="make_composite.py",
-        description="Create a weighted composite mosaic from a set of S-1 RTC products",
-        epilog="Output pixel values calculated using weights that are the inverse of the area."
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-
-    parser.add_argument("outname", help="Name of output weighted mosaic geotiff file (without extension)")
-    parser.add_argument("--pol", choices=['VV', 'VH', 'HH', 'HV'], default='VV',
-                        help="When using multi-pol data, only mosaic given polarization")
-    parser.add_argument("-r", "--resolution", type=float, help="Desired output resolution")
+    parser.add_argument("out_name", help="Base name of output mosaic GeoTIFF (without extension)")
+    parser.add_argument("rasters", nargs='+', help="Sentinel-1 GeoTIFF rasters to mosaic")
+    parser.add_argument("-r", "--resolution", type=float,
+                        help="Desired output resolution in meters "
+                             "(default is the max resolution of all the input files)")
     parser.add_argument("-v", "--verbose", action='store_true', help="Turn on verbose logging")
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-p", "--path", help="Name of directory where input stack is located")
-    group.add_argument("-i", "--infiles", nargs='*', help="Names of input series files")
-
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO
@@ -255,8 +241,6 @@ def main():
     log.debug(' '.join(sys.argv))
     log.info("Starting run")
 
-    rasters = get_rasters_from_path(args.path, args.pol) if args.path else args.infiles
-
-    make_composite(args.outname, rasters, args.resolution)
+    make_composite(args.out_name, args.rasters, args.resolution)
 
     log.info("Program successfully completed")
