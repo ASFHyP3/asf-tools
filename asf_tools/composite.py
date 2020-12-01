@@ -11,8 +11,8 @@
 import argparse
 import logging
 import os
-import statistics
 from glob import glob
+from statistics import multimode
 from tempfile import TemporaryDirectory
 from typing import List
 
@@ -40,19 +40,17 @@ def get_target_epsg_code(codes: List[int]) -> int:
     # UTM EPSG codes for each hemisphere will look like:
     #   North: 326XX
     #   South: 327XX
-    code_array = np.array(codes)
-    valid_codes = np.concatenate([np.arange(32601, 32661), np.arange(32701, 32761)])
-    if not np.isin(code_array, valid_codes).all():
-        raise ValueError(f'Non UTM EPSG code encountered: {codes}')
-    hemispheres = code_array // 100 * 100
-    zones = code_array % 100
+    valid_codes = list(range(32601, 32661)) + list(range(32701, 32761))
+    if bad_codes := set(codes) - set(valid_codes):
+        raise ValueError(f'Non UTM EPSG code encountered: {bad_codes}')
 
-    # handle antimeridian
-    target_zone = int(statistics.median(zones % 60))
-    if target_zone == 0:
-        target_zone = 60
+    hemispheres = [c // 100 * 100 for c in codes]
+    # if even modes, choose lowest (North)
+    target_hemisphere = min(multimode(hemispheres))
 
-    target_hemisphere = int(statistics.mode(hemispheres))
+    zones = sorted([c % 100 for c in codes])
+    # if even length, choose fist of median two
+    target_zone = zones[(len(zones) - 1) // 2]
 
     return target_hemisphere + target_zone
 
