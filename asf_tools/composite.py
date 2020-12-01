@@ -13,7 +13,7 @@ import logging
 import os
 import statistics
 from glob import glob
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import List
 
 import numpy as np
@@ -137,18 +137,20 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
               dtype=gdal.GDT_Float32, nodata_value=None):
     logging.info(f"Writing {file_name}")
 
-    driver = gdal.GetDriverByName('MEM')
-    out_raster = driver.Create('', data.shape[1], data.shape[0], 1, dtype)
-    out_raster.GetRasterBand(1).WriteArray(data)
-    if nodata_value is not None:
-        out_raster.GetRasterBand(1).SetNoDataValue(nodata_value)
-    out_raster.SetGeoTransform(transform)
-    out_raster.SetProjection(projection)
+    with NamedTemporaryFile() as temp_file:
+        driver = gdal.GetDriverByName('GTiff')
+        temp_geotiff = driver.Create(temp_file.name, data.shape[1], data.shape[0], 1, dtype)
+        temp_geotiff.GetRasterBand(1).WriteArray(data)
+        if nodata_value is not None:
+            temp_geotiff.GetRasterBand(1).SetNoDataValue(nodata_value)
+        temp_geotiff.SetGeoTransform(transform)
+        temp_geotiff.SetProjection(projection)
 
-    driver = gdal.GetDriverByName('COG')
-    driver.CreateCopy(file_name, out_raster, options=["COMPRESS=LZW"])
+        driver = gdal.GetDriverByName('COG')
+        driver.CreateCopy(file_name, temp_geotiff, options=["COMPRESS=LZW"])
 
-    del out_raster  # How to close w/ gdal
+        del temp_geotiff  # How to close w/ gdal
+
 
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
