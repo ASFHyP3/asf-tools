@@ -32,6 +32,12 @@ def get_epsg_code(info: dict) -> int:
     return epsg_code
 
 
+def epsg_to_wkt(epsg_code: int) -> str:
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(epsg_code)
+    return srs.ExportToWkt()
+
+
 def get_target_epsg_code(codes: List[int]) -> int:
     """Determine the target UTM EPSG projection for the output composite
 
@@ -85,17 +91,15 @@ def get_full_extent(raster_info: dict):
     log.debug(f"Full extent raster upper left: ({ulx, uly}); lower right: ({lrx, lry})")
 
     trans = []
-    proj = ''
     for info in raster_info.values():
         # Only need info from any one raster
         trans = info['geoTransform']
-        proj = info['coordinateSystem']['wkt']
         break
 
     trans[0] = ulx
     trans[3] = uly
 
-    return (ulx, uly), (lrx, lry), trans, proj
+    return (ulx, uly), (lrx, lry), trans
 
 
 def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, directory: str) -> dict:
@@ -136,7 +140,7 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
     return data
 
 
-def write_cog(file_name: str, data: np.ndarray, transform: List[float], projection: str,
+def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_code: int,
               dtype=gdal.GDT_Float32, nodata_value=None):
     log.info(f'Creating {file_name}')
 
@@ -147,7 +151,7 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
         if nodata_value is not None:
             temp_geotiff.GetRasterBand(1).SetNoDataValue(nodata_value)
         temp_geotiff.SetGeoTransform(transform)
-        temp_geotiff.SetProjection(projection)
+        temp_geotiff.SetProjection(epsg_to_wkt(epsg_code))
 
         driver = gdal.GetDriverByName('COG')
         options = ['COMPRESS=LZW', 'OVERVIEW_RESAMPLING=AVERAGE', 'NUM_THREADS=ALL_CPUS', 'BIGTIFF=YES']
@@ -181,7 +185,7 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
                                           directory=temp_dir)
 
         # Get extent of union of all images
-        full_ul, full_lr, full_trans, full_proj = get_full_extent(raster_info)
+        full_ul, full_lr, full_trans = get_full_extent(raster_info)
 
         nx = int(abs(full_ul[0] - full_lr[0]) // resolution)
         ny = int(abs(full_ul[1] - full_lr[1]) // resolution)
@@ -225,10 +229,10 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     outputs /= weights
     del weights
 
-    out_raster = write_cog(f'{out_name}.tif', outputs, full_trans, full_proj, nodata_value=0)
+    out_raster = write_cog(f'{out_name}.tif', outputs, full_trans, target_epsg_code, nodata_value=0)
     del outputs
 
-    out_counts_raster = write_cog(f'{out_name}_counts.tif', counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
+    out_counts_raster = write_cog(f'{out_name}_counts.tif', counts, full_trans, target_epsg_code, dtype=gdal.GDT_Int16)
     del counts
 
     return out_raster, out_counts_raster
