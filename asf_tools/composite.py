@@ -158,7 +158,7 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     """Create a composite mosaic of rasters using inverse area weighting to adjust backscatter"""
     if not rasters:
-        raise ValueError(f'Must specify at least one raster to mosaic')
+        raise ValueError('Must specify at least one raster to mosaic')
 
     raster_info = {}
     for raster in rasters:
