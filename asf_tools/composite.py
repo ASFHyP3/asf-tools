@@ -136,16 +136,18 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
 def write_cog(file_name: str, data: np.ndarray, transform: List[float], projection: str,
               dtype=gdal.GDT_Float32, nodata_value=None):
     logging.info(f"Writing {file_name}")
-    driver = gdal.GetDriverByName('GTiff')
-    out_raster = driver.Create(
-        file_name, data.shape[1], data.shape[0], 1, dtype,
-        options=["TILED=YES", "COMPRESS=LZW", "INTERLEAVE=BAND"]
-    )
+
+    driver = gdal.GetDriverByName('MEM')
+    out_raster = driver.Create('', data.shape[1], data.shape[0], 1, dtype)
     out_raster.GetRasterBand(1).WriteArray(data)
     if nodata_value is not None:
         out_raster.GetRasterBand(1).SetNoDataValue(nodata_value)
     out_raster.SetGeoTransform(transform)
     out_raster.SetProjection(projection)
+
+    driver = gdal.GetDriverByName('COG')
+    driver.CreateCopy(file_name, out_raster, options=["COMPRESS=LZW"])
+
     del out_raster  # How to close w/ gdal
 
 
