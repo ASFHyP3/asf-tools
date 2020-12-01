@@ -13,11 +13,14 @@ import logging
 import os
 from glob import glob
 from statistics import multimode
+from sys import argv
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import List
 
 import numpy as np
 from osgeo import gdal, osr
+
+log = logging.getLogger(__name__)
 
 
 def get_epsg_code(info: dict) -> int:
@@ -77,7 +80,7 @@ def get_full_extent(raster_info: dict):
     lrx = max([lr[0] for lr in lower_right_corners])
     lry = min([lr[1] for lr in lower_right_corners])
 
-    logging.debug(f"Full extent raster upper left: ({ulx, uly}); lower right: ({lrx, lry})")
+    log.debug(f"Full extent raster upper left: ({ulx, uly}); lower right: ({lrx, lry})")
 
     trans = []
     proj = ''
@@ -94,13 +97,13 @@ def get_full_extent(raster_info: dict):
 
 
 def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, directory: str) -> dict:
-    logging.info("Checking projections")
+    log.info("Checking projections")
     target_raster_info = {}
     for raster, info in raster_info.items():
         epsg_code = get_epsg_code(info)
         resolution = info['geoTransform'][1]
         if epsg_code != target_epsg_code or resolution != target_resolution:
-            logging.info(f"Reprojecting {raster}")
+            log.info(f"Reprojecting {raster}")
             reprojected_raster = os.path.join(directory, os.path.basename(raster))
             gdal.Warp(
                 reprojected_raster, raster, dstSRS=f'EPSG:{target_epsg_code}',
@@ -108,7 +111,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
             )
 
             area_raster = get_area_raster(raster)
-            logging.info(f"Reprojecting {area_raster}")
+            log.info(f"Reprojecting {area_raster}")
             reprojected_area_raster = os.path.join(directory, os.path.basename(area_raster))
             gdal.Warp(
                 reprojected_area_raster, area_raster, dstSRS=f'EPSG:{target_epsg_code}',
@@ -117,14 +120,14 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
 
             target_raster_info[reprojected_raster] = gdal.Info(reprojected_raster,  format='json')
         else:
-            logging.info(f"No need to reproject {raster}")
+            log.info(f"No need to reproject {raster}")
             target_raster_info[raster] = info
 
     return target_raster_info
 
 
 def read_as_array(raster: str, band: int = 1) -> np.array:
-    logging.info(f"Reading raster values from {raster}")
+    log.info(f"Reading raster values from {raster}")
     ds = gdal.Open(raster)
     data = ds.GetRasterBand(band).ReadAsArray()
     del ds  # How to close w/ gdal
@@ -133,7 +136,7 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
 
 def write_cog(file_name: str, data: np.ndarray, transform: List[float], projection: str,
               dtype=gdal.GDT_Float32, nodata_value=None):
-    logging.info(f'Writing {file_name}')
+    log.info(f'Writing {file_name}')
 
     with NamedTemporaryFile() as temp_file:
         driver = gdal.GetDriverByName('GTiff')
@@ -153,9 +156,6 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], projecti
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     """Create a composite mosaic of rasters using inverse area weighting to adjust backscatter"""
-
-    logging.info(f"make_composite: {out_name} {rasters} {resolution}")
-
     raster_info = {}
     for raster in rasters:
         raster_info[raster] = gdal.Info(raster, format='json')
@@ -179,11 +179,11 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
         weights = np.zeros(outputs.shape)
         counts = np.zeros(outputs.shape, dtype=np.int8)
 
-        logging.info("Calculating output values")
+        log.info("Calculating output values")
         for raster, info in raster_info.items():
-            logging.info(f"Processing raster {raster}")
-            logging.info(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
-                         f"lower right: {info['cornerCoordinates']['lowerRight']}")
+            log.info(f"Processing raster {raster}")
+            log.info(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
+                     f"lower right: {info['cornerCoordinates']['lowerRight']}")
 
             values = read_as_array(raster)
 
@@ -197,7 +197,7 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
             x_index_start = int((ulx - full_ul[0]) // resolution)
             x_index_end = x_index_start + values.shape[1]
 
-            logging.info(
+            log.info(
                 f"Placing values in output grid at {y_index_start}:{y_index_end} and {x_index_start}:{x_index_end}"
             )
 
@@ -221,8 +221,6 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     write_cog(f'{out_name}_counts.tif', counts, full_trans, full_proj, dtype=gdal.GDT_Int16)
     del counts
 
-    logging.info("Program successfully completed")
-
 
 def get_rasters_from_path(path, pol):
     # Establish input file list
@@ -243,6 +241,7 @@ def main():
     parser.add_argument("--pol", choices=['VV', 'VH', 'HH', 'HV'], default='VV',
                         help="When using multi-pol data, only mosaic given polarization")
     parser.add_argument("-r", "--resolution", type=float, help="Desired output resolution")
+    parser.add_argument("-v", "--verbose", action='store_true', help="Turn on verbose logging")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-p", "--path", help="Name of directory where input stack is located")
@@ -250,12 +249,13 @@ def main():
 
     args = parser.parse_args()
 
-    logFile = "make_composite_{}.log".format(os.getpid())
-    logging.basicConfig(filename=logFile, format='%(asctime)s - %(levelname)s - %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
-    logging.getLogger().addHandler(logging.StreamHandler())
-    logging.info("Starting run")
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=level)
+    log.debug(' '.join(argv))
+    log.info("Starting run")
 
     rasters = get_rasters_from_path(args.path, args.pol) if args.path else args.infiles
 
     make_composite(args.outname, rasters, args.resolution)
+
+    log.info("Program successfully completed")
