@@ -1,10 +1,11 @@
-"""Create an inverse scattering area weighted composite from Sentinel-1 RTC products.
+"""Create a local-resolution-weighted composite from Sentinel-1 RTC products.
 
-Create an inverse scattering area weighted composite from a set of Sentinel-1 RTC
-products (D. Small, 2012). Output pixel values are calculated using weights that
-are the inverse of the scattering area for that pixel. The composite image is
-created as a Cloud Optimized GeoTIFF (COG). Additionally, a COG specifying the
-number of rasters contributing to each composite pixel is created.
+Create a local-resolution-weighted composite from a set of Sentinel-1 RTC
+products (D. Small, 2012). The local resolution, defined as the inverse of the
+local contributing (scattering) area, is used to weight each RTC products'
+contributions to the composite image on a pixel-by-pixel basis. The composite image
+is created as a Cloud Optimized GeoTIFF (COG). Additionally, a COG specifying
+the number of rasters contributing to each composite pixel is created.
 
 References:
     David Small, 2012: https://doi.org/10.1109/IGARSS.2012.6350465
@@ -161,7 +162,7 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_cod
 
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
-    """Create an inverse scattering area weighted composite from Sentinel-1 RTC products"""
+    """Create a local resolution (inverse scattering area) weighted composite from Sentinel-1 RTC products"""
     if not rasters:
         raise ValueError('Must specify at least one raster to composite')
 
