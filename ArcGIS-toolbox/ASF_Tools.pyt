@@ -1100,7 +1100,7 @@ class RGBWaterMask(object):
 
         elif parameters[1].value == "High Wind Conditions":
             parameters[2].value = 5
-            parameters[3].value = 65
+            parameters[3].value = 105
             parameters[4].value = 0
 
         else:
