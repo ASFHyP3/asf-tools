@@ -85,11 +85,11 @@ def test_get_full_extents():
     data = {}
 
     data['a'] = {
-        'geoTransform': [10.0, 2.0, 0.0, 40.0, 0.0, -2.0],
         'cornerCoordinates': {
             'upperLeft': [10.0, 130.0],
             'lowerRight': [110.0, 30.0],
         },
+        'geoTransform': [10.0, 2.0, 0.0, 40.0, 0.0, -2.0],
     }
 
     expected_upper_left = (10.0, 130.0)
@@ -98,11 +98,11 @@ def test_get_full_extents():
     assert composite.get_full_extent(data) == (expected_upper_left, expected_lower_right, expected_geotransform)
 
     data['b'] = {
-        'geoTransform': [20.0, 1.0, 12.0, 140.0, 13.0, -1.0],
         'cornerCoordinates': {
             'upperLeft': [20.0, 140.0],
             'lowerRight': [120.0, 40.0],
         },
+        'geoTransform': [20.0, 1.0, 12.0, 140.0, 13.0, -1.0],
     }
 
     expected_upper_left = (10.0, 140.0)
