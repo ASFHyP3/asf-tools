@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 from osgeo import gdal
@@ -130,3 +132,44 @@ def test_write_cog(tmp_path):
     assert 'overviews' in info['bands'][0]
     assert info['metadata']['IMAGE_STRUCTURE']['LAYOUT'] == 'COG'
     assert info['metadata']['IMAGE_STRUCTURE']['COMPRESSION'] == 'LZW'
+
+
+def test_make_composite(tmp_path):
+    epsg_code = 32601
+    area = np.ones((2, 2))
+
+    data1 = np.ones((2, 2))
+    geotransform1 = [0.0, 30.0, 0.0, 60.0, 0.0, -30.0]
+    file1 = str(tmp_path / 'file1_vv.tif')
+    composite.write_cog(file1, data1, geotransform1, epsg_code)
+
+    area1 = str(tmp_path / 'file1_area.tif')
+    composite.write_cog(area1, area, geotransform1, epsg_code)
+
+    data2 = data1 * 3
+    geotransform2 = [30.0, 30.0, 0.0, 30.0, 0.0, -30.0]
+    file2 = str(tmp_path / 'file2_vv.tif')
+    composite.write_cog(file2, data2, geotransform2, epsg_code)
+
+    area2 = str(tmp_path / 'file2_area.tif')
+    composite.write_cog(area2, area, geotransform2, epsg_code)
+
+    out_file, count_file = composite.make_composite('out', [file1, file2])
+    assert Path(out_file).exists()
+    assert Path(count_file).exists()
+
+    data = np.ma.masked_invalid(composite.read_as_array(out_file)).filled(0)
+    expected = np.array([
+        [1, 1, 0],
+        [1, 2, 3],
+        [0, 3, 3],
+    ])
+    assert np.allclose(data, expected)
+
+    counts = composite.read_as_array(count_file)
+    expected = np.array([
+        [1, 1, 0],
+        [1, 2, 1],
+        [0, 1, 1],
+    ])
+    assert np.allclose(counts, expected)
