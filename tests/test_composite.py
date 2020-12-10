@@ -159,7 +159,7 @@ def test_make_composite(tmp_path):
         [1, 3, 1, 1],
         [1, 2, 1, 1],
     ])
-    composite.write_cog('second_data.tif', data, transform, epsg_code, nodata_value=0)
+    composite.write_cog('second_data.tif', data, transform, epsg_code)
     composite.write_cog('second_area.tif', area, transform, epsg_code)
 
     out_file, count_file = composite.make_composite('out', ['first_data.tif', 'second_data.tif'])
