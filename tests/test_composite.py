@@ -169,11 +169,11 @@ def test_make_composite(tmp_path):
     assert os.path.exists(out_file)
     assert os.path.exists(count_file)
 
-    data = np.ma.masked_invalid(composite.read_as_array(out_file)).filled(0)
+    data = np.nan_to_num(composite.read_as_array(out_file))
     expected = np.array([
-        [1, 0, 1, 0],
+        [1, 0,   1, 0],
         [1, 2, 1.5, 3],
-        [0, 3, 3, 3],
+        [0, 3,   3, 3],
     ])
     assert np.allclose(data, expected)
 
