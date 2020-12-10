@@ -140,8 +140,8 @@ def test_make_composite(tmp_path):
 
     transform = [0.0, 30.0, 0.0, 60.0, 0.0, -30.0]
     data = np.array([
-        [1, 0, 1, 1],
-        [1, 0, 1, 1],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
     ])
     area = np.array([
         [1, 1, 1, 1],
@@ -152,12 +152,12 @@ def test_make_composite(tmp_path):
 
     transform = [30.0, 30.0, 0.0, 30.0, 0.0, -30.0]
     data = np.array([
-        [3, 3, 3, 3],
-        [3, 3, 3, 3],
+        [3, 0, 3, 3],
+        [3, 0, 3, 3],
     ])
     area = np.array([
-        [1, 3, 1, 1],
-        [1, 2, 1, 1],
+        [1, 1, 3, 1],
+        [1, 1, 2, 1],
     ])
     composite.write_cog('second_data.tif', data, transform, epsg_code)
     composite.write_cog('second_area.tif', area, transform, epsg_code)
@@ -171,16 +171,16 @@ def test_make_composite(tmp_path):
 
     data = np.nan_to_num(composite.read_as_array(out_file))
     expected = np.array([
-        [1, 0,   1, 1, 0],
-        [1, 3, 1.5, 2, 3],
-        [0, 3,   3, 3, 3],
+        [1, 1, 1,   1, 0],
+        [1, 2, 1, 1.5, 3],
+        [0, 3, 0,   3, 3],
     ])
     assert np.allclose(data, expected)
 
     counts = composite.read_as_array(count_file)
     expected = np.array([
-        [1, 0, 1, 1, 0],
-        [1, 1, 2, 2, 1],
-        [0, 1, 1, 1, 1],
+        [1, 1, 1, 1, 0],
+        [1, 2, 1, 2, 1],
+        [0, 1, 0, 1, 1],
     ])
     assert np.allclose(counts, expected)
