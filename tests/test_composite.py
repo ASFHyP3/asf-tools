@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pytest
 from osgeo import gdal
@@ -130,3 +132,55 @@ def test_write_cog(tmp_path):
     assert 'overviews' in info['bands'][0]
     assert info['metadata']['IMAGE_STRUCTURE']['LAYOUT'] == 'COG'
     assert info['metadata']['IMAGE_STRUCTURE']['COMPRESSION'] == 'LZW'
+
+
+def test_make_composite(tmp_path):
+    os.chdir(tmp_path)
+    epsg_code = 32601
+
+    transform = [0.0, 30.0, 0.0, 60.0, 0.0, -30.0]
+    data = np.array([
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+    ])
+    area = np.array([
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+    ])
+    composite.write_cog('first_data.tif', data, transform, epsg_code, nodata_value=0)
+    composite.write_cog('first_area.tif', area, transform, epsg_code)
+
+    transform = [30.0, 30.0, 0.0, 30.0, 0.0, -30.0]
+    data = np.array([
+        [3, 0, 3, 3],
+        [3, 0, 3, 3],
+    ])
+    area = np.array([
+        [1, 1, 3, 1],
+        [1, 1, 2, 1],
+    ])
+    composite.write_cog('second_data.tif', data, transform, epsg_code)
+    composite.write_cog('second_area.tif', area, transform, epsg_code)
+
+    out_file, count_file = composite.make_composite('out', ['first_data.tif', 'second_data.tif'])
+
+    assert out_file == 'out.tif'
+    assert count_file == 'out_counts.tif'
+    assert os.path.exists(out_file)
+    assert os.path.exists(count_file)
+
+    data = np.nan_to_num(composite.read_as_array(out_file))
+    expected = np.array([
+        [1, 1, 1,   1, 0],
+        [1, 2, 1, 1.5, 3],
+        [0, 3, 0,   3, 3],
+    ])
+    assert np.allclose(data, expected)
+
+    counts = composite.read_as_array(count_file)
+    expected = np.array([
+        [1, 1, 1, 1, 0],
+        [1, 2, 1, 2, 1],
+        [0, 1, 0, 1, 1],
+    ])
+    assert np.allclose(counts, expected)
