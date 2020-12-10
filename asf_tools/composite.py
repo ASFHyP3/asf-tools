@@ -158,7 +158,7 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_cod
         driver.CreateCopy(file_name, temp_geotiff, options=options)
 
         del temp_geotiff  # How to close w/ gdal
-        return file_name
+    return file_name
 
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):

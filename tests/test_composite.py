@@ -1,4 +1,6 @@
+import numpy as np
 import pytest
+from osgeo import gdal
 
 from asf_tools import composite
 
@@ -109,3 +111,22 @@ def test_get_full_extents():
     expected_lower_right = (120.0, 30.0)
     expected_geotransform = [10.0, 2.0, 0.0, 140.0, 0.0, -2.0]
     assert composite.get_full_extent(data) == (expected_upper_left, expected_lower_right, expected_geotransform)
+
+
+def test_write_cog(tmp_path):
+    outfile = tmp_path / 'out.tif'
+    data = np.ones((1024, 1024))
+    transform = [10.0, 0.0, 1.0, 20.0, 0.0, -1.0]
+    epsg_code = 4326
+
+    result = composite.write_cog(str(outfile), data, transform, epsg_code)
+    assert result == str(outfile)
+    assert outfile.exists()
+
+    info = gdal.Info(result, format='json')
+    assert info['geoTransform'] == transform
+    assert info['driverShortName'] == 'GTiff'
+    assert info['size'] == [1024, 1024]
+    assert 'overviews' in info['bands'][0]
+    assert info['metadata']['IMAGE_STRUCTURE']['LAYOUT'] == 'COG'
+    assert info['metadata']['IMAGE_STRUCTURE']['COMPRESSION'] == 'LZW'
