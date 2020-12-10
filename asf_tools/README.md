@@ -37,12 +37,12 @@ You will need to request RTC products using the `Include Scattering Area` option
 
 To generate a composite of the co-polarization images, navigate to the directory containing the unzipped RTC products and run:
 ```
-make_composite composite.tif */*VV.tif
+make_composite VV-composite.tif */*VV.tif
 ```
 
 To generate a composite of the cross-polarization images, navigate to the directory containing the unzipped RTC products and run:
 ```
-make_composite composite.tif */*VH.tif
+make_composite VH-composite.tif */*VH.tif
 ```
 
 ## Documentation
