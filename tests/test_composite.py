@@ -156,8 +156,8 @@ def test_make_composite(tmp_path):
         [3, 3, 3, 3],
     ])
     area = np.array([
-        [1, 3, 1, 3],
-        [1, 2, 1, 3],
+        [1, 3, 1, 1],
+        [1, 2, 1, 1],
     ])
     composite.write_cog('second_data.tif', data, transform, epsg_code, nodata_value=0)
     composite.write_cog('second_area.tif', area, transform, epsg_code)
