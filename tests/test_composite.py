@@ -147,7 +147,7 @@ def test_make_composite(tmp_path):
         [1, 1, 1],
         [1, 1, 1],
     ])
-    composite.write_cog('first_vv.tif', data, transform, epsg_code, nodata_value=0)
+    composite.write_cog('first_data.tif', data, transform, epsg_code, nodata_value=0)
     composite.write_cog('first_area.tif', area, transform, epsg_code)
 
     transform = [30.0, 30.0, 0.0, 30.0, 0.0, -30.0]
@@ -159,10 +159,10 @@ def test_make_composite(tmp_path):
         [1, 3, 1],
         [1, 2, 1],
     ])
-    composite.write_cog('second_vv.tif', data, transform, epsg_code, nodata_value=0)
+    composite.write_cog('second_data.tif', data, transform, epsg_code, nodata_value=0)
     composite.write_cog('second_area.tif', area, transform, epsg_code)
 
-    out_file, count_file = composite.make_composite('out', ['first_vv.tif', 'second_vv.tif'])
+    out_file, count_file = composite.make_composite('out', ['first_data.tif', 'second_data.tif'])
 
     assert out_file == 'out.tif'
     assert count_file == 'out_counts.tif'
