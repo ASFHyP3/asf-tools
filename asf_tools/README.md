@@ -45,6 +45,13 @@ To generate a composite of the cross-polarization images, navigate to the direct
 make_composite VH-composite */*VH.tif
 ```
 
+#### Usage Tip
+Because the imagery has been radiometrically terrain corrected (RTC), geometric and radiometric distortions have been removed from the files to be composited.  One the strong points of LRW composites is that you combine both ascending and descending datatakes into a single product.  In this manner no layover or shadow masks are required - what is shadowed on an ascending pass is visible in a descending pass and vice-versa.  Thus, not only is it possible to combine ascending and descending, but it is highly encouraged.  Using many datatakes from both the ascending and descending satellite passes will make the best composites possible.
+
+#### About Local Resolution Weighting (LRW)
+In an LRW composite, each satellite pass contributes to creating the output pixels.  The amount of this contribution is scaled by the inverse of the scattering area used during terrain correction (thus the need for requesting the area map option of HyP3 RTC).  The inverse of the surface scattering area, also referred to as local resolution, is multiplied by each pixel's backscatter value.  The results of all of the images covering any single pixel are then summed. This total is then divided by the sum of the weights used to get the output average backscatter.
+
+
 ## Documentation
 
 For advanced usage and the `asf_tools` API Reference, see the 
