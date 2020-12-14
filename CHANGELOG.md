@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0](https://github.com/ASFHyP3/asf-tools/compare/v0.1.1...v0.2.0)
 
 ### Added
 * The `asf_tools` python package for working with Synthetic Aperture Radar (SAR) data. 
@@ -18,7 +18,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * This repository moved from `ASFHyP3/GIS-tools` to [`ASFHyP3/asf-tools`](https://github.com/ASFHyP3/asf-tools) 
   due to the broadening scope of the tools contained here
 
-## [0.1.1](https://github.com/ASFHyP3/asf-tools/compare/v0.0.0...v0.1.0)
+## [0.1.1](https://github.com/ASFHyP3/asf-tools/compare/v0.1.0...v0.1.1)
 
 ### Added
 * Information and links to [On Demand RTC Processing](https://asfhyp3.github.io/using/vertex/) 
