@@ -187,7 +187,7 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
 
 def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_code: int,
               dtype=gdal.GDT_Float32, nodata_value=None):
-    """Creates a cloud optimized GeoTIFF
+    """Creates a Cloud Optimized GeoTIFF
 
     Args:
         file_name: The output file name
