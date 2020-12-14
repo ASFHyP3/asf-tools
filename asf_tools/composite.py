@@ -27,13 +27,28 @@ log = logging.getLogger(__name__)
 
 
 def get_epsg_code(info: dict) -> int:
-    """Get the EPSG code from a GDAL Info dictionary"""
+    """Get the EPSG code from a GDAL Info dictionary
+
+    Args:
+        info: The dictionary returned by a gdal.Info call
+
+    Returns:
+        epsg_code: The integer EPSG code
+    """
     proj = osr.SpatialReference(info['coordinateSystem']['wkt'])
     epsg_code = int(proj.GetAttrValue('AUTHORITY', 1))
     return epsg_code
 
 
 def epsg_to_wkt(epsg_code: int) -> str:
+    """Get the WKT representation of a projection from its EPSG code
+
+    Args:
+        epsg_code: The integer EPSG code
+
+    Returns:
+        wkt: The WKT representation of the projection
+    """
     srs = osr.SpatialReference()
     srs.ImportFromEPSG(epsg_code)
     return srs.ExportToWkt()
@@ -81,6 +96,16 @@ def get_area_raster(raster: str) -> str:
 
 
 def get_full_extent(raster_info: dict):
+    """Determine the corner coordinates and geotransform for the full extent of a set of rasters
+
+    Args:
+        raster_info: A dictionary of gdal.Info results for the set of rasters
+
+    Returns:
+        upper_left: The upper left corner of the extent as a tuple
+        upper_right: The lower right corner of the extent as a tuple
+        geotransform: The geotransform of the extent as a list
+    """
     upper_left_corners = [info['cornerCoordinates']['upperLeft'] for info in raster_info.values()]
     lower_right_corners = [info['cornerCoordinates']['lowerRight'] for info in raster_info.values()]
 
@@ -162,7 +187,17 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_cod
 
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
-    """Create a local resolution (inverse scattering area) weighted composite from Sentinel-1 RTC products"""
+    """Creates a local-resolution-weighted composite from Sentinel-1 RTC products
+
+    Args:
+        out_name: The base name of the output GeoTIFFs
+        rasters: A list of file paths to the images to composite
+        resolution: The pixel size for the output GeoTIFFs
+
+    Returns:
+        out_raster: Path to the created composite backscatter GeoTIFF
+        out_counts_raster: Path to the created GeoTIFF with counts of scenes contributing to each pixel
+    """
     if not rasters:
         raise ValueError('Must specify at least one raster to composite')
 
