@@ -50,19 +50,3 @@ Because the imagery has been radiometrically terrain corrected (RTC), geometric 
 
 #### About Local Resolution Weighting (LRW)
 In an LRW composite, each satellite pass contributes to creating the output pixels.  The amount of this contribution is scaled by the inverse of the scattering area used during terrain correction (thus the need for requesting the area map option of HyP3 RTC).  The inverse of the surface scattering area, also referred to as local resolution, is multiplied by each pixel's backscatter value.  The results of all of the images covering any single pixel are then summed. This total is then divided by the sum of the weights used to get the output average backscatter.
-
-
-## Documentation
-
-For advanced usage and the `asf_tools` API Reference, see the 
-[documentation](https://hyp3-docs.asf.alaska.edu/tools/asf_tools/)
-
-## Contact Us
-
-Want to talk about the `asf_tools`? We would love to hear from you!
-
-Found a bug? Want to request a feature?
-[open an issue](https://github.com/ASFHyP3/asf_tools/issues/new)
-
-General questions? Suggestions? Or just want to talk to the team?
-[chat with us on gitter](https://gitter.im/ASFHyP3/community)
