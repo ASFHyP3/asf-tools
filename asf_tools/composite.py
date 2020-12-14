@@ -129,6 +129,17 @@ def get_full_extent(raster_info: dict):
 
 
 def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolution: float, directory: str) -> dict:
+    """Reprojects a set of raster images to a common projection and resolution
+
+    Args:
+        raster_info: A dictionary of gdal.Info results for the set of rasters
+        target_epsg_code: The integer EPSG code for the target projection
+        target_resolution: The target resolution
+        directory: The directory in which to create the reprojected files
+
+    Returns:
+        target_raster_info: An updated dictionary of gdal.Info results for the reprojected files
+    """
     target_raster_info = {}
     for raster, info in raster_info.items():
         epsg_code = get_epsg_code(info)
@@ -158,6 +169,15 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
 
 
 def read_as_array(raster: str, band: int = 1) -> np.array:
+    """Reads data from a raster image into memory
+
+    Args:
+        raster: The file path to a raster image
+        band: The raster band to read
+
+    Returns:
+        data: The raster pixel data as a numpy array
+    """
     log.debug(f'Reading raster values from {raster}')
     ds = gdal.Open(raster)
     data = ds.GetRasterBand(band).ReadAsArray()
@@ -167,6 +187,19 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
 
 def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_code: int,
               dtype=gdal.GDT_Float32, nodata_value=None):
+    """Creates a cloud optimized GeoTIFF
+
+    Args:
+        file_name: The output file name
+        data: The raster data
+        transform: The geotransform for the output GeoTIFF
+        epsg_code: The integer EPSG code for the output GeoTIFF projection
+        dtype: The pixel data type for the output GeoTIFF
+        nodata_value: The NODATA value for the output Geotiff
+
+    Returns:
+        file_name: The output file name
+    """
     log.info(f'Creating {file_name}')
 
     with NamedTemporaryFile() as temp_file:
@@ -191,7 +224,7 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
 
     Args:
         out_name: The base name of the output GeoTIFFs
-        rasters: A list of file paths to the images to composite
+        rasters: A list of file paths of the images to composite
         resolution: The pixel size for the output GeoTIFFs
 
     Returns:
