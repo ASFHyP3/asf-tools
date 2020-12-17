@@ -8,7 +8,7 @@ is created as a Cloud Optimized GeoTIFF (COG). Additionally, a COG specifying
 the number of rasters contributing to each composite pixel is created.
 
 References:
-    David Small, 2012: https://doi.org/10.1109/IGARSS.2012.6350465
+    David Small, 2012: <https://doi.org/10.1109/IGARSS.2012.6350465>
 """
 
 import argparse

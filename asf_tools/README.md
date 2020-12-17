@@ -16,13 +16,18 @@ potential to be used with a variety of rasters, including non-SAR datasets.
 
 ## Install
 
-`asf_tools` can be installed via [Anaconda/Miniconda](https://docs.conda.io/en/latest/index.html):
+In order to easily manage dependencies, we recommend using dedicated environments
+for projects via [Anaconda/Miniconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html).
+It is also possible to use [Python virtual environments](https://docs.python.org/3/tutorial/venv.html),
+but installation of non-python dependencies (e.g., `gdal`) can be challenging. 
+
+`asf_tools` can be installed into a conda environment with
 
 ```
 conda install -c conda-forge asf_tools
 ```
 
-Or using [`pip`](https://pypi.org/project/asf_tools/):
+or into a virtual environment with
 
 ```
 python -m pip install asf_tools
