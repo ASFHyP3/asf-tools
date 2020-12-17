@@ -16,8 +16,8 @@ potential to be used with a variety of rasters, including non-SAR datasets.
 
 ## Install
 
-In order to easily manage dependencies, we recommend using dedicated environments
-for projects via [Anaconda/Miniconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html).
+In order to easily manage dependencies, we recommend using dedicated project
+environments via [Anaconda/Miniconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html).
 It is also possible to use [Python virtual environments](https://docs.python.org/3/tutorial/venv.html),
 but installation of non-python dependencies (e.g., `gdal`) can be challenging. 
 
