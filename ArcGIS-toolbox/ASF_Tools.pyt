@@ -227,7 +227,7 @@ class ScaleConversion(object):
                     arcpy.AddMessage("Spatial Analyst Extension has been checked out.")
                 else:
                     arcpy.AddMessage("Spatial Analyst Extension is not available for use.")
-        except Exception:
+        except Exception:  # noqa: B902
             arcpy.AddMessage(
                 "Spatial Analyst extension is not available for use. Check your licensing to make sure you have "
                 "access to this extension.")
@@ -395,7 +395,7 @@ class ReclassifyRTC(object):
                     arcpy.AddMessage("Spatial Analyst Extension has been checked out.")
                 else:
                     arcpy.AddMessage("Spatial Analyst Extension is not available for use.")
-        except Exception:
+        except Exception:  # noqa: B902
             arcpy.AddMessage(
                 "Spatial Analyst extension is not available for use. Check your licensing to make sure you have "
                 "access to this extension.")
@@ -546,7 +546,7 @@ class LogDiff(object):
                     arcpy.AddMessage("Spatial Analyst Extension has been checked out.")
                 else:
                     arcpy.AddMessage("Spatial Analyst Extension is not available for use.")
-        except Exception:
+        except Exception:  # noqa: B902
             arcpy.AddMessage(
                 "Spatial Analyst extension is not available for use. "
                 "Check your licensing to make sure you have access to this extension.")
@@ -722,7 +722,7 @@ class RGBDecomp(object):
                     arcpy.AddMessage("Spatial Analyst Extension has been checked out.")
                 else:
                     arcpy.AddMessage("Spatial Analyst Extension is not available for use.")
-        except Exception:
+        except Exception:  # noqa: B902
             arcpy.AddMessage(
                 "Spatial Analyst extension is not available for use. Check your licensing to make sure you have "
                 "access to this extension.")
