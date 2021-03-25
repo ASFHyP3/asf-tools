@@ -42,7 +42,7 @@ jobs:
           workflow: Update ASF Tools version
           token: ${{ secrets.TOOLS_BOT_PAK }}
           repo: ASFHyP3/hyp3-docs
-          ref: main
+          ref: develop
           inputs: '{"asf_tools_version": "${{ steps.release_assets.outputs.version_tag }}"}'
 
       - name: Attempt fast-forward develop from main
