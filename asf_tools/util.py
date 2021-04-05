@@ -1,7 +1,9 @@
+from typing import Tuple
+
 import numpy as np
 
 
-def tile_array(a, tile_shape=(200, 200), pad=None):
+def tile_array(a: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad: float = None):
     """Tile a 2D numpy array
 
     Turn a 2D numpy array like:
@@ -59,7 +61,7 @@ def tile_array(a, tile_shape=(200, 200), pad=None):
     return tiled
 
 
-def untile_array(t, array_shape):
+def untile_array(tiled_array, array_shape: Tuple[int, int]):
     """Untile a tiled array into a 2D numpy array
 
     This is the reverse of `tile_array` and will turn a tiled array like:
@@ -71,7 +73,7 @@ def untile_array(t, array_shape):
                   [2,2]],
                  [[3,3],
                   [3,3]]]
-        >>> t.shape
+        >>> tiled_array.shape
         (4, 2, 2)
 
     into a 2D array like:
@@ -84,7 +86,7 @@ def untile_array(t, array_shape):
         (4,4)
 
     Args:
-        t: a tiled array
+        tiled_array: a tiled array
         array_shape: shape to until the array to. If the untiled array's shape is larger
             than this, `untile_array` will assume the original image was right-bottom padded
             to evenly tile, and the padding will be removed.
@@ -92,13 +94,13 @@ def untile_array(t, array_shape):
     Returns:
         untiled: the untiled array
     """
-    nt, tr, tc = t.shape
+    nt, tr, tc = tiled_array.shape
     ar, ac = array_shape
 
     nr = int(np.ceil(ar / tr))
     nc = int(np.ceil(ac / tc))
 
-    untiled = np.zeros((nr*tr, nc*tc), dtype=t.dtype)
+    untiled = np.zeros((nr*tr, nc*tc), dtype=tiled_array.dtype)
 
     if ar > untiled.shape[0] or ac > untiled.shape[1]:
         raise ValueError(
@@ -107,6 +109,6 @@ def untile_array(t, array_shape):
 
     for ii in range(nr):
         for jj in range(nc):
-            untiled[ii*tr:(ii+1)*tr,jj*tc:(jj+1)*tc] = t[ii*nr+jj,:,:]
+            untiled[ii*tr:(ii+1)*tr,jj*tc:(jj+1)*tc] = tiled_array[ii * nr + jj, :, :]
 
     return untiled[:ar,:ac]
