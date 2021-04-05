@@ -87,7 +87,7 @@ def untile_array(tiled_array, array_shape: Tuple[int, int]):
 
     Args:
         tiled_array: a tiled array
-        array_shape: shape to until the array to. If the untiled array's shape is larger
+        array_shape: shape to untile the array to. If the untiled array's shape is larger
             than this, `untile_array` will assume the original image was right-bottom padded
             to evenly tile, and the padding will be removed.
 
@@ -109,6 +109,6 @@ def untile_array(tiled_array, array_shape: Tuple[int, int]):
 
     for ii in range(nr):
         for jj in range(nc):
-            untiled[ii*tr:(ii+1)*tr,jj*tc:(jj+1)*tc] = tiled_array[ii * nr + jj, :, :]
+            untiled[ii*tr:(ii+1)*tr, jj*tc:(jj+1)*tc] = tiled_array[ii * nr + jj, :, :]
 
-    return untiled[:ar,:ac]
+    return untiled[:ar, :ac]
