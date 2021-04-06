@@ -49,7 +49,7 @@ def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad_
     else:
         cpad = 0
 
-    if rmod or cmod:
+    if rpad or cpad:
         if pad_value is None:
             raise ValueError(f'Cannot evenly tile a {array.shape} array into ({tile_rows},{tile_columns}) tiles')
         else:
