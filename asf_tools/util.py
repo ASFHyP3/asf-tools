@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 
 
-def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad: float = None):
+def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad_value: float = None):
     """Tile a 2D numpy array
 
     Turn a 2D numpy array like:
@@ -31,7 +31,7 @@ def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad:
     Args:
         array: 2D array to tile
         tile_shape: the shape of each tile
-        pad: right-bottom pad `a` with `pad` as needed so `a` is evenly divisible into tiles
+        pad_value: right-bottom pad `a` with `pad` as needed so `a` is evenly divisible into tiles
 
     Returns:
         the tiled array
@@ -50,10 +50,10 @@ def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad:
         cpad = 0
 
     if rmod or cmod:
-        if pad is None:
+        if pad_value is None:
             raise ValueError(f'Cannot evenly tile a {array.shape} array into ({tile_rows},{tile_columns}) tiles')
         else:
-            array = np.pad(array, ((0, rpad), (0, cpad)), constant_values=pad)
+            array = np.pad(array, ((0, rpad), (0, cpad)), constant_values=pad_value)
 
     tile_list = []
     for rows in np.vsplit(array, range(tile_rows, array_rows, tile_rows)):
