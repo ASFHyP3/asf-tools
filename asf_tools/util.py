@@ -89,9 +89,9 @@ def untile_array(tiled_array, array_shape: Tuple[int, int]):
 
     Args:
         tiled_array: a tiled array
-        array_shape: shape to untile the array to. If the untiled array's shape is larger
-            than this, `untile_array` will assume the original image was right-bottom padded
-            to evenly tile, and the padding will be removed.
+        array_shape: shape to untile the array to. If array_shape's size is smaller
+            than the tiled array, `untile_array` will subset the tiled array assuming
+            bottom right padding was added when tiling.
 
     Returns:
         the untiled array
