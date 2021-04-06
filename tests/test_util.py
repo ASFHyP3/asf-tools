@@ -40,13 +40,19 @@ def test_untile_array():
                   [2, 2, 3, 3],
                   [2, 2, 3, 3]])
 
-    # assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(2, 2)), array_shape=a.shape))
-    # assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(3, 3), pad_value=4), array_shape=a.shape))
-    # assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(2, 3), pad_value=4), array_shape=a.shape))
-    # assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(3, 2), pad_value=4), array_shape=a.shape))
+    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(2, 2)), array_shape=a.shape))
+    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(3, 3), pad_value=4), array_shape=a.shape))
+    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(2, 3), pad_value=4), array_shape=a.shape))
+    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(3, 2), pad_value=4), array_shape=a.shape))
 
     with pytest.raises(ValueError):
         util.untile_array(util.tile_array(a, tile_shape=(2, 2)), array_shape=(5, 5))
 
     with pytest.raises(ValueError):
-        util.untile_array(util.tile_array(a, tile_shape=(3, 3), pad_value=4), array_shape=(7, 7))
+        util.untile_array(util.tile_array(a, tile_shape=(2, 3), pad_value=4), array_shape=(4, 7))
+
+    # array shape will subset some of the padding that was required to tile `a` with `tile_shape`
+    assert np.all(
+            np.pad(a, ((0, 0), (0, 1)), constant_values=4)
+            == util.untile_array(util.tile_array(a, tile_shape=(2, 3), pad_value=4), array_shape=(4, 5))
+    )
