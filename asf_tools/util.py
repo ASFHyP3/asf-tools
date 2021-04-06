@@ -39,15 +39,9 @@ def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad_
     array_rows, array_columns = array.shape
     tile_rows, tile_columns = tile_shape
 
-    if rmod := array_rows % tile_rows:
-        rpad = tile_rows - rmod
-    else:
-        rpad = 0
-
-    if cmod := array_columns % tile_columns:
-        cpad = tile_columns - cmod
-    else:
-        cpad = 0
+    # CREDIT: https://twitter.com/LizzUltee/status/1379508448262512641
+    rpad = -array_rows % tile_rows
+    cpad = -array_columns % tile_columns
 
     if rpad or cpad:
         if pad_value is None:
