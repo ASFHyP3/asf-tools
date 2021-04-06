@@ -104,14 +104,14 @@ def untile_array(tiled_array, array_shape: Tuple[int, int]):
 
     untiled = np.zeros((untiled_rows*tile_rows, untiled_columns*tile_columns), dtype=tiled_array.dtype)
 
-    if array_rows > untiled.shape[0] or array_columns > untiled.shape[1]:
+    try:
+        for ii in range(untiled_rows):
+            for jj in range(untiled_columns):
+                untiled[ii*tile_rows:(ii+1)*tile_rows, jj*tile_columns:(jj+1)*tile_columns] = \
+                    tiled_array[ii * untiled_rows + jj, :, :]
+    except IndexError:
         raise ValueError(
-            f'array_shape {array_shape} must be the same or smaller than the untiled array {untiled.shape}'
+            f'Unable to untile the array using the input array_shape {array_shape}.'
         )
-
-    for ii in range(untiled_rows):
-        for jj in range(untiled_columns):
-            untiled[ii*tile_rows:(ii+1)*tile_rows, jj*tile_columns:(jj+1)*tile_columns] = \
-                tiled_array[ii * untiled_rows + jj, :, :]
 
     return untiled[:array_rows, :array_columns]
