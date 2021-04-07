@@ -56,13 +56,12 @@ def water_extent(raster: np.ndarray, tile_shape: Tuple[int, int] = (200, 200),
 
 
 def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], secondary: Union[str, Path]):
-    f"""Creates a surface water extent map from a Sentinel-1 RTC product
+    """Creates a surface water extent map from a Sentinel-1 RTC product
 
     Args:
         out_raster: Water map GeoTIFF to create
         primary: Sentinel-1 RTC GeoTIFF raster of the primary polarization
         secondary: Sentinel-1 RTC GeoTIFF raster of the secondary polarization
-
     """
 
     primary_array = read_as_array(str(primary))

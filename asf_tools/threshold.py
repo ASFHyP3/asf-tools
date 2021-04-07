@@ -8,7 +8,7 @@ def kittler_illingworth_threshold(scene: np.ndarray) -> float:
     Original Matlab code: https://www.mathworks.com/matlabcentral/fileexchange/45685-kittler-illingworth-thresholding
     Paper: Kittler, J. & Illingworth, J. Minimum error thresholding. Pattern Recognit. 19, 41–47 (1986).
     """
-    # source: https://github.com/asfadmin/asf-jupyter-notebooks/blob/master/SAR_Training/English/HydroSAR/Lab2-SurfaceWaterExtentMapping.ipynb
+    # source: https://github.com/asfadmin/asf-jupyter-notebooks/blob/master/SAR_Training/English/HydroSAR/Lab2-SurfaceWaterExtentMapping.ipynb  # noqa: E501
     hist, bins = np.histogram(scene.ravel(), bins=256)
 
     c = np.cumsum(hist)
