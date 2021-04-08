@@ -16,8 +16,8 @@ from asf_tools.util import tile_array
 log = logging.getLogger(__name__)
 
 
-def water_extent(raster: np.ndarray, tile_shape: Tuple[int, int] = (200, 200),
-                 sub_tile_shape: Tuple[int, int] = (100, 100)):
+def water_mask(raster: np.ndarray, tile_shape: Tuple[int, int] = (200, 200),
+               sub_tile_shape: Tuple[int, int] = (100, 100)):
 
     tiles = np.ma.masked_invalid(tile_array(raster, tile_shape=tile_shape, pad_value=np.nan))
     sub_tiles_std = np.zeros((tiles.shape[0], 4))
@@ -65,15 +65,15 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     """
 
     primary_array = read_as_array(str(primary))
-    primary_extent = water_extent(primary_array)
+    primary_mask = water_mask(primary_array)
 
     secondary_array = read_as_array(str(secondary))
-    secondary_extent = water_extent(secondary_array)
+    secondary_mask = water_mask(secondary_array)
 
-    combined_extent = primary_extent | secondary_extent
+    combined_mask = primary_mask | secondary_mask
 
     primary_info = gdal.Info(str(primary), format='json')
-    write_cog(str(out_raster), combined_extent, transform=primary_info['geoTransform'],
+    write_cog(str(out_raster), combined_mask, transform=primary_info['geoTransform'],
               epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
 
 
