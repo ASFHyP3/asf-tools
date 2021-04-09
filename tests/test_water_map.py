@@ -6,6 +6,7 @@ from asf_tools.water_map import make_water_map
 
 gdal.UseExceptions()
 
+
 @pytest.mark.integration
 def test_initial_water_map(tmp_path, rtc_raster_pair, golden_water_map):
     primary, secondary = rtc_raster_pair
