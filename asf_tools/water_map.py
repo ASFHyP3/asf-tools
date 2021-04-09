@@ -16,22 +16,25 @@ from asf_tools.util import tile_array
 log = logging.getLogger(__name__)
 
 
-def water_mask(raster: np.ndarray, tile_shape: Tuple[int, int] = (200, 200),
-               sub_tile_shape: Tuple[int, int] = (100, 100)):
-
-    tiles = np.ma.masked_invalid(tile_array(raster, tile_shape=tile_shape, pad_value=np.nan))
+def std_of_subtiles(tiles: np.ndarray) -> np.ndarray:
+    sub_tile_shape = (tiles.shape[1] // 2, tiles.shape[2] // 2)
     sub_tiles_std = np.zeros((tiles.shape[0], 4))
     for ii, tile in enumerate(tiles):
         sub_tiles = np.ma.masked_invalid(tile_array(tile, tile_shape=sub_tile_shape))
         sub_tiles_std[ii, :] = sub_tiles.std(axis=(1, 2))
+    return sub_tiles_std
 
-    variation = sub_tiles_std.mean(axis=1)
-    # tile index in order of variation, from lowest to highest
-    tile_indexes_by_variation = np.argsort(variation, axis=0)
+
+def determine_threshold(tiles: np.ndarray) -> float:
+    sub_tiles_std = std_of_subtiles(tiles)
+
+    # tile index in order of each tile's coefficient of variation, from highest to lowest
+    tiles_variation = sub_tiles_std.mean(axis=1)
+    tile_indexes_by_variation = np.argsort(tiles_variation, axis=0)[::-1]
 
     selected = []
     thresholds = []
-    for ii in tile_indexes_by_variation[::-1]:
+    for ii in tile_indexes_by_variation:
         threshold = ki_threshold(tiles[ii, :, :].filled(0))
 
         # Maximum value of threshold = -10 per Martinis et al., 2015
@@ -51,6 +54,17 @@ def water_mask(raster: np.ndarray, tile_shape: Tuple[int, int] = (200, 200),
     else:
         threshold = np.mean(thresholds)
 
+    return threshold
+
+
+def water_mask(raster: np.ndarray, tile_shape: Tuple[int, int] = (200, 200)):
+    if tile_shape[0] % 2 or tile_shape[1] % 2:
+        raise ValueError(f'tile_shape {tile_shape} requires even values.')
+
+    tiles = np.ma.masked_invalid(tile_array(raster, tile_shape=tile_shape, pad_value=np.nan))
+
+    threshold = determine_threshold(tiles)
+
     log.info(f'Using threshold value of {threshold}')
     return raster < threshold
 
@@ -65,11 +79,14 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     """
 
     primary_array = read_as_array(str(primary))
+    log.info('Creating initial water mask from primary raster')
     primary_mask = water_mask(primary_array)
 
     secondary_array = read_as_array(str(secondary))
+    log.info('Creating initial water mask from secondary raster')
     secondary_mask = water_mask(secondary_array)
 
+    log.info('Combining primary and secondary water masks')
     combined_mask = primary_mask | secondary_mask
 
     primary_info = gdal.Info(str(primary), format='json')
