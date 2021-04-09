@@ -1,10 +1,7 @@
 import pytest
-from osgeo import gdal
 from osgeo.utils.gdalcompare import find_diff
 
 from asf_tools.water_map import make_water_map
-
-gdal.UseExceptions()
 
 
 @pytest.mark.integration
