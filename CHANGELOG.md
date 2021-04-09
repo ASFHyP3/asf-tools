@@ -9,7 +9,11 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.3.0](https://github.com/ASFHyP3/asf-tools/compare/v0.2.0...v0.3.0)
 
 ### Added
-* `util.tile_array` and `util.untile_array` to transform a numpy array into a set of tiles
+* `asf_tools.water_map` and an associated `water_map` entrypoint for making
+  water extent maps using Kittler-Illingworth Thresholding
+* `kittler_illingworth_threshold` in `asf_tools.threshold` to calculate a minimum error threshold
+  value à la [Kittler and Illingworth, 1986](https://doi.org/10.1016/0031-3203(86)90030-0)
+* `tile_array` and `untile_array` in `asf_tools.util` to transform a numpy array into a set of tiles
 
 
 ## [0.2.0](https://github.com/ASFHyP3/asf-tools/compare/v0.1.1...v0.2.0)
