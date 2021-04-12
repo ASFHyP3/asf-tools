@@ -1,6 +1,5 @@
 """Calculate height above nearest drainage (HAND) from the Copernicus GLO-30 Public DEM"""
 import argparse
-import json
 import logging
 import sys
 import warnings
@@ -13,15 +12,13 @@ import fiona
 import numpy as np
 import rasterio.crs
 import rasterio.mask
-from osgeo import gdal
 from pysheds.grid import Grid
 from shapely.geometry import GeometryCollection, shape
 
+from asf_tools.dem import prepare_dem_vrt
 from asf_tools.composite import write_cog
 
 log = logging.getLogger(__name__)
-
-HYBAS_DEM_TILES_MAP = json.loads(Path('_test/hand/HyBAS/hybas_dem_tiles.json').read_text())
 
 
 def fill_nan(arr):
@@ -100,17 +97,9 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
     hand = grid.compute_hand('dir', 'inflated_dem', grid.acc > acc_thresh, inplace=False)
     if np.any(np.isnan(hand)):
         log.debug('NaNs encountered in HAND; filling.')
-        grid.hand = fill_nan(hand)
+        hand = fill_nan(hand)
 
     return hand
-
-
-def prepare_dem_vrt(vrt: Union[str, Path], basin_ids: list):
-    dem_tiles = []
-    for ii in basin_ids:
-        dem_tiles.extend(HYBAS_DEM_TILES_MAP[str(ii)])
-
-    gdal.BuildVRT(str(vrt), dem_tiles)
 
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
@@ -132,18 +121,13 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
 
 def make_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
     with fiona.open(vector_file) as vds:
-        basin_ids, geometries = [], []
-        for feature in vds:
-            basin_ids.append(feature['properties']['HYBAS_ID'])
-            geometries.append(shape(feature['geometry']))
-
-    geometries = GeometryCollection(geometries)
+        geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as f:
         dem_file = Path(f.name)
         dem_file.touch()
 
-    prepare_dem_vrt(dem_file, basin_ids)
+    prepare_dem_vrt(dem_file, geometries)
 
     calculate_hand_for_basins(out_raster, geometries, dem_file)
 
