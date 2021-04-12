@@ -28,15 +28,14 @@ def fill_nan(arr):
     """
 
     kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)  # kernel x_size=8*stddev
-    arr_type = arr.dtype
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        while np.isnan(arr).any():
-            arr = astropy.convolution.interpolate_replace_nans(
-                arr.astype(float), kernel, convolve=astropy.convolution.convolve
-            )
 
-    return arr.astype(arr_type)
+        arr = astropy.convolution.interpolate_replace_nans(
+            arr, kernel, convolve=astropy.convolution.convolve
+        )
+
+    return arr
 
 
 def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask, acc_thresh=100):
@@ -75,17 +74,19 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
     #     grid.resolve_flats('flooded_dem', out_name='inflated_dem')
     # except:
     #     grid.inflated_dem = grid.flooded_dem
+    log.info('Resolving flats')
     grid.resolve_flats('flooded_dem', out_name='inflated_dem')
     if np.isnan(grid.inflated_dem).any():
         log.debug('NaNs encountered in inflated DEM; replacing NaNs with original DEM values')
         grid.inflated_dem[np.isnan(grid.inflated_dem)] = dem_array[np.isnan(grid.inflated_dem)]
 
-    # Obtain flow direction
+    log.info('Obtaining flow direction')
     grid.flowdir(data='inflated_dem', out_name='dir', apply_mask=True)
     if np.isnan(grid.dir).any():
         log.debug('NaNs encountered in flow direction; filling.')
         grid.dir = fill_nan(grid.dir)
 
+    log.info('Calculating flow accumulation')
     grid.accumulation(data='dir', out_name='acc')
     if np.isnan(grid.acc).any():
         log.debug('NaNs encountered in accumulation; filling.')
@@ -94,10 +95,14 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
     if acc_thresh is None:
         acc_thresh = grid.acc.mean()
 
+    log.info(f'Calculating HAND using accumulation threshold of {acc_thresh}')
     hand = grid.compute_hand('dir', 'inflated_dem', grid.acc > acc_thresh, inplace=False)
-    if np.any(np.isnan(hand)):
+    if np.isnan(hand).any():
         log.debug('NaNs encountered in HAND; filling.')
         hand = fill_nan(hand)
+
+    # ensure non-basin is masked after fill_nan
+    hand[basin_mask] = np.nan
 
     return hand
 
