@@ -1,5 +1,6 @@
 """Calculate height above nearest drainage (HAND) from the Copernicus GLO-30 Public DEM"""
 import argparse
+import json
 import logging
 import sys
 import warnings
@@ -12,13 +13,15 @@ import fiona
 import numpy as np
 import rasterio.crs
 import rasterio.mask
+from osgeo import gdal
 from pysheds.grid import Grid
 from shapely.geometry import GeometryCollection, shape
 
-from asf_tools import dem
 from asf_tools.composite import write_cog
 
 log = logging.getLogger(__name__)
+
+HYBAS_DEM_TILES_MAP = json.loads(Path('_test/hand/HyBAS/hybas_dem_tiles.json').read_text())
 
 
 def fill_nan(arr):
@@ -102,16 +105,17 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
     return hand
 
 
-def calculate_hand_for_basins(out_raster:  Union[str, Path], geojson: Union[str, Path]):
+def prepare_dem_vrt(vrt: Union[str, Path], basin_ids: list):
+    dem_tiles = []
+    for ii in basin_ids:
+        dem_tiles.extend(HYBAS_DEM_TILES_MAP[str(ii)])
+
+    gdal.BuildVRT(str(vrt), dem_tiles)
+
+
+def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
+                              dem_file: Union[str, Path]):
     """Calculate HAND data for drainage basins"""
-    with fiona.open(geojson) as jsn:
-        geometries = GeometryCollection([shape(feature['geometry']) for feature in jsn])
-
-    with NamedTemporaryFile(suffix='.vrt') as f:
-        dem_file = Path(f.name)
-        dem_file.touch()
-
-    dem.prepare_dem_vrt(dem_file, geometries)
 
     with rasterio.open(dem_file) as src:
         basin_mask, basin_affine_tf, dem_window = rasterio.mask.raster_geometry_mask(
@@ -125,7 +129,23 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geojson: Union[str,
 
     write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=dem_crs.to_epsg())
 
-    return hand
+
+def make_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
+    with fiona.open(vector_file) as vds:
+        basin_ids, geometries = [], []
+        for feature in vds:
+            basin_ids.append(feature['properties']['HYBAS_ID'])
+            geometries.append(shape(feature['geometry']))
+
+    geometries = GeometryCollection(geometries)
+
+    with NamedTemporaryFile(suffix='.vrt', delete=False) as f:
+        dem_file = Path(f.name)
+        dem_file.touch()
+
+    prepare_dem_vrt(dem_file, basin_ids)
+
+    calculate_hand_for_basins(out_raster, geometries, dem_file)
 
 
 def main():
@@ -135,8 +155,9 @@ def main():
     )
     parser.add_argument('out_raster', type=Path,
                         help='HAND GeoTIFF to create')
-    parser.add_argument('geojson', type=Path,
-                        help='GeoJSON of watershed boundary (hydrobasin) polygons to calculate HAND over')
+    parser.add_argument('vector_file', type=Path,
+                        help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over.'
+                             'Vector file Must be openable by GDAL, see: https://gdal.org/drivers/vector/index.html')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -144,8 +165,8 @@ def main():
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
-    log.info(f'Calculating HAND for {args.geojson}')
+    log.info(f'Calculating HAND for {args.vector_file}')
 
-    calculate_hand_for_basins(args.out_raster, args.geojson)
+    make_hand(args.out_raster, args.vector_file)
 
     log.info(f'HAND GeoTIFF created successfully: {args.out_raster}')
