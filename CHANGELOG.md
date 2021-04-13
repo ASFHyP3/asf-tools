@@ -11,6 +11,9 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 * `asf_tools.water_map` and an associated `water_map` entrypoint for making
   water extent maps using Kittler-Illingworth Thresholding
+* `asf_tools.hand` and an associated `calculate_hand` entrypoint for calculating
+  Height Above Nearest Drainage (HAND) from the Copernicus GLO-30 Public DEM
+* `asf_tools.dem` for creating a Copernicus GLO-30 Public DEM mosaic
 * `kittler_illingworth_threshold` in `asf_tools.threshold` to calculate a minimum error threshold
   value à la [Kittler and Illingworth, 1986](https://doi.org/10.1016/0031-3203(86)90030-0)
 * `tile_array` and `untile_array` in `asf_tools.util` to transform a numpy array into a set of tiles
