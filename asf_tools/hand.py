@@ -69,11 +69,6 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         log.debug('NaNs encountered in flooded DEM; filling.')
         grid.flooded_dem = fill_nan(grid.flooded_dem)
 
-    # # https://github.com/mdbartos/pysheds/issues/118
-    # try:
-    #     grid.resolve_flats('flooded_dem', out_name='inflated_dem')
-    # except:
-    #     grid.inflated_dem = grid.flooded_dem
     log.info('Resolving flats')
     grid.resolve_flats('flooded_dem', out_name='inflated_dem')
     if np.isnan(grid.inflated_dem).any():
