@@ -1,11 +1,11 @@
-"""Calculate height above nearest drainage (HAND) from the Copernicus GLO-30 Public DEM"""
+"""Calculate Height Above Nearest Drainage (HAND) from the Copernicus GLO-30 Public DEM"""
 import argparse
 import logging
 import sys
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Union
+from typing import Union, Optional
 
 import astropy.convolution
 import fiona
@@ -21,44 +21,50 @@ from asf_tools.dem import prepare_dem_vrt
 log = logging.getLogger(__name__)
 
 
-def fill_nan(arr):
-    """
-    filled_arr=fill_nan(arr)
-    Fills Not-a-number values in arr using astropy.
-    """
+def fill_nan(array: np.ndarray) -> np.ndarray:
+    """Replace NaNs with values interpolated from their neighbors
 
+    Replace NaNs with values interpolated from their neighbors using a 2D Gaussian
+    kernel, see: https://docs.astropy.org/en/stable/convolution/#using-astropy-s-convolution-to-replace-bad-data
+    """
     kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)  # kernel x_size=8*stddev
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 
-        arr = astropy.convolution.interpolate_replace_nans(
-            arr, kernel, convolve=astropy.convolution.convolve
+        array = astropy.convolution.interpolate_replace_nans(
+            array, kernel, convolve=astropy.convolution.convolve
         )
 
-    return arr
+    return array
 
 
-def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask, acc_thresh=100):
-    """
-    hand=calculate_hand(dem_array, dem_gT, dem_proj4, mask=None, verbose=False)
-    Calculate the height above nearest drainage using pySHEDS library. This is done over a few steps:
+def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask,
+                   acc_thresh: Optional[int] = 100):
+    """Calculate the Height Above Nearest Drainage (HAND)
 
-    Fill_Depressions fills depressions in a DEM (regions of cells lower than their surrounding neighbors).
-    Resolve_Flats resolves drainable flats in a DEM.
-    FlowDir converts the DEM to flow direction based on dirmap.
-    Accumulation converts from flow direction to flow accumulation.
-    Compute_Hand is used to convert directions to height above nearest drainage.
+     Calculate the Height Above Nearest Drainage (HAND) using pySHEDS library. Because HAND
+     is tied to watershed boundaries (hydrobasins), clipped/cut basins will produce weird edge
+     effects, and incomplete basins should be masked out
 
-    NaN values are filled at the end of resolve_flats and final steps.
+     This involves:
+        * Filling depressions (regions of cells lower than their surrounding neighbors)
+            in the Digital Elevation Model (DEM)
+        * Resolving un-drainable flats
+        * Determine the flow direction using the ESRI D8 routing scheme
+        * Determine flow accumulation (number of upstream cells)
+        * Create a drainage mask using the accumulation threshold `acc_thresh`
+        * Calculating HAND
 
-    Inputs:
-      dem_array=Numpy array of Digital Elevation Model (DEM) to convert to HAND.
-      dem_gT= GeoTransform of the input DEM
-      dem_proj4=Proj4 string of DEM
-      mask=If provided parts of DEM can be masked out. If not entire DEM is evaluated.
-      verbose=If True, provides information about where NaN values are encountered.
-      acc_thresh=Accumulation threshold. By default is set to 100. If none,
-                 mean value of accumulation array (acc.mean()) is used.
+    In the HAND calculation, NaNs inside the basin filled using `fill_nan`
+
+    Args:
+        dem_array: DEM to calculate HAND for
+        dem_crs: DEM Coordinate Reference System (CRS)
+        dem_affine: DEM Affine geotransform
+        basin_mask: Array of booleans indicating wither an element should be masked out (à la Numpy Masked Arrays:
+            https://numpy.org/doc/stable/reference/maskedarray.generic.html#what-is-a-masked-array)
+        acc_thresh: Accumulation threshold for determining the drainage mask.
+            If `None`, the mean accumulation value is used
     """
 
     grid = Grid()
@@ -104,8 +110,13 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
                               dem_file: Union[str, Path]):
-    """Calculate HAND data for drainage basins"""
+    """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins)
 
+    Args:
+        out_raster: HAND GeoTIFF to create
+        geometries: watershed boundary (hydrobasin) polygons to calculate HAND over
+        dem_file: DEM raster covering (containing) `geometries`
+    """
     with rasterio.open(dem_file) as src:
         basin_mask, basin_affine_tf, dem_window = rasterio.mask.raster_geometry_mask(
             src, geometries, all_touched=True, crop=True, pad=True, pad_width=1
@@ -119,7 +130,16 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
     write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=dem_crs.to_epsg())
 
 
-def make_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
+def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
+    """Copernicus GLO-30 Public Height Above Nearest Drainage (HAND)
+
+    Make a Height Above Nearest Drainage (HAND) GeoTIFF from the Copernicus GLO-30 Public DEM
+    covering the watershed boundaries (hydrobasins) defined in a vector file
+
+    Args:
+        out_raster: HAND GeoTIFF to create
+        vector_file: Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over
+    """
     with fiona.open(vector_file) as vds:
         geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
 
@@ -140,7 +160,7 @@ def main():
     parser.add_argument('out_raster', type=Path,
                         help='HAND GeoTIFF to create')
     parser.add_argument('vector_file', type=Path,
-                        help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over.'
+                        help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over. '
                              'Vector file Must be openable by GDAL, see: https://gdal.org/drivers/vector/index.html')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
@@ -151,6 +171,6 @@ def main():
     log.debug(' '.join(sys.argv))
     log.info(f'Calculating HAND for {args.vector_file}')
 
-    make_hand(args.out_raster, args.vector_file)
+    copernicus_hand(args.out_raster, args.vector_file)
 
     log.info(f'HAND GeoTIFF created successfully: {args.out_raster}')
