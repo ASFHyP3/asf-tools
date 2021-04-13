@@ -174,6 +174,8 @@ def main():
     log.info(f'Calculating HAND for {args.vector_geometry}')
 
     copernicus_hand(os.path.basename(args.key), args.vector_geometry)
+
+    log.info(f'uploading to s3://{args.bucket}/{args.key}')
     S3 = boto3.client('s3')
     S3.upload_file(os.path.basename(args.key), args.bucket, args.key)
 
