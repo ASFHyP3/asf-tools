@@ -75,7 +75,7 @@ def shift_for_antimeridian(dem_file_paths: List[str], directory: Path) -> List[s
     return shifted_file_paths
 
 
-def geometry_from_wkb(wkb: bytes):
+def geometry_from_wkb(wkb: bytes) -> ogr.Geometry:
     return ogr.CreateGeometryFromWkb(wkb)
 
 
