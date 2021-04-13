@@ -33,7 +33,7 @@ Resources:
         MinvCpus: 0
         MaxvCpus: 20
         InstanceTypes:
-          - r5.xlarge
+          - r5d.xlarge
         ImageId: !Ref AmiId
         Subnets: !Ref SubnetIds
         InstanceRole: !Ref InstanceProfile
