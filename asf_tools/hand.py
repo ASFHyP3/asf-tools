@@ -1,6 +1,7 @@
 """Calculate Height Above Nearest Drainage (HAND) from the Copernicus GLO-30 Public DEM"""
 import argparse
 import logging
+import os
 import sys
 import warnings
 from pathlib import Path
@@ -8,6 +9,7 @@ from tempfile import NamedTemporaryFile
 from typing import Optional, Union
 
 import astropy.convolution
+import boto3
 import fiona
 import numpy as np
 import rasterio.crs
@@ -157,11 +159,11 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('out_raster', type=Path,
-                        help='HAND GeoTIFF to create')
-    parser.add_argument('vector_file', type=Path,
+    parser.add_argument('--vector-geometry', type=Path,
                         help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over. '
                              'Vector file Must be openable by GDAL, see: https://gdal.org/drivers/vector/index.html')
+    parser.add_argument('--bucket', type=str, help='Bucket to upload output to')
+    parser.add_argument('--key', type=str, help='key to upload output to')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -169,8 +171,10 @@ def main():
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
-    log.info(f'Calculating HAND for {args.vector_file}')
+    log.info(f'Calculating HAND for {args.vector_geometry}')
 
-    copernicus_hand(args.out_raster, args.vector_file)
+    copernicus_hand(os.path.basename(args.key), args.vector_geometry)
+    S3 = boto3.client('s3')
+    S3.upload_file(os.path.basename(args.key), args.bucket, args.key)
 
-    log.info(f'HAND GeoTIFF created successfully: {args.out_raster}')
+    log.info(f'HAND GeoTIFF created successfully: {args.key}')

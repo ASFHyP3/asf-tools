@@ -103,8 +103,8 @@ Resources:
         Memory: 7000
         JobRoleArn: !Ref TaskRoleArn
         Command:
-          - --input-json-file
-          - Ref::input_json_file
+          - --vector-geometry
+          - Ref::vector-geometry
           - --bucket
           - !Ref ContentBucket
       Timeout:

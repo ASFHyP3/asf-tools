@@ -19,6 +19,7 @@ dependencies:
   - pytest-console-scripts
   - pytest-cov
   # For running
+  - boto3
   - astropy
   - fiona
   - gdal>=3.2.0
