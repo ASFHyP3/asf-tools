@@ -33,7 +33,7 @@ Resources:
         MinvCpus: 0
         MaxvCpus: 20
         InstanceTypes:
-          - r5.large
+          - r5.xlarge
         ImageId: !Ref AmiId
         Subnets: !Ref SubnetIds
         InstanceRole: !Ref InstanceProfile
@@ -100,7 +100,7 @@ Resources:
       ContainerProperties:
         Image: 'jlrine2/hand'
         Vcpus: 1
-        Memory: 12000
+        Memory: 31000
         JobRoleArn: !GetAtt TaskRole.Arn
         Command:
           - --vector-geometry
