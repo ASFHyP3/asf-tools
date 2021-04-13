@@ -5,7 +5,7 @@ import sys
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Union, Optional
+from typing import Optional, Union
 
 import astropy.convolution
 import fiona
