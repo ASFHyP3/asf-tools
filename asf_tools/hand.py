@@ -72,6 +72,7 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
     grid = Grid()
     grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_crs.to_dict(), mask=~basin_mask)
 
+    log.info('Filling depressions')
     grid.fill_depressions('dem', out_name='flooded_dem')
     if np.isnan(grid.flooded_dem).any():
         log.debug('NaNs encountered in flooded DEM; filling.')
