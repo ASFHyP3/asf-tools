@@ -72,6 +72,7 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
     grid = Grid()
     grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_crs.to_dict(), mask=~basin_mask)
 
+    log.info('Filling depressions')
     grid.fill_depressions('dem', out_name='flooded_dem')
     if np.isnan(grid.flooded_dem).any():
         log.debug('NaNs encountered in flooded DEM; filling.')
@@ -159,7 +160,7 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('--vector-geometry', type=Path,
+    parser.add_argument('--vector-geometry', type=str,
                         help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over. '
                              'Vector file Must be openable by GDAL, see: https://gdal.org/drivers/vector/index.html')
     parser.add_argument('--bucket', type=str, help='Bucket to upload output to')
@@ -174,6 +175,8 @@ def main():
     log.info(f'Calculating HAND for {args.vector_geometry}')
 
     copernicus_hand(os.path.basename(args.key), args.vector_geometry)
+
+    log.info(f'uploading to s3://{args.bucket}/{args.key}')
     S3 = boto3.client('s3')
     S3.upload_file(os.path.basename(args.key), args.bucket, args.key)
 
