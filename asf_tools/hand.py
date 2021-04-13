@@ -15,8 +15,8 @@ import rasterio.mask
 from pysheds.grid import Grid
 from shapely.geometry import GeometryCollection, shape
 
-from asf_tools.dem import prepare_dem_vrt
 from asf_tools.composite import write_cog
+from asf_tools.dem import prepare_dem_vrt
 
 log = logging.getLogger(__name__)
 
