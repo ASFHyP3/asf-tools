@@ -5,6 +5,7 @@ from typing import Generator, List, Union
 from osgeo import gdal, ogr
 from shapely.geometry import GeometryCollection
 
+__all__ = ['GDALConfigManager', 'prepare_dem_vrt']
 DEM_GEOJSON = '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/cop30.geojson'
 
 gdal.UseExceptions()
