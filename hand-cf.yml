@@ -31,9 +31,9 @@ Resources:
         Type: SPOT
         AllocationStrategy: SPOT_CAPACITY_OPTIMIZED
         MinvCpus: 0
-        MaxvCpus: 100 # TODO
+        MaxvCpus: 20
         InstanceTypes:
-          - r5d.8xlarge
+          - r5.large
         ImageId: !Ref AmiId
         Subnets: !Ref SubnetIds
         InstanceRole: !Ref InstanceProfile
@@ -95,17 +95,19 @@ Resources:
     Properties:
       Type: container
       Parameters:
-        granules: ""
-        bucket_prefix: ""
+        vector_geometry: ""
+        key: ""
       ContainerProperties:
-        Image: 'foo'
+        Image: 'jlrine2/hand'
         Vcpus: 1
-        Memory: 7000
-        JobRoleArn: !Ref TaskRoleArn
+        Memory: 12000
+        JobRoleArn: !GetAtt TaskRole.Arn
         Command:
           - --vector-geometry
-          - Ref::vector-geometry
+          - Ref::vector_geometry
           - --bucket
           - !Ref ContentBucket
+          - --key
+          - Ref::key
       Timeout:
         AttemptDurationSeconds: 10800
