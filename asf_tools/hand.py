@@ -159,7 +159,7 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('--vector-geometry', type=Path,
+    parser.add_argument('--vector-geometry', type=str,
                         help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over. '
                              'Vector file Must be openable by GDAL, see: https://gdal.org/drivers/vector/index.html')
     parser.add_argument('--bucket', type=str, help='Bucket to upload output to')
