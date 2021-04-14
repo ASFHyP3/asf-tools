@@ -122,16 +122,14 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         dem_file: DEM raster covering (containing) `geometries`
     """
     with rasterio.open(dem_file) as src:
-        basin_mask, basin_affine_tf, dem_window = rasterio.mask.raster_geometry_mask(
+        basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
             src, geometries, all_touched=True, crop=True, pad=True, pad_width=1
         )
-        dem_array = src.read(1, window=dem_window)
-        dem_affine_tf = src.transform
-        dem_crs = src.crs
+        basin_array = src.read(1, window=basin_window)
 
-    hand = calculate_hand(dem_array, dem_affine_tf, dem_crs, basin_mask)
+        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
 
-    write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=dem_crs.to_epsg())
+        write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
 
 
 def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
@@ -150,7 +148,7 @@ def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]
         geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as dem_vrt:
-        prepare_dem_vrt(dem_vrt.name, geometries)
+        prepare_dem_vrt(dem_vrt.name, geometries, buffer=0.0)
         calculate_hand_for_basins(out_raster, geometries, dem_vrt.name)
 
 
