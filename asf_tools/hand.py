@@ -44,7 +44,8 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
      Calculate the Height Above Nearest Drainage (HAND) using pySHEDS library. Because HAND
      is tied to watershed boundaries (hydrobasins), clipped/cut basins will produce weird edge
-     effects, and incomplete basins should be masked out
+     effects, and incomplete basins should be masked out. For watershed boundaries,
+     see: https://www.hydrosheds.org/page/hydrobasins
 
      This involves:
         * Filling depressions (regions of cells lower than their surrounding neighbors)
@@ -111,7 +112,9 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
                               dem_file: Union[str, Path]):
-    """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins)
+    """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
+
+    For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
 
     Args:
         out_raster: HAND GeoTIFF to create
@@ -135,7 +138,9 @@ def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]
     """Copernicus GLO-30 Public Height Above Nearest Drainage (HAND)
 
     Make a Height Above Nearest Drainage (HAND) GeoTIFF from the Copernicus GLO-30 Public DEM
-    covering the watershed boundaries (hydrobasins) defined in a vector file
+    covering the watershed boundaries (hydrobasins) defined in a vector file.
+
+    For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
 
     Args:
         out_raster: HAND GeoTIFF to create
@@ -152,6 +157,7 @@ def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
+        epilog='For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins',
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument('out_raster', type=Path,
