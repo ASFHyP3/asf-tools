@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 
 
-def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad_value: float = None):
+def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad_value: float = None) -> np.ndarray:
     """Tile a 2D numpy array
 
     Turn a 2D numpy array like:
@@ -59,7 +59,7 @@ def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad_
     return tiled
 
 
-def untile_array(tiled_array, array_shape: Tuple[int, int]):
+def untile_array(tiled_array, array_shape: Tuple[int, int]) -> np.ndarray:
     """Untile a tiled array into a 2D numpy array
 
     This is the reverse of `tile_array` and will turn a tiled array like:

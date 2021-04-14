@@ -64,6 +64,12 @@ def test_tile_masked_array():
                                  [False, True]]])
     )
 
+    tiled = util.tile_array(ma, tile_shape=(3, 3), pad_value=4)
+    assert isinstance(tiled, np.ma.MaskedArray)
+    assert tiled.shape == (4, 3, 3)
+    assert np.all(tiled[0, :, :] == np.array([[0, 0, 1], [0, 0, 1], [2, 2, 3]]))
+    assert np.all(tiled[-1, :, :] == np.array([[3, 4, 4], [4, 4, 4], [4, 4, 4]]))
+
 
 def test_untile_array():
     a = np.array([[0, 0, 1, 1],
@@ -108,3 +114,9 @@ def test_untile_masked_array():
 
     assert np.all(ma == untiled)
     assert np.all(ma.mask == untiled.mask)
+
+    # array shape will subset some of the padding that was required to tile `a` with `tile_shape`
+    assert np.all(
+            np.pad(ma, ((0, 0), (0, 1)), constant_values=4)
+            == util.untile_array(util.tile_array(ma, tile_shape=(2, 3), pad_value=4), array_shape=(4, 5))
+    )
