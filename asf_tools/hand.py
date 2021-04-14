@@ -144,13 +144,9 @@ def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]
     with fiona.open(vector_file) as vds:
         geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
 
-    with NamedTemporaryFile(suffix='.vrt', delete=False) as f:
-        dem_file = Path(f.name)
-        dem_file.touch()
-
-    prepare_dem_vrt(dem_file, geometries)
-
-    calculate_hand_for_basins(out_raster, geometries, dem_file)
+    with NamedTemporaryFile(suffix='.vrt', delete=False) as dem_vrt:
+        prepare_dem_vrt(dem_vrt.name, geometries)
+        calculate_hand_for_basins(out_raster, geometries, dem_vrt.name)
 
 
 def main():
