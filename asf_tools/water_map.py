@@ -20,7 +20,7 @@ def std_of_subtiles(tiles: np.ndarray) -> np.ndarray:
     sub_tile_shape = (tiles.shape[1] // 2, tiles.shape[2] // 2)
     sub_tiles_std = np.zeros((tiles.shape[0], 4))
     for ii, tile in enumerate(tiles):
-        sub_tiles = np.ma.masked_invalid(tile_array(tile, tile_shape=sub_tile_shape))
+        sub_tiles = tile_array(tile, tile_shape=sub_tile_shape)
         sub_tiles_std[ii, :] = sub_tiles.std(axis=(1, 2))
     return sub_tiles_std
 
