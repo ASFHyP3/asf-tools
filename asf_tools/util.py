@@ -52,7 +52,10 @@ def tile_array(array: np.ndarray, tile_shape: Tuple[int, int] = (200, 200), pad_
     tile_list = []
     for rows in np.vsplit(array, range(tile_rows, array_rows, tile_rows)):
         tile_list.extend(np.hsplit(rows, range(tile_columns, array_columns, tile_columns)))
-    tiled = np.moveaxis(np.dstack(tile_list), -1, 0)
+
+    dstack = np.ma.dstack if isinstance(array, np.ma.MaskedArray) else np.dstack
+    tiled = np.moveaxis(dstack(tile_list), -1, 0)
+
     return tiled
 
 
@@ -108,5 +111,9 @@ def untile_array(tiled_array, array_shape: Tuple[int, int]):
         for jj in range(untiled_columns):
             untiled[ii*tile_rows:(ii+1)*tile_rows, jj*tile_columns:(jj+1)*tile_columns] = \
                 tiled_array[ii * untiled_rows + jj, :, :]
+
+    if isinstance(tiled_array, np.ma.MaskedArray):
+        untiled_mask = untile_array(tiled_array.mask, array_shape)
+        untiled = np.ma.MaskedArray(untiled, mask=untiled_mask)
 
     return untiled[:array_rows, :array_columns]
