@@ -31,8 +31,13 @@ setup(
     python_requires='~=3.8',
 
     install_requires=[
-        'numpy',
+        'astropy',
+        'fiona',
         'gdal>=3.2.0',
+        'numpy',
+        'pysheds',
+        'shapely',
+        'rasterio',
     ],
 
     extras_require={
@@ -53,6 +58,7 @@ setup(
         'console_scripts': [
             'make_composite = asf_tools.composite:main',
             'water_map = asf_tools.water_map:main',
+            'make_hand = asf_tools.hand:main',
         ]
     },
 
