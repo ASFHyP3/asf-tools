@@ -75,19 +75,16 @@ def shift_for_antimeridian(dem_file_paths: List[str], directory: Path) -> List[s
     return shifted_file_paths
 
 
-def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection],
-                    buffer: float = 0.0):
+def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection]):
     """Create a DEM mosaic VRT covering a given geometry
 
-    The DEM mosaic is assembled from the Copernicus GLO-30 Public DEM.  The output VRT ensures the DEM covers the input
-    geometry buffered by the specified number of degrees.
+    The DEM mosaic is assembled from the Copernicus GLO-30 Public DEM tiles that intersect the geometry.
 
     Note: If the input geometry is a MULTIPOLYGON, this assumes the polygons are adjacent to the antimeridian.
 
     Args:
         vrt: Path for the output VRT file
         geometry: Geometry in EPSG:4326 (lon/lat) projection for which to prepare a DEM mosaic
-        buffer: Buffer the geometry by this many degrees when searching for intersection with DEM tiles
 
     """
     with GDALConfigManager(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR'):
@@ -99,7 +96,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely
 
         with TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            dem_file_paths = get_dem_file_paths(geometry.Buffer(buffer))
+            dem_file_paths = get_dem_file_paths(geometry)
 
             if geometry.GetGeometryName() == 'MULTIPOLYGON':
                 dem_file_paths = shift_for_antimeridian(dem_file_paths, temp_path)
