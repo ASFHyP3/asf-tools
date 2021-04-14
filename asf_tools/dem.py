@@ -2,8 +2,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Generator, List, Union
 
+import shapely.geometry
 from osgeo import gdal, ogr
-from shapely.geometry import GeometryCollection
 
 __all__ = ['GDALConfigManager', 'prepare_dem_vrt']
 DEM_GEOJSON = '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/cop30.geojson'
@@ -75,11 +75,8 @@ def shift_for_antimeridian(dem_file_paths: List[str], directory: Path) -> List[s
     return shifted_file_paths
 
 
-def geometry_from_wkb(wkb: bytes) -> ogr.Geometry:
-    return ogr.CreateGeometryFromWkb(wkb)
-
-
-def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, GeometryCollection]):
+def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection],
+                    buffer: float = 0.15):
     """Create a DEM mosaic VRT covering a given geometry
 
     The DEM mosaic is assembled from the Copernicus GLO-30 Public DEM.  The output VRT ensures the DEM covers the input
@@ -90,10 +87,11 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, Geometr
     Args:
         vrt: Path for the output VRT file
         geometry: Geometry in EPSG:4326 (lon/lat) projection for which to prepare a DEM mosaic
+        buffer: Buffer the geometry by this many degrees when searching for intersection with DEM tiles
 
     """
     with GDALConfigManager(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR'):
-        if isinstance(geometry, GeometryCollection):
+        if isinstance(geometry, shapely.geometry.GeometryCollection):
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
         if not intersects_dem(geometry):
@@ -101,7 +99,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, Geometr
 
         with TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            dem_file_paths = get_dem_file_paths(geometry.Buffer(0.15))
+            dem_file_paths = get_dem_file_paths(geometry.Buffer(buffer))
 
             if geometry.GetGeometryName() == 'MULTIPOLYGON':
                 dem_file_paths = shift_for_antimeridian(dem_file_paths, temp_path)
