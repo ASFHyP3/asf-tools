@@ -58,7 +58,7 @@ setup(
         'console_scripts': [
             'make_composite = asf_tools.composite:main',
             'water_map = asf_tools.water_map:main',
-            'calculate_hand = asf_tools.hand:main',
+            'make_hand = asf_tools.hand:main',
         ]
     },
 
