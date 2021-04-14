@@ -148,7 +148,7 @@ def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]
         geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as dem_vrt:
-        prepare_dem_vrt(dem_vrt.name, geometries, buffer=0.0)
+        prepare_dem_vrt(dem_vrt.name, geometries)
         calculate_hand_for_basins(out_raster, geometries, dem_vrt.name)
 
 

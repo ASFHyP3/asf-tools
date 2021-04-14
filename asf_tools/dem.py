@@ -76,11 +76,11 @@ def shift_for_antimeridian(dem_file_paths: List[str], directory: Path) -> List[s
 
 
 def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection],
-                    buffer: float = 0.15):
+                    buffer: float = 0.0):
     """Create a DEM mosaic VRT covering a given geometry
 
     The DEM mosaic is assembled from the Copernicus GLO-30 Public DEM.  The output VRT ensures the DEM covers the input
-    geometry buffered by 0.15 degrees.
+    geometry buffered by the specified number of degrees.
 
     Note: If the input geometry is a MULTIPOLYGON, this assumes the polygons are adjacent to the antimeridian.
 
