@@ -1,8 +1,13 @@
+from typing import Literal
 import warnings
+
+
+
 import numpy as np
 
 
-def convert_scale(array: np.ndarray, in_scale: str, out_scale: str) -> np.ndarray:
+def convert_scale(array: np.ndarray, in_scale: Literal['db', 'amplitude', 'power'],
+                  out_scale: Literal['db', 'amplitude', 'power']) -> np.ndarray:
     """Convert raster scale between power, amplitude and db"""
     if in_scale == out_scale:
         warnings.warn(f'Nothing to do! {in_scale} is same as {out_scale}.')
