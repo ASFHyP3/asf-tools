@@ -4,6 +4,7 @@ import pytest
 
 from asf_tools import raster
 
+
 def test_convert_scale():
     c = raster.convert_scale(np.array([-10, -5, 0, 5, 10]), 'amplitude', 'power')
     assert np.all(np.isclose(np.array([100, 25, 0, 25, 100]), c))
