@@ -17,7 +17,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * `kittler_illingworth_threshold` in `asf_tools.threshold` to calculate a minimum error threshold
   value à la [Kittler and Illingworth, 1986](https://doi.org/10.1016/0031-3203(86)90030-0)
 * `tile_array` and `untile_array` in `asf_tools.util` to transform a numpy array into a set of tiles
-
+* `convert_scale` in `asf_tools.raster` to transform calibrated raster between decibel, power, and amplitude scales
 
 ## [0.2.0](https://github.com/ASFHyP3/asf-tools/compare/v0.1.1...v0.2.0)
 
