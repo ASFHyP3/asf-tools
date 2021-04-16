@@ -1,7 +1,5 @@
-from typing import Literal
 import warnings
-
-
+from typing import Literal
 
 import numpy as np
 
