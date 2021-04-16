@@ -6,7 +6,7 @@ import numpy as np
 
 def convert_scale(array: np.ndarray, in_scale: Literal['db', 'amplitude', 'power'],
                   out_scale: Literal['db', 'amplitude', 'power']) -> np.ndarray:
-    """Convert raster scale between power, amplitude and db"""
+    """Convert calibrated raster scale between db, amplitude and power"""
     if in_scale == out_scale:
         warnings.warn(f'Nothing to do! {in_scale} is same as {out_scale}.')
         return array
