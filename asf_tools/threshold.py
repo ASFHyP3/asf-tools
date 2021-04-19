@@ -65,11 +65,11 @@ def expectation_maximization_threshold(image: np.ndarray, number_of_classes: int
             (np.arange(number_of_classes) + 1) * maximum /
             (number_of_classes + 1)
     )
-    class_variances = np.ones((number_of_classes)) * maximum
-    class_proportions = np.ones((number_of_classes)) * 1 / number_of_classes
+    class_variances = np.ones(number_of_classes) * maximum
+    class_proportions = np.ones(number_of_classes) * 1 / number_of_classes
     sml = np.mean(np.diff(nonzero_indices)) / 1000
     iteration = 0
-    while (True):
+    while True:
         class_likelihood = make_distribution(
             class_means, class_variances, class_proportions, nonzero_indices
         )
@@ -91,7 +91,7 @@ def expectation_maximization_threshold(image: np.ndarray, number_of_classes: int
                     / class_proportions[j] + sml
             )
             del class_posterior_probability, vr
-        class_proportions = class_proportions + 1e-3
+        class_proportions += 1e-3
         class_proportions = class_proportions / np.sum(class_proportions)
         class_likelihood = make_distribution(
             class_means, class_variances, class_proportions, nonzero_indices
@@ -101,9 +101,9 @@ def expectation_maximization_threshold(image: np.ndarray, number_of_classes: int
         del class_likelihood
         new_log_likelihood = np.sum(histogram * np.log(sum_likelihood))
         del sum_likelihood
-        if ((new_log_likelihood - log_likelihood) < 0.000001):
+        if (new_log_likelihood - log_likelihood) < 0.000001:
             break
-        iteration = iteration + 1
+        iteration += 1
     del log_likelihood, new_log_likelihood
     class_means = class_means + minimum - 1
     s = image_copy.shape
