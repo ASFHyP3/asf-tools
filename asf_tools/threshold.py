@@ -44,14 +44,14 @@ def make_distribution(m, v, g, x):
     return y
 
 
-def expectation_maximization_threshold(image: np.ndarray, number_of_classes: int, scaling) -> Tuple[np.ndarray]:
+def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int = 3) -> Tuple[np.ndarray]:
     """
     Function for Threshold Calculation using an Expectation Maximization Approach
     """
 
-    image_copy = image.copy()
-    image_copy2 = np.ma.filled(image.astype(float), np.nan)  # needed for valid posterior_lookup keys
-    image = image.flatten()
+    image_copy = tile.copy()
+    image_copy2 = np.ma.filled(tile.astype(float), np.nan)  # needed for valid posterior_lookup keys
+    image = tile.flatten()
     minimum = np.amin(image)
     image = image - minimum + 1
     maximum = np.amax(image)
@@ -125,21 +125,13 @@ def expectation_maximization_threshold(image: np.ndarray, number_of_classes: int
                     posterior[i, j, n] = x * class_proportions[n]
                     posterior_lookup[pixel_val][n] = posterior[i, j, n]
 
-    ### TODO: MAGIC
     sorti = np.argsort(class_means)
-    cms = class_means[sorti]
-    cvs = class_variances[sorti]
-    cps = class_proportions[sorti]
-    xvec = np.arange(cms[0], cms[1], step=.05)
-    x1 = make_distribution(cms[0], cvs[0], cps[0], xvec)
-    x2 = make_distribution(cms[1], cvs[1], cps[1], xvec)
+    xvec = np.arange(class_means[sorti[0]], class_means[sorti[1]], step=.05)
+    x1 = make_distribution(class_means[sorti[0]], class_variances[sorti[0]], class_proportions[sorti[0]], xvec)
+    x2 = make_distribution(class_means[sorti[1]], class_variances[sorti[1]], class_proportions[sorti[1]], xvec)
     dx = np.abs(x1 - x2)
-    diff1 = posterior[:, :, 0] - posterior[:, :, 1]
-    t_ind = np.argmin(dx)
-    return xvec[t_ind] / scaling
-    ###  end edits
 
-    # return posterior, class_means, class_variances, class_proportions
+    return xvec[np.argmin(dx)]
 
 
 def kittler_illingworth_threshold(scene: np.ndarray) -> float:
