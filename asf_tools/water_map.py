@@ -89,10 +89,6 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
         hand_threshold:
         hand_fraction:
     """
-    # TODO: * pull HAND for scenes if needed... (Exp. Max)
-    #       * mask hand less than a HAND threshold...
-    #       * percent unmasked HAND pixels... for???
-    # TODO: calculate VH first, then VV
     if tile_shape[0] % 2 or tile_shape[1] % 2:
         raise ValueError(f'tile_shape {tile_shape} requires even values.')
 
@@ -112,7 +108,8 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     secondary_db_threshold = determine_em_threshold(secondary_tiles[selected_secondary_tiles, :, :])
     print(f"Best Secondary Flood Mapping Threshold: "
           f"{secondary_db_threshold:.2f} (db-like); "
-          f"{10 * (secondary_db_threshold - 30):.2f} (power)")
+          f"{10 * (secondary_db_threshold - 30):.2f} (notebook print)"
+          f"{10 ** (secondary_db_threshold - 30):.2f} (power)")
 
     log.info('Creating initial water mask from primary raster')
     primary_array = np.ma.masked_less(read_as_array(str(primary)), 0)
@@ -123,7 +120,8 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     primary_db_threshold = determine_em_threshold(primary_tiles[selected_secondary_tiles, :, :])
     print(f"Best Primary Flood Mapping Threshold: "
           f"{primary_db_threshold:.2f} (db-like); "
-          f"{10 * (primary_db_threshold - 30):.2f} (power)")
+          f"{10 * (primary_db_threshold - 30):.2f} (notebook print)"
+          f"{10 ** (primary_db_threshold - 30):.2f} (power)")
 
 
     # log.info('Combining primary and secondary water masks')
