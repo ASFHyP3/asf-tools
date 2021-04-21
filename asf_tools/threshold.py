@@ -44,7 +44,7 @@ def make_distribution(m, v, g, x):
     return y
 
 
-def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int = 3) -> Tuple[np.ndarray]:
+def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int = 3) -> float:
     """
     Function for Threshold Calculation using an Expectation Maximization Approach
     """
@@ -65,8 +65,8 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
             (np.arange(number_of_classes) + 1) * maximum /
             (number_of_classes + 1)
     )
-    class_variances = np.ones(number_of_classes) * maximum
-    class_proportions = np.ones(number_of_classes) * 1 / number_of_classes
+    class_variances = np.ones((number_of_classes)) * maximum
+    class_proportions = np.ones((number_of_classes)) * 1 / number_of_classes
     sml = np.mean(np.diff(nonzero_indices)) / 1000
     iteration = 0
     while True:
@@ -125,7 +125,9 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
                     posterior[i, j, n] = x * class_proportions[n]
                     posterior_lookup[pixel_val][n] = posterior[i, j, n]
 
+    # return posterior, class_means, class_variances, class_proportions
     sorti = np.argsort(class_means)
+
     xvec = np.arange(class_means[sorti[0]], class_means[sorti[1]], step=.05)
     x1 = make_distribution(class_means[sorti[0]], class_variances[sorti[0]], class_proportions[sorti[0]], xvec)
     x2 = make_distribution(class_means[sorti[1]], class_variances[sorti[1]], class_proportions[sorti[1]], xvec)

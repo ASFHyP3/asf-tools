@@ -3,7 +3,6 @@
 import argparse
 import logging
 import sys
-from functools import reduce
 from pathlib import Path
 from typing import Tuple, Union
 
@@ -56,23 +55,29 @@ def select_backscatter_tiles(backscatter_tiles: np.ndarray, hand_candidates: np.
 
     potential_candidates = np.intersect1d(hand_candidates, low_mean_candidates)
 
+    print(f'hand candidates: {hand_candidates}')  # looks similar... h_select_vh
+    print(f'low mean candidates: {low_mean_candidates}')  # looks similar... mean_select_vh
+    print(f'potential candidates: {potential_candidates}')  # different.
+
     for pvar in np.percentile(tile_variance, np.arange(5, 96)[::-1]):
-        variance_threshold = tile_variance[np.argmax(tile_variance > pvar)]
+        print(f'variance percentile: {pvar}')  # Close! 0.03849890488947989 (us) vs 0.3701278340453614 (them)
+        variance_threshold = tile_variance[np.argmin(tile_variance > pvar)]
+        print(f'variance_threshold {variance_threshold}')
         variance_candidates = tile_indexes[tile_variance > variance_threshold]
         selected = np.intersect1d(variance_candidates, potential_candidates)
+        print(selected)
         if len(selected) >= 5:
             return selected[:5]
 
 
-def determine_em_threshold(tiles: np.ndarray) -> float:
-    # FIXME: Scaling here or there?
-    scaling = 256 / (np.mean(tiles) + 3 * np.std(tiles))
-
+def determine_em_threshold(tiles: np.ndarray, scaling: float) -> float:
     thresholds = []
     for ii in range(tiles.shape[0]):
-        thresholds.append(em_threshold(tiles[ii, :, :] * scaling))
+        test_tile = (np.around(tiles[ii, :, :] * scaling)).astype(int)
+        thresholds.append(em_threshold(test_tile) / scaling)
 
-    return np.median(thresholds) / scaling
+    print(f'thresholds: {thresholds}')
+    return np.median(np.sort(thresholds)[:4])
 
 
 def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], secondary: Union[str, Path],
@@ -98,29 +103,34 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
 
     log.info('Creating initial water mask from secondary raster')
-    secondary_array = np.ma.masked_less(read_as_array(str(secondary)), 0)
-    secondary_tiles = np.ma.masked_invalid(tile_array(secondary_array, tile_shape=tile_shape, pad_value=np.nan))
+    secondary_array = np.ma.masked_invalid(read_as_array(str(secondary)))
+    secondary_tiles = np.ma.masked_less_equal(tile_array(secondary_array, tile_shape=tile_shape, pad_value=0.), 0.)
     selected_secondary_tiles = select_backscatter_tiles(secondary_tiles, hand_candidates)
     if selected_secondary_tiles is None:
         raise NotImplementedError('Tile selection did not converge! using default threshold')
+    print(f'Selected Secondary Tiles: {selected_secondary_tiles}')
+
+    assert np.all(selected_secondary_tiles == np.array([771, 1974, 1205, 2397, 2577]))  # them.
 
     secondary_tiles = np.log10(secondary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
-    secondary_db_threshold = determine_em_threshold(secondary_tiles[selected_secondary_tiles, :, :])
+    secondary_scaling = 256 / (np.mean(secondary_tiles) + 3 * np.std(secondary_tiles))
+    secondary_db_threshold = determine_em_threshold(secondary_tiles[selected_secondary_tiles, :, :], secondary_scaling)
     print(f"Best Secondary Flood Mapping Threshold: "
           f"{secondary_db_threshold:.2f} (db-like); "
-          f"{10 * (secondary_db_threshold - 30):.2f} (notebook print)"
+          f"{10 * (secondary_db_threshold - 30):.2f} (notebook print) "
           f"{10 ** (secondary_db_threshold - 30):.2f} (power)")
 
     log.info('Creating initial water mask from primary raster')
-    primary_array = np.ma.masked_less(read_as_array(str(primary)), 0)
-    primary_tiles = np.ma.masked_invalid(tile_array(primary_array, tile_shape=tile_shape, pad_value=np.nan))
+    primary_array = np.ma.masked_invalid(read_as_array(str(primary)))
+    primary_tiles = np.ma.masked_less_equal(tile_array(primary_array, tile_shape=tile_shape, pad_value=0.), 0.)
     # selected_primary_tiles = select_backscatter_tiles(primary_tiles, hand_candidates)
 
     primary_tiles = np.log10(primary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
-    primary_db_threshold = determine_em_threshold(primary_tiles[selected_secondary_tiles, :, :])
+    primary_scaling = 256 / (np.mean(primary_tiles) + 3 * np.std(primary_tiles))
+    primary_db_threshold = determine_em_threshold(primary_tiles[selected_secondary_tiles, :, :], primary_scaling)
     print(f"Best Primary Flood Mapping Threshold: "
           f"{primary_db_threshold:.2f} (db-like); "
-          f"{10 * (primary_db_threshold - 30):.2f} (notebook print)"
+          f"{10 * (primary_db_threshold - 30):.2f} (notebook print) "
           f"{10 ** (primary_db_threshold - 30):.2f} (power)")
 
 
