@@ -95,25 +95,25 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     hand_tiles = np.ma.masked_invalid(tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan))
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
 
-    log.info('Creating initial water mask from secondary raster')
-    secondary_array = np.ma.masked_invalid(read_as_array(str(secondary)))
-    secondary_tiles = np.ma.masked_less_equal(tile_array(secondary_array, tile_shape=tile_shape, pad_value=0.), 0.)
-    selected_secondary_tiles = select_backscatter_tiles(secondary_tiles, hand_candidates)
-    if selected_secondary_tiles is None:
-        raise NotImplementedError('Tile selection did not converge! using default threshold')
-
-    secondary_tiles = np.log10(secondary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
-    secondary_scaling = 256 / (np.mean(secondary_tiles) + 3 * np.std(secondary_tiles))
-    secondary_db_threshold = determine_em_threshold(secondary_tiles[selected_secondary_tiles, :, :], secondary_scaling)
-
     log.info('Creating initial water mask from primary raster')
     primary_array = np.ma.masked_invalid(read_as_array(str(primary)))
     primary_tiles = np.ma.masked_less_equal(tile_array(primary_array, tile_shape=tile_shape, pad_value=0.), 0.)
-    # selected_primary_tiles = select_backscatter_tiles(primary_tiles, hand_candidates)
+    selected_primary_tiles = select_backscatter_tiles(primary_tiles, hand_candidates)
+    if selected_primary_tiles is None:
+        raise NotImplementedError('Tile selection did not converge! using default threshold')
 
     primary_tiles = np.log10(primary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
     primary_scaling = 256 / (np.mean(primary_tiles) + 3 * np.std(primary_tiles))
-    primary_db_threshold = determine_em_threshold(primary_tiles[selected_secondary_tiles, :, :], primary_scaling)
+    primary_db_threshold = determine_em_threshold(primary_tiles[selected_primary_tiles, :, :], primary_scaling)
+
+    log.info('Creating initial water mask from secondary raster')
+    secondary_array = np.ma.masked_invalid(read_as_array(str(secondary)))
+    secondary_tiles = np.ma.masked_less_equal(tile_array(secondary_array, tile_shape=tile_shape, pad_value=0.), 0.)
+
+    secondary_tiles = np.log10(secondary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
+    secondary_scaling = 256 / (np.mean(secondary_tiles) + 3 * np.std(secondary_tiles))
+    secondary_db_threshold = determine_em_threshold(secondary_tiles[selected_primary_tiles, :, :], secondary_scaling)
+
 
 
     # log.info('Combining primary and secondary water masks')
