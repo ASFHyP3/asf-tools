@@ -1,3 +1,5 @@
+# Turned off flake8 because we haven't refactored 3rd party provided functions
+# flake8: noqa
 import numpy as np
 
 
