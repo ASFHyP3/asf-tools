@@ -12,13 +12,10 @@ def make_histogram(image):
     del indices
     size = image.size
     maximum = int(np.ceil(np.amax(image)) + 1)
-    # maximum = (np.ceil(np.amax(image)) + 1)
     histogram = np.zeros((1, maximum))
     for i in range(0, size):
-        # floor_value = int(np.floor(image[i]))
         floor_value = np.floor(image[i]).astype(np.uint8)
-        # floor_value = (np.floor(image[i]))
-        if floor_value > 0 and floor_value < maximum - 1:
+        if 0 < floor_value < maximum - 1:
             temp1 = image[i] - floor_value
             temp2 = 1 - temp1
             histogram[0, floor_value] = histogram[0, floor_value] + temp1
@@ -54,7 +51,6 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
     image = image - minimum + 1
     maximum = np.amax(image)
 
-    size = image.size
     histogram = make_histogram(image)
     nonzero_indices = np.nonzero(histogram)[0]
     histogram = histogram[nonzero_indices]
@@ -63,8 +59,8 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
             (np.arange(number_of_classes) + 1) * maximum /
             (number_of_classes + 1)
     )
-    class_variances = np.ones((number_of_classes)) * maximum
-    class_proportions = np.ones((number_of_classes)) * 1 / number_of_classes
+    class_variances = np.ones(number_of_classes) * maximum
+    class_proportions = np.ones(number_of_classes) * 1 / number_of_classes
     sml = np.mean(np.diff(nonzero_indices)) / 1000
     iteration = 0
     while True:
@@ -123,9 +119,7 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
                     posterior[i, j, n] = x * class_proportions[n]
                     posterior_lookup[pixel_val][n] = posterior[i, j, n]
 
-    # return posterior, class_means, class_variances, class_proportions
     sorti = np.argsort(class_means)
-
     xvec = np.arange(class_means[sorti[0]], class_means[sorti[1]], step=.05)
     x1 = make_distribution(class_means[sorti[0]], class_variances[sorti[0]], class_proportions[sorti[0]], xvec)
     x2 = make_distribution(class_means[sorti[1]], class_variances[sorti[1]], class_proportions[sorti[1]], xvec)
