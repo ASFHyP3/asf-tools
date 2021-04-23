@@ -11,9 +11,12 @@ from osgeo import gdal
 
 from asf_tools.composite import get_epsg_code, read_as_array, write_cog
 from asf_tools.threshold import expectation_maximization_threshold as em_threshold
-from asf_tools.util import tile_array
+from asf_tools.util import tile_array, untile_array
 
 log = logging.getLogger(__name__)
+
+VV_DEFAULT_THRESHOLD = -17. / 10. + 30.  # db -> db-like
+VH_DEFAULT_THRESHOLD = -24. / 10. + 30.  # db -> db-like
 
 
 def std_of_subtiles(tiles: np.ndarray) -> np.ndarray:
@@ -99,29 +102,40 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     primary_array = np.ma.masked_invalid(read_as_array(str(primary)))
     primary_tiles = np.ma.masked_less_equal(tile_array(primary_array, tile_shape=tile_shape, pad_value=0.), 0.)
     selected_primary_tiles = select_backscatter_tiles(primary_tiles, hand_candidates)
-    if selected_primary_tiles is None:
-        raise NotImplementedError('Tile selection did not converge! using default threshold')
 
     primary_tiles = np.log10(primary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
-    primary_scaling = 256 / (np.mean(primary_tiles) + 3 * np.std(primary_tiles))
-    primary_db_threshold = determine_em_threshold(primary_tiles[selected_primary_tiles, :, :], primary_scaling)
+    if selected_primary_tiles is None:
+        log.warning('Tile selection did not converge! using default thresholds')
+        primary_threshold = VH_DEFAULT_THRESHOLD
+    else:
+        primary_scaling = 256 / (np.mean(primary_tiles) + 3 * np.std(primary_tiles))
+        primary_threshold = determine_em_threshold(primary_tiles[selected_primary_tiles, :, :], primary_scaling)
+        primary_threshold = primary_threshold if primary_threshold < VH_DEFAULT_THRESHOLD else VH_DEFAULT_THRESHOLD
+
+    primary_tiles = np.ma.masked_greater_equal(primary_tiles, primary_threshold)
+    primary_water_map = untile_array(~primary_tiles.mask, primary_array.shape)
 
     log.info('Creating initial water mask from secondary raster')
     secondary_array = np.ma.masked_invalid(read_as_array(str(secondary)))
     secondary_tiles = np.ma.masked_less_equal(tile_array(secondary_array, tile_shape=tile_shape, pad_value=0.), 0.)
 
     secondary_tiles = np.log10(secondary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
-    secondary_scaling = 256 / (np.mean(secondary_tiles) + 3 * np.std(secondary_tiles))
-    secondary_db_threshold = determine_em_threshold(secondary_tiles[selected_primary_tiles, :, :], secondary_scaling)
+    if selected_primary_tiles is None:
+        secondary_threshold = VV_DEFAULT_THRESHOLD
+    else:
+        secondary_scaling = 256 / (np.mean(secondary_tiles) + 3 * np.std(secondary_tiles))
+        secondary_threshold = determine_em_threshold(secondary_tiles[selected_primary_tiles, :, :], secondary_scaling)
+        secondary_threshold = secondary_threshold if secondary_threshold < VV_DEFAULT_THRESHOLD else VV_DEFAULT_THRESHOLD
 
+    secondary_tiles = np.ma.masked_greater_equal(secondary_tiles, secondary_threshold)
+    secondary_water_map = untile_array(~secondary_tiles.mask, secondary_array.shape)
 
+    log.info('Combining primary and secondary water masks')
+    combined_water_map = primary_water_map | secondary_water_map
 
-    # log.info('Combining primary and secondary water masks')
-    # combined_mask = primary_mask | secondary_mask
-    #
-    # primary_info = gdal.Info(str(primary), format='json')
-    # write_cog(str(out_raster), combined_mask, transform=primary_info['geoTransform'],
-    #           epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
+    primary_info = gdal.Info(str(primary), format='json')
+    write_cog(str(out_raster), combined_water_map, transform=primary_info['geoTransform'],
+              epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
 
 
 def main():
