@@ -117,7 +117,7 @@ def untile_array(tiled_array: Union[np.ndarray, np.ma.MaskedArray], array_shape:
     for ii in range(untiled_rows):
         for jj in range(untiled_columns):
             untiled[ii*tile_rows:(ii+1)*tile_rows, jj*tile_columns:(jj+1)*tile_columns] = \
-                tiled_array[ii * untiled_rows + jj, :, :]
+                tiled_array[ii * untiled_columns + jj, :, :]
 
     if isinstance(tiled_array, np.ma.MaskedArray):
         untiled_mask = untile_array(tiled_array.mask, untiled.shape)
