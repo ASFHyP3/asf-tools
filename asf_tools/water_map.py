@@ -20,15 +20,6 @@ VV_DEFAULT_THRESHOLD = -17. / 10. + 30.  # db -> db-like
 VH_DEFAULT_THRESHOLD = -24. / 10. + 30.  # db -> db-like
 
 
-def std_of_subtiles(tiles: np.ndarray) -> np.ndarray:
-    sub_tile_shape = (tiles.shape[1] // 2, tiles.shape[2] // 2)
-    sub_tiles_std = np.zeros((tiles.shape[0], 4))
-    for ii, tile in enumerate(tiles):
-        sub_tiles = tile_array(tile, tile_shape=sub_tile_shape)
-        sub_tiles_std[ii, :] = sub_tiles.std(axis=(1, 2))
-    return sub_tiles_std
-
-
 def mean_of_subtiles(tiles: np.ndarray) -> np.ndarray:
     sub_tile_shape = (tiles.shape[1] // 2, tiles.shape[2] // 2)
     sub_tiles_mean = np.zeros((tiles.shape[0], 4))
@@ -66,6 +57,7 @@ def select_backscatter_tiles(backscatter_tiles: np.ndarray, hand_candidates: np.
         sort_index = np.argsort(sub_tile_means_std[selected])[::-1]
         if len(selected) >= 5:
             return selected[sort_index][:5]
+    return np.array([])
 
 
 def determine_em_threshold(tiles: np.ndarray, scaling: float) -> float:
@@ -77,15 +69,15 @@ def determine_em_threshold(tiles: np.ndarray, scaling: float) -> float:
     return np.median(np.sort(thresholds)[:4])
 
 
-def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], secondary: Union[str, Path],
+def make_water_map(out_raster: Union[str, Path], vh_raster: Union[str, Path], vv_raster: Union[str, Path],
                    hand: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
                    hand_threshold: float = 15., hand_fraction: float = 0.8):
     """Creates a surface water extent map from a Sentinel-1 RTC product
 
     Args:
         out_raster: Water map GeoTIFF to create
-        primary: Sentinel-1 RTC GeoTIFF raster, in power scale, of the primary polarization
-        secondary: Sentinel-1 RTC GeoTIFF raster, in power scale, of the secondary polarization
+        vh_raster: Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization
+        vv_raster: Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization
         hand: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the rasters
         tile_shape:
         hand_threshold:
@@ -99,50 +91,47 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     hand_tiles = tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan)
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
 
-    log.info('Creating initial water mask from primary raster')
-    primary_array = read_as_masked_array(str(primary))
-    # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
-    primary_tiles = np.ma.masked_less_equal(tile_array(primary_array, tile_shape=tile_shape, pad_value=0.), 0.)
-    selected_primary_tiles = select_backscatter_tiles(primary_tiles, hand_candidates)
+    selected_tiles = None
+    water_extent_maps = []
+    for default_threshold, raster in zip((VH_DEFAULT_THRESHOLD, VV_DEFAULT_THRESHOLD), (vh_raster, vv_raster)):
+        log.info(f'Creating initial water mask from {raster}')
+        array = read_as_masked_array(str(raster))
+        # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
+        tiles = np.ma.masked_less_equal(tile_array(array, tile_shape=tile_shape, pad_value=0.), 0.)
+        if selected_tiles is None:
+            selected_tiles = select_backscatter_tiles(tiles, hand_candidates)
+            log.info(f'Selected tiles {selected_tiles} from {raster}')
 
-    primary_tiles = np.log10(primary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
-    if selected_primary_tiles is None:
-        log.warning('Tile selection did not converge! using default thresholds')
-        primary_threshold = VH_DEFAULT_THRESHOLD
-    else:
-        primary_scaling = 256 / (np.mean(primary_tiles) + 3 * np.std(primary_tiles))
-        primary_threshold = determine_em_threshold(primary_tiles[selected_primary_tiles, :, :], primary_scaling)
-        primary_threshold = primary_threshold if primary_threshold < VH_DEFAULT_THRESHOLD else VH_DEFAULT_THRESHOLD
+        tiles = np.log10(tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
+        if selected_tiles.size == 0:
+            log.info(f'Tile selection did not converge! using default threshold {default_threshold}')
+            threshold = default_threshold
+        else:
+            scaling = 256 / (np.mean(tiles) + 3 * np.std(tiles))
+            threshold = determine_em_threshold(tiles[selected_tiles, :, :], scaling)
+            log.info(f'Threshold determined to be {threshold}')
+            if threshold > default_threshold:
+                log.info(f'Threshold not low enough! Using default threshold {default_threshold}')
+                threshold = default_threshold
 
-    primary_tiles = np.ma.masked_less_equal(primary_tiles, primary_threshold)
-    primary_water_map = untile_array(primary_tiles.mask, primary_array.shape) & ~primary_array.mask
+        tiles = np.ma.masked_less_equal(tiles, threshold)
+        water_map = untile_array(tiles.mask, array.shape) & ~array.mask
 
-    log.info('Creating initial water mask from secondary raster')
-    secondary_array = read_as_masked_array(str(secondary))
-    # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
-    secondary_tiles = np.ma.masked_less_equal(tile_array(secondary_array, tile_shape=tile_shape, pad_value=0.), 0.)
+        del array, tiles
 
-    secondary_tiles = np.log10(secondary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
-    if selected_primary_tiles is None:
-        secondary_threshold = VV_DEFAULT_THRESHOLD
-    else:
-        secondary_scaling = 256 / (np.mean(secondary_tiles) + 3 * np.std(secondary_tiles))
-        secondary_threshold = determine_em_threshold(secondary_tiles[selected_primary_tiles, :, :], secondary_scaling)
-        secondary_threshold = secondary_threshold if secondary_threshold < VV_DEFAULT_THRESHOLD else VV_DEFAULT_THRESHOLD
+        raster_info = gdal.Info(str(raster), format='json')
+        file_end = '_VH.tif' if '_VH' in str(raster) else '_VV.tif'
+        write_cog(str(out_raster).replace('.tif', file_end), water_map, transform=raster_info['geoTransform'],
+                  epsg_code=get_epsg_code(raster_info), dtype=gdal.GDT_Byte, nodata_value=False)
 
-    secondary_tiles = np.ma.masked_less_equal(secondary_tiles, secondary_threshold)
-    secondary_water_map = untile_array(secondary_tiles.mask, secondary_array.shape) & ~secondary_array.mask
+        water_extent_maps.append(water_map)
 
-    log.info('Combining primary and secondary water masks')
-    combined_water_map = primary_water_map | secondary_water_map
+    log.info('Combining VH and VV water masks')
+    combined_water_map = water_extent_maps[0] | water_extent_maps[1]
 
-    primary_info = gdal.Info(str(primary), format='json')
-    write_cog(str(out_raster), combined_water_map, transform=primary_info['geoTransform'],
-              epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
-    write_cog(str(out_raster).replace('.tif', '_VH.tif'), primary_water_map, transform=primary_info['geoTransform'],
-              epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
-    write_cog(str(out_raster).replace('.tif', '_VV.tif'), secondary_water_map, transform=primary_info['geoTransform'],
-              epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
+    raster_info = gdal.Info(str(vh_raster), format='json')
+    write_cog(str(out_raster), combined_water_map, transform=raster_info['geoTransform'],
+              epsg_code=get_epsg_code(raster_info), dtype=gdal.GDT_Byte, nodata_value=False)
 
 
 def main():
@@ -153,10 +142,10 @@ def main():
 
     parser.add_argument('out_raster', type=Path, help='Water map GeoTIFF to create')
     # FIXME: Don't assume power scale?
-    parser.add_argument('primary', type=Path,
-                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, of the primary polarization')
-    parser.add_argument('secondary', type=Path,
-                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, of the secondary polarization')
+    parser.add_argument('vh_raster', type=Path,
+                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization')
+    parser.add_argument('vv_raster', type=Path,
+                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
     # FIXME: Don't assume warped HAND
     parser.add_argument('hand', type=Path,
                         help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the rasters')
@@ -167,8 +156,8 @@ def main():
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
-    log.info(f'Creating a water map from raster(s): {args.primary} {args.secondary}')
+    log.info(f'Creating a water map from raster(s): {args.vh_raster} {args.vv_raster}')
 
-    make_water_map(args.out_raster, args.primary, args.secondary, args.hand)
+    make_water_map(args.out_raster, args.vh_raster, args.vv_raster, args.hand)
 
     log.info(f'Water map created successfully: {args.out_raster}')
