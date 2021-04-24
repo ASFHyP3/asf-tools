@@ -9,7 +9,8 @@ from typing import Tuple, Union
 import numpy as np
 from osgeo import gdal
 
-from asf_tools.composite import get_epsg_code, read_as_array, write_cog
+from asf_tools.composite import get_epsg_code, write_cog
+from asf_tools.raster import read_as_masked_array
 from asf_tools.threshold import expectation_maximization_threshold as em_threshold
 from asf_tools.util import tile_array, untile_array
 
@@ -93,13 +94,14 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
     if tile_shape[0] % 2 or tile_shape[1] % 2:
         raise ValueError(f'tile_shape {tile_shape} requires even values.')
 
-    hand_array = read_as_array(str(hand))
+    hand_array = read_as_masked_array(str(hand))
 
-    hand_tiles = np.ma.masked_invalid(tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan))
+    hand_tiles = tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan)
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
 
     log.info('Creating initial water mask from primary raster')
-    primary_array = np.ma.masked_invalid(read_as_array(str(primary)))
+    primary_array = read_as_masked_array(str(primary))
+    # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
     primary_tiles = np.ma.masked_less_equal(tile_array(primary_array, tile_shape=tile_shape, pad_value=0.), 0.)
     selected_primary_tiles = select_backscatter_tiles(primary_tiles, hand_candidates)
 
@@ -112,11 +114,12 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
         primary_threshold = determine_em_threshold(primary_tiles[selected_primary_tiles, :, :], primary_scaling)
         primary_threshold = primary_threshold if primary_threshold < VH_DEFAULT_THRESHOLD else VH_DEFAULT_THRESHOLD
 
-    primary_tiles = np.ma.masked_greater_equal(primary_tiles, primary_threshold)
-    primary_water_map = untile_array(~primary_tiles.mask, primary_array.shape)
+    primary_tiles = np.ma.masked_less_equal(primary_tiles, primary_threshold)
+    primary_water_map = untile_array(primary_tiles.mask, primary_array.shape) & ~primary_array.mask
 
     log.info('Creating initial water mask from secondary raster')
-    secondary_array = np.ma.masked_invalid(read_as_array(str(secondary)))
+    secondary_array = read_as_masked_array(str(secondary))
+    # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
     secondary_tiles = np.ma.masked_less_equal(tile_array(secondary_array, tile_shape=tile_shape, pad_value=0.), 0.)
 
     secondary_tiles = np.log10(secondary_tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
@@ -127,14 +130,18 @@ def make_water_map(out_raster: Union[str, Path], primary: Union[str, Path], seco
         secondary_threshold = determine_em_threshold(secondary_tiles[selected_primary_tiles, :, :], secondary_scaling)
         secondary_threshold = secondary_threshold if secondary_threshold < VV_DEFAULT_THRESHOLD else VV_DEFAULT_THRESHOLD
 
-    secondary_tiles = np.ma.masked_greater_equal(secondary_tiles, secondary_threshold)
-    secondary_water_map = untile_array(~secondary_tiles.mask, secondary_array.shape)
+    secondary_tiles = np.ma.masked_less_equal(secondary_tiles, secondary_threshold)
+    secondary_water_map = untile_array(secondary_tiles.mask, secondary_array.shape) & ~secondary_array.mask
 
     log.info('Combining primary and secondary water masks')
     combined_water_map = primary_water_map | secondary_water_map
 
     primary_info = gdal.Info(str(primary), format='json')
     write_cog(str(out_raster), combined_water_map, transform=primary_info['geoTransform'],
+              epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
+    write_cog(str(out_raster).replace('.tif', '_VH.tif'), primary_water_map, transform=primary_info['geoTransform'],
+              epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
+    write_cog(str(out_raster).replace('.tif', '_VV.tif'), secondary_water_map, transform=primary_info['geoTransform'],
               epsg_code=get_epsg_code(primary_info), dtype=gdal.GDT_Byte, nodata_value=False)
 
 
