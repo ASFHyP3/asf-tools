@@ -15,8 +15,8 @@ def test_determine_em_threshold(raster_tiles):
 
 @pytest.mark.integration
 def test_select_hand_tiles(hand_candidates):
-    hand = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_HAND.tif'
-    hand_array = read_as_array(str(hand))
+    hand_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_HAND.tif'
+    hand_array = read_as_array(str(hand_geotif))
     hand_tiles = np.ma.masked_invalid(tile_array(hand_array, tile_shape=(100, 100), pad_value=np.nan))
 
     selected_tiles = water_map.select_hand_tiles(hand_tiles, 15., 0.8)
@@ -25,22 +25,22 @@ def test_select_hand_tiles(hand_candidates):
 
 @pytest.mark.integration
 def test_select_backscatter_tiles(hand_candidates):
-    primary = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VH.tif'
-    primary_array = np.ma.masked_invalid(read_as_array(primary))
-    primary_tiles = np.ma.masked_less_equal(tile_array(primary_array, tile_shape=(100, 100), pad_value=0.), 0.)
+    backscatter_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VH.tif'
+    backscatter_array = np.ma.masked_invalid(read_as_array(backscatter_geotif))
+    backscatter_tiles = np.ma.masked_less_equal(tile_array(backscatter_array, tile_shape=(100, 100), pad_value=0.), 0.)
 
-    selected_tiles = water_map.select_backscatter_tiles(primary_tiles, hand_candidates)
-    assert np.all(selected_tiles == np.array([771, 1974, 2397, 1205, 2577]))
+    tile_indexes = water_map.select_backscatter_tiles(backscatter_tiles, hand_candidates)
+    assert np.all(tile_indexes == np.array([771, 1974, 2397, 1205, 2577]))
 
 
 @pytest.mark.integration
-def test_initial_water_map(tmp_path):
-    primary = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VH.tif'
-    secondary = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VV.tif'
-    hand = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_HAND.tif'
+def test_em_threshold_water_map(tmp_path):
+    vh_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VH.tif'
+    vv_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VV.tif'
+    hand_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_HAND.tif'
 
-    out_water_map = tmp_path / 'initial_water_map.tif'
-    water_map.make_water_map(out_water_map, primary, secondary, hand)
+    out_water_map = tmp_path / 'water_map.tif'
+    water_map.make_water_map(out_water_map, vh_geotif, vv_geotif, hand_geotif)
 
     assert out_water_map.exists()
 
