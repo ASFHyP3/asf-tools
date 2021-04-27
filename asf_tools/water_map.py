@@ -1,4 +1,10 @@
-"""Generate surface water maps from Sentinel-1 RTC products"""
+"""Generate surface water maps from Sentinel-1 RTC products
+
+Create a surface water extent map from a dual-pol Sentinel-1 RTC product and
+a HAND image. The HAND image must be pixel-aligned (same extent and size) to
+the RTC images. The water extent maps are created using an adaptive Expectation
+Maximization thresholding approach.
+"""
 
 import argparse
 import logging
@@ -15,9 +21,6 @@ from asf_tools.threshold import expectation_maximization_threshold as em_thresho
 from asf_tools.util import tile_array, untile_array
 
 log = logging.getLogger(__name__)
-
-VV_DEFAULT_THRESHOLD = -17. / 10. + 30.  # db -> db-like
-VH_DEFAULT_THRESHOLD = -24. / 10. + 30.  # db -> db-like
 
 
 def mean_of_subtiles(tiles: np.ndarray) -> np.ndarray:
@@ -69,68 +72,93 @@ def determine_em_threshold(tiles: np.ndarray, scaling: float) -> float:
     return np.median(np.sort(thresholds)[:4])
 
 
-def make_water_map(out_raster: Union[str, Path], vh_raster: Union[str, Path], vv_raster: Union[str, Path],
+def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh_raster: Union[str, Path],
                    hand: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
+                   max_vv_threshold: float = -17., max_vh_threshold: float = -24.,
                    hand_threshold: float = 15., hand_fraction: float = 0.8):
     """Creates a surface water extent map from a Sentinel-1 RTC product
 
+    Create a surface water extent map from a dual-pol Sentinel-1 RTC product and
+    a HAND image. The HAND image must be pixel-aligned (same extent and size) to
+    the RTC images. The water extent maps are created using an adaptive Expectation
+    Maximization thresholding approach.
+
+    The input images are broken into a set of corresponding tiles with a shape of
+    `tile_shape`, and a set of tiles are selected from the VH RTC
+    image that contain water boundaries to determine an appropriate water threshold.
+     Candidate tiles must meet these criteria:
+    * `hand_fraction` of pixels within a tile must have HAND pixel values lower
+      than `hand_threshold`
+    * The median backscatter value for the tile must be lower than an average tiles'
+      backscatter values
+    * The tile must have a high variance -- high variance is considered initially to
+      be a variance in the 95th percentile of the tile variances, but progressively
+      relaxed to the 5th percentile if there not at least 5 candidate tiles.
+
+    The 5 VH tiles with the highest variance are selected for thresholding and a
+    water threshold value is determined using an Expectation Maximization approach.
+    If there were not enough candidate tiles, the `max_vh_threshold` and `max_vv_threshold`
+    will be used instead.
+
     Args:
         out_raster: Water map GeoTIFF to create
-        vh_raster: Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization
         vv_raster: Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization
-        hand: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the rasters
-        tile_shape:
-        hand_threshold:
-        hand_fraction:
+        vh_raster: Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization
+        hand: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters
+        tile_shape: shape (height, width) in pixels to tile the image to
+        max_vv_threshold: Maximum threshold value to use for `vv_raster` in decibels (db)
+        max_vh_threshold:  Maximum threshold value to use for `vh_raster` in decibels (db)
+        hand_threshold: The maximum height above nearest drainage in meters to consider
+            a pixel valid
+        hand_fraction: The minimum fraction of valid HAND pixels required in a tile for
+            thresholding
     """
     if tile_shape[0] % 2 or tile_shape[1] % 2:
         raise ValueError(f'tile_shape {tile_shape} requires even values.')
 
-    hand_array = read_as_masked_array(str(hand))
+    hand_array = read_as_masked_array(hand)
 
     hand_tiles = tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan)
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
 
     selected_tiles = None
     water_extent_maps = []
-    for default_threshold, raster in zip((VH_DEFAULT_THRESHOLD, VV_DEFAULT_THRESHOLD), (vh_raster, vv_raster)):
+    for default_threshold, raster in zip((max_vh_threshold, max_vv_threshold),
+                                         (vh_raster, vv_raster)):
         log.info(f'Creating initial water mask from {raster}')
-        array = read_as_masked_array(str(raster))
+        array = read_as_masked_array(raster)
+        tiles = tile_array(array, tile_shape=tile_shape, pad_value=0.)
         # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
-        tiles = np.ma.masked_less_equal(tile_array(array, tile_shape=tile_shape, pad_value=0.), 0.)
+        tiles = np.ma.masked_less_equal(tiles, 0.)
         if selected_tiles is None:
             selected_tiles = select_backscatter_tiles(tiles, hand_candidates)
             log.info(f'Selected tiles {selected_tiles} from {raster}')
 
-        tiles = np.log10(tiles) + 30  # linear power distribution --> gaussian (db-like) distribution
-        if selected_tiles.size == 0:
-            log.info(f'Tile selection did not converge! using default threshold {default_threshold}')
-            threshold = default_threshold
-        else:
+        tiles = np.log10(tiles) + 30.  # linear power scale --> Gaussian (db-like) scale optimized for thresholding
+        default_threshold = default_threshold / 10. + 30.  # db --> Gaussian (db-like) scale optimized for thresholding
+        if selected_tiles.size:
             scaling = 256 / (np.mean(tiles) + 3 * np.std(tiles))
             threshold = determine_em_threshold(tiles[selected_tiles, :, :], scaling)
             log.info(f'Threshold determined to be {threshold}')
             if threshold > default_threshold:
-                log.info(f'Threshold not low enough! Using default threshold {default_threshold}')
+                log.info(f'Threshold too high! Using maximum threshold {default_threshold}')
                 threshold = default_threshold
+        else:
+            log.info(f'Tile selection did not converge! using default threshold {default_threshold}')
+            threshold = default_threshold
 
         tiles = np.ma.masked_less_equal(tiles, threshold)
         water_map = untile_array(tiles.mask, array.shape) & ~array.mask
 
-        del array, tiles
-
-        raster_info = gdal.Info(str(raster), format='json')
-        file_end = '_VH.tif' if '_VH' in str(raster) else '_VV.tif'
-        write_cog(str(out_raster).replace('.tif', file_end), water_map, transform=raster_info['geoTransform'],
-                  epsg_code=get_epsg_code(raster_info), dtype=gdal.GDT_Byte, nodata_value=False)
-
         water_extent_maps.append(water_map)
 
+        del array, tiles
+
     log.info('Combining VH and VV water masks')
-    combined_water_map = water_extent_maps[0] | water_extent_maps[1]
+    combined_water_map = np.logical_or(*water_extent_maps)
 
     raster_info = gdal.Info(str(vh_raster), format='json')
-    write_cog(str(out_raster), combined_water_map, transform=raster_info['geoTransform'],
+    write_cog(out_raster, combined_water_map, transform=raster_info['geoTransform'],
               epsg_code=get_epsg_code(raster_info), dtype=gdal.GDT_Byte, nodata_value=False)
 
 
@@ -141,14 +169,25 @@ def main():
     )
 
     parser.add_argument('out_raster', type=Path, help='Water map GeoTIFF to create')
-    # FIXME: Don't assume power scale?
-    parser.add_argument('vh_raster', type=Path,
-                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization')
+    # FIXME: Decibel RTCs would be real nice.
     parser.add_argument('vv_raster', type=Path,
                         help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
-    # FIXME: Don't assume warped HAND
+    parser.add_argument('vh_raster', type=Path,
+                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization')
+    # FIXME: Don't assume pixel-aligned HAND
     parser.add_argument('hand', type=Path,
-                        help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the rasters')
+                        help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters')
+
+    parser.add_argument('--tile-shape', type=int, nargs=2, default=(100, 100),
+                        help='shape (height, width) in pixels to tile the image to')
+    parser.add_argument('--max-vv-threshold', type=float, default=-17.,
+                        help='Maximum threshold value to use for `vv_raster` in decibels (db)')
+    parser.add_argument('--max-vh-threshold', type=float, default=-25.,
+                        help='Maximum threshold value to use for `vh_raster` in decibels (db)')
+    parser.add_argument('--hand-threshold', type=float, default=15.,
+                        help='The maximum height above nearest drainage in meters to consider a pixel valid')
+    parser.add_argument('--hand-fraction', type=float, default=0.8,
+                        help='The minimum fraction of valid HAND pixels required in a tile for thresholding')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -156,8 +195,8 @@ def main():
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
-    log.info(f'Creating a water map from raster(s): {args.vh_raster} {args.vv_raster}')
 
-    make_water_map(args.out_raster, args.vh_raster, args.vv_raster, args.hand)
+    make_water_map(args.out_raster, args.vv_raster, args.vh_raster, args.hand, args.tile_shape,
+                   args.max_vv_threshold, args.max_vh_threshold, args.hand_threshold, args.hand_fraction)
 
     log.info(f'Water map created successfully: {args.out_raster}')
