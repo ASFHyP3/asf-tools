@@ -97,8 +97,8 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     The 5 VH tiles with the highest variance are selected for thresholding and a
     water threshold value is determined using an Expectation Maximization approach.
-    If there were not enough candidate tiles, the `max_vh_threshold` and `max_vv_threshold`
-    will be used instead.
+    If there were not enough candidate tiles or the threshold is too high,
+    `max_vh_threshold` and/or `max_vv_threshold` will be used instead.
 
     Args:
         out_raster: Water map GeoTIFF to create
