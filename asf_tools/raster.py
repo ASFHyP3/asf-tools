@@ -1,6 +1,7 @@
 import logging
 import warnings
-from typing import Literal
+from pathlib import Path
+from typing import Literal, Union
 
 import numpy as np
 from osgeo import gdal
@@ -37,7 +38,7 @@ def convert_scale(array: np.ndarray, in_scale: Literal['db', 'amplitude', 'power
     raise ValueError(f'Cannot convert raster of scale {in_scale} to {out_scale}')
 
 
-def read_as_masked_array(raster: str, band: int = 1) -> np.ma.MaskedArray:
+def read_as_masked_array(raster: Union[str, Path], band: int = 1) -> np.ma.MaskedArray:
     """Reads data from a raster image into memory, masking invalid and NoData values
 
     Args:
@@ -48,7 +49,7 @@ def read_as_masked_array(raster: str, band: int = 1) -> np.ma.MaskedArray:
         data: The raster pixel data as a numpy MaskedArray
     """
     log.debug(f'Reading raster values from {raster}')
-    ds = gdal.Open(raster)
+    ds = gdal.Open(str(raster))
     band = ds.GetRasterBand(band)
     data = np.ma.masked_invalid(band.ReadAsArray())
     nodata = band.GetNoDataValue()
