@@ -73,7 +73,7 @@ def determine_em_threshold(tiles: np.ndarray, scaling: float) -> float:
 
 
 def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh_raster: Union[str, Path],
-                   hand: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
+                   hand_raster: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
                    max_vv_threshold: float = -17., max_vh_threshold: float = -24.,
                    hand_threshold: float = 15., hand_fraction: float = 0.8):
     """Creates a surface water extent map from a Sentinel-1 RTC product
@@ -102,9 +102,9 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     Args:
         out_raster: Water map GeoTIFF to create
-        vv_raster: Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization
-        vh_raster: Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization
-        hand: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters
+        vv_raster: Sentinel-1 RTC GeoTIFF, in power scale, with VV polarization
+        vh_raster: Sentinel-1 RTC GeoTIFF, in power scale, with VH polarization
+        hand_raster: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters
         tile_shape: shape (height, width) in pixels to tile the image to
         max_vv_threshold: Maximum threshold value to use for `vv_raster` in decibels (db)
         max_vh_threshold:  Maximum threshold value to use for `vh_raster` in decibels (db)
@@ -116,7 +116,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     if tile_shape[0] % 2 or tile_shape[1] % 2:
         raise ValueError(f'tile_shape {tile_shape} requires even values.')
 
-    hand_array = read_as_masked_array(hand)
+    hand_array = read_as_masked_array(hand_raster)
 
     hand_tiles = tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan)
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
@@ -175,7 +175,7 @@ def main():
     parser.add_argument('vh_raster', type=Path,
                         help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization')
     # FIXME: Don't assume pixel-aligned HAND
-    parser.add_argument('hand', type=Path,
+    parser.add_argument('hand_raster', type=Path,
                         help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters')
 
     parser.add_argument('--tile-shape', type=int, nargs=2, default=(100, 100),
@@ -196,7 +196,7 @@ def main():
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
 
-    make_water_map(args.out_raster, args.vv_raster, args.vh_raster, args.hand, args.tile_shape,
+    make_water_map(args.out_raster, args.vv_raster, args.vh_raster, args.hand_raster, args.tile_shape,
                    args.max_vv_threshold, args.max_vh_threshold, args.hand_threshold, args.hand_fraction)
 
     log.info(f'Water map created successfully: {args.out_raster}')
