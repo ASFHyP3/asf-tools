@@ -123,7 +123,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     selected_tiles = None
     water_extent_maps = []
-    for max_threshold, raster in ((max_vh_threshold, vh_raster), (max_vv_threshold, vv_raster)):
+    for max_threshold_db, raster in ((max_vh_threshold, vh_raster), (max_vv_threshold, vv_raster)):
         log.info(f'Creating initial water mask from {raster}')
         array = read_as_masked_array(raster)
         tiles = tile_array(array, tile_shape=tile_shape, pad_value=0.)
@@ -133,20 +133,21 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
             selected_tiles = select_backscatter_tiles(tiles, hand_candidates)
             log.info(f'Selected tiles {selected_tiles} from {raster}')
 
-        tiles = np.log10(tiles) + 30.  # linear power scale --> Gaussian (db-like) scale optimized for thresholding
-        max_threshold = max_threshold / 10. + 30.  # db --> Gaussian (db-like) scale optimized for thresholding
+        tiles = np.log10(tiles) + 30.  # linear power scale -> Gaussian scale optimized for thresholding
+        max_threshold_gaussian = max_threshold_db / 10. + 30.  # db -> Gaussian scale optimized for thresholding
         if selected_tiles.size:
             scaling = 256 / (np.mean(tiles) + 3 * np.std(tiles))
-            threshold = determine_em_threshold(tiles[selected_tiles, :, :], scaling)
-            log.info(f'Threshold determined to be {10.*(threshold - 30.)} db')
-            if threshold > max_threshold:
-                log.warning(f'Threshold too high! Using maximum threshold {10.*(max_threshold - 30.)} db')
-                threshold = max_threshold
+            threshold_gaussian = determine_em_threshold(tiles[selected_tiles, :, :], scaling)
+            threshold_db = 10. * (threshold_gaussian - 30.)
+            log.info(f'Threshold determined to be {threshold_db} db')
+            if threshold_gaussian > max_threshold_gaussian:
+                log.warning(f'Threshold too high! Using maximum threshold {max_threshold_db} db')
+                threshold_gaussian = max_threshold_gaussian
         else:
-            log.warning(f'Tile selection did not converge! using default threshold {10.*(max_threshold - 30.)} db')
-            threshold = max_threshold
+            log.warning(f'Tile selection did not converge! using default threshold {max_threshold_db} db')
+            threshold_gaussian = max_threshold_gaussian
 
-        tiles = np.ma.masked_less_equal(tiles, threshold)
+        tiles = np.ma.masked_less_equal(tiles, threshold_gaussian)
         water_map = untile_array(tiles.mask, array.shape) & ~array.mask
 
         water_extent_maps.append(water_map)
