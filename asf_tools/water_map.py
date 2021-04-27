@@ -123,8 +123,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     selected_tiles = None
     water_extent_maps = []
-    for default_threshold, raster in zip((max_vh_threshold, max_vv_threshold),
-                                         (vh_raster, vv_raster)):
+    for max_threshold, raster in ((max_vh_threshold, vh_raster), (max_vv_threshold, vv_raster)):
         log.info(f'Creating initial water mask from {raster}')
         array = read_as_masked_array(raster)
         tiles = tile_array(array, tile_shape=tile_shape, pad_value=0.)
@@ -135,17 +134,17 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
             log.info(f'Selected tiles {selected_tiles} from {raster}')
 
         tiles = np.log10(tiles) + 30.  # linear power scale --> Gaussian (db-like) scale optimized for thresholding
-        default_threshold = default_threshold / 10. + 30.  # db --> Gaussian (db-like) scale optimized for thresholding
+        max_threshold = max_threshold / 10. + 30.  # db --> Gaussian (db-like) scale optimized for thresholding
         if selected_tiles.size:
             scaling = 256 / (np.mean(tiles) + 3 * np.std(tiles))
             threshold = determine_em_threshold(tiles[selected_tiles, :, :], scaling)
             log.info(f'Threshold determined to be {threshold}')
-            if threshold > default_threshold:
-                log.info(f'Threshold too high! Using maximum threshold {default_threshold}')
-                threshold = default_threshold
+            if threshold > max_threshold:
+                log.info(f'Threshold too high! Using maximum threshold {max_threshold}')
+                threshold = max_threshold
         else:
-            log.info(f'Tile selection did not converge! using default threshold {default_threshold}')
-            threshold = default_threshold
+            log.info(f'Tile selection did not converge! using default threshold {max_threshold}')
+            threshold = max_threshold
 
         tiles = np.ma.masked_less_equal(tiles, threshold)
         water_map = untile_array(tiles.mask, array.shape) & ~array.mask
