@@ -138,12 +138,12 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         if selected_tiles.size:
             scaling = 256 / (np.mean(tiles) + 3 * np.std(tiles))
             threshold = determine_em_threshold(tiles[selected_tiles, :, :], scaling)
-            log.info(f'Threshold determined to be {threshold}')
+            log.info(f'Threshold determined to be {10.*(threshold - 30.)} db')
             if threshold > max_threshold:
-                log.warning(f'Threshold too high! Using maximum threshold {max_threshold}')
+                log.warning(f'Threshold too high! Using maximum threshold {10.*(max_threshold - 30.)} db')
                 threshold = max_threshold
         else:
-            log.warning(f'Tile selection did not converge! using default threshold {max_threshold}')
+            log.warning(f'Tile selection did not converge! using default threshold {10.*(max_threshold - 30.)} db')
             threshold = max_threshold
 
         tiles = np.ma.masked_less_equal(tiles, threshold)
