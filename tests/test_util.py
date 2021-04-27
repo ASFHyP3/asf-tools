@@ -78,26 +78,29 @@ def test_tile_masked_array():
 
 
 def test_untile_array():
-    a = np.array([[0, 0, 1, 1],
-                  [0, 0, 1, 1],
-                  [2, 2, 3, 3],
-                  [2, 2, 3, 3]])
+    a = np.array([[0, 0, 1, 1, 2, 2],
+                  [0, 0, 1, 1, 2, 2],
+                  [3, 3, 4, 4, 5, 5],
+                  [3, 3, 4, 4, 5, 5],
+                  [6, 6, 7, 7, 8, 8],
+                  [6, 6, 7, 7, 8, 8],
+                  ])
 
     assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(2, 2)), array_shape=a.shape))
-    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(3, 3), pad_value=4), array_shape=a.shape))
-    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(2, 3), pad_value=4), array_shape=a.shape))
-    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(3, 2), pad_value=4), array_shape=a.shape))
+    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(4, 4), pad_value=9), array_shape=a.shape))
+    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(2, 4), pad_value=9), array_shape=a.shape))
+    assert np.all(a == util.untile_array(util.tile_array(a, tile_shape=(4, 2), pad_value=9), array_shape=a.shape))
 
     with pytest.raises(ValueError):
-        util.untile_array(util.tile_array(a, tile_shape=(2, 2)), array_shape=(5, 5))
+        util.untile_array(util.tile_array(a, tile_shape=(4, 4)), array_shape=(9, 9))
 
     with pytest.raises(ValueError):
-        util.untile_array(util.tile_array(a, tile_shape=(2, 3), pad_value=4), array_shape=(4, 7))
+        util.untile_array(util.tile_array(a, tile_shape=(2, 4), pad_value=9), array_shape=(6, 9))
 
     # array shape will subset some of the padding that was required to tile `a` with `tile_shape`
     assert np.all(
-            np.pad(a, ((0, 0), (0, 1)), constant_values=4)
-            == util.untile_array(util.tile_array(a, tile_shape=(2, 3), pad_value=4), array_shape=(4, 5))
+            np.pad(a, ((0, 0), (0, 2)), constant_values=9)
+            == util.untile_array(util.tile_array(a, tile_shape=(2, 4), pad_value=9), array_shape=(6, 8))
     )
 
 
