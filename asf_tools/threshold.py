@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def make_histogram(image):
+def _make_histogram(image):
     image = image.flatten()
     indices = np.nonzero(np.isnan(image))
     image[indices] = 0
@@ -26,7 +26,7 @@ def make_histogram(image):
     return histogram
 
 
-def make_distribution(m, v, g, x):
+def _make_distribution(m, v, g, x):
     x = x.flatten()
     m = m.flatten()
     v = v.flatten()
@@ -51,7 +51,7 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
     image = image - minimum + 1
     maximum = np.amax(image)
 
-    histogram = make_histogram(image)
+    histogram = _make_histogram(image)
     nonzero_indices = np.nonzero(histogram)[0]
     histogram = histogram[nonzero_indices]
     histogram = histogram.flatten()
@@ -64,7 +64,7 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
     sml = np.mean(np.diff(nonzero_indices)) / 1000
     iteration = 0
     while True:
-        class_likelihood = make_distribution(
+        class_likelihood = _make_distribution(
             class_means, class_variances, class_proportions, nonzero_indices
         )
         sum_likelihood = np.sum(class_likelihood, 1) + np.finfo(
@@ -87,7 +87,7 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
             del class_posterior_probability, vr
         class_proportions += 1e-3
         class_proportions = class_proportions / np.sum(class_proportions)
-        class_likelihood = make_distribution(
+        class_likelihood = _make_distribution(
             class_means, class_variances, class_proportions, nonzero_indices
         )
         sum_likelihood = np.sum(class_likelihood, 1) + np.finfo(
@@ -112,7 +112,7 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
             else:
                 posterior_lookup.update({pixel_val: [0] * number_of_classes})
                 for n in range(0, number_of_classes):
-                    x = make_distribution(
+                    x = _make_distribution(
                         class_means[n], class_variances[n], class_proportions[n],
                         image_copy[i, j]
                     )
@@ -121,8 +121,8 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
 
     sorti = np.argsort(class_means)
     xvec = np.arange(class_means[sorti[0]], class_means[sorti[1]], step=.05)
-    x1 = make_distribution(class_means[sorti[0]], class_variances[sorti[0]], class_proportions[sorti[0]], xvec)
-    x2 = make_distribution(class_means[sorti[1]], class_variances[sorti[1]], class_proportions[sorti[1]], xvec)
+    x1 = _make_distribution(class_means[sorti[0]], class_variances[sorti[0]], class_proportions[sorti[0]], xvec)
+    x2 = _make_distribution(class_means[sorti[1]], class_variances[sorti[1]], class_proportions[sorti[1]], xvec)
     dx = np.abs(x1 - x2)
 
     return xvec[np.argmin(dx)]
