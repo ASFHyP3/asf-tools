@@ -40,8 +40,21 @@ def _make_distribution(m, v, g, x):
 
 
 def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int = 3) -> float:
-    """
-    Function for Threshold Calculation using an Expectation Maximization Approach
+    """Water threshold Calculation using a multi-mode Expectation Maximization Approach
+
+    Thresholding works best when backscatter tiles are provided on a decibel scale
+    to get Gaussian distribution that is scaled to a range of 0-255, and performed
+    on a small tile that is likely to have a transition between water and not water.
+
+
+    Args:
+        tile: array of backscatter values for a tile from an RTC raster
+        number_of_classes: classify the tile into this many classes. Typically, three
+            classes capture: (1) urban and bright slopes, (2) average brightness farmland,
+            and (3) water, as is often seen in the US Midwest.
+
+    Returns:
+        threshold: threshold value that can be used to create a water extent map
     """
 
     image_copy = tile.copy()
