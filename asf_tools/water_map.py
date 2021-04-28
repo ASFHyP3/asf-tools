@@ -124,7 +124,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     selected_tiles = None
     water_extent_maps = []
     for max_threshold_db, raster in ((max_vh_threshold, vh_raster), (max_vv_threshold, vv_raster)):
-        log.info(f'Creating initial water mask from {raster}')
+        log.info(f'Creating initial water extent map from {raster}')
         array = read_as_masked_array(raster)
         tiles = tile_array(array, tile_shape=tile_shape, pad_value=0.)
         # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
@@ -133,7 +133,9 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
             selected_tiles = select_backscatter_tiles(tiles, hand_candidates)
             log.info(f'Selected tiles {selected_tiles} from {raster}')
 
-        tiles = np.log10(tiles) + 30.  # linear power scale -> Gaussian scale optimized for thresholding
+        with np.testing.suppress_warnings() as sup:
+            sup.filter(RuntimeWarning)  # invalid value and divide by zero encountered in log10
+            tiles = np.log10(tiles) + 30.  # linear power scale -> Gaussian scale optimized for thresholding
         max_threshold_gaussian = max_threshold_db / 10. + 30.  # db -> Gaussian scale optimized for thresholding
         if selected_tiles.size:
             scaling = 256 / (np.mean(tiles) + 3 * np.std(tiles))
@@ -154,7 +156,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
         del array, tiles
 
-    log.info('Combining VH and VV water masks')
+    log.info('Combining initial VH and VV extent map')
     combined_water_map = np.logical_or(*water_extent_maps)
 
     raster_info = gdal.Info(str(vh_raster), format='json')
