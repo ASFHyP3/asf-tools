@@ -150,14 +150,14 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     uses these indicators for the presence of water:
     * radar cross section in a pixel relative to the determined detection threshold
     * the height above nearest drainage (HAND)
-    * the surface sloped, which is derived from the HAND data
+    * the surface slope, which is derived from the HAND data
     * the size of the detected water feature
 
     For each indicator, a Z-shaped activation function is used to determine pixel membership.
     The membership maps are combined to form the final water extent map. Pixels classified
     as water pixels will:
     * have non-zero membership in all of the indicators, and
-    * have a average membership above the `membership_threshold` value.
+    * have an average membership above the `membership_threshold` value.
 
     Finally, the VV and VH water masks will be combined to include all water pixels
     from both masks, and the combined water map will be written to `out_raster`.
