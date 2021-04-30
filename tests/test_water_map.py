@@ -34,7 +34,7 @@ def test_select_backscatter_tiles(hand_candidates):
 
 
 @pytest.mark.integration
-def test_em_threshold_water_map(tmp_path):
+def test_make_water_map(tmp_path):
     vv_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VV.tif'
     vh_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VH.tif'
     hand_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_HAND.tif'
