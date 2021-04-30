@@ -3,7 +3,7 @@
 Create a surface water extent map from a dual-pol Sentinel-1 RTC product and
 a HAND image. The HAND image must be pixel-aligned (same extent and size) to
 the RTC images. The water extent maps are created using an adaptive Expectation
-Maximization thresholding approach.
+Maximization thresholding approach and refined using Fuzzy Logic.
 """
 
 import argparse
