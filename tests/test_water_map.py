@@ -45,6 +45,6 @@ def test_em_threshold_water_map(tmp_path):
     assert out_water_map.exists()
 
     golden_water_map = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/' \
-                       'em-threshold-initial-water-map.tif'
+                       'fuzzy-water-map.tif'
     diffs = find_diff(golden_water_map, str(out_water_map))
     assert diffs == 0
