@@ -13,7 +13,9 @@ from pathlib import Path
 from typing import Tuple, Union
 
 import numpy as np
+import skfuzzy as fuzz
 from osgeo import gdal
+from skimage import filters, measure, morphology
 
 from asf_tools.composite import get_epsg_code, write_cog
 from asf_tools.raster import read_as_masked_array
@@ -72,6 +74,48 @@ def determine_em_threshold(tiles: np.ndarray, scaling: float) -> float:
     return np.median(np.sort(thresholds)[:4])
 
 
+def calculate_slope_magnitude(array: np.ndarray, pixel_size) -> np.ndarray:
+    dx, dy = np.gradient(array)
+    magnitude = np.sqrt(dx**2, dy**2) / pixel_size
+    slope = np.arctan(magnitude) / np.pi * 180.
+    return slope
+
+def determine_membership_limits(
+        array: np.ndarray, mask_percentile: float = 90, std_range: float = 3.0) -> Tuple[float, float]:
+    array = np.ma.masked_values(array, 0.)
+    array = np.ma.masked_greater(array, np.percentile(array, mask_percentile))
+    lower_limit = np.ma.median(array)
+    upper_limit = lower_limit + std_range * array.std()
+    return lower_limit, upper_limit
+
+
+def segment_image(image: np.ndarray) -> np.ndarray:
+    med = filters.median(image, morphology.disk(2))
+    selem = morphology.disk(3)
+    closed = morphology.closing(med, selem)
+    segments = measure.label(closed, connectivity=2)
+    return segments
+
+
+def min_max_membership(array: np.ndarray, lower_limit: float, upper_limit: float, resolution: float) -> np.ndarray:
+    possible_values = np.arange(array.min(), array.max(), resolution)
+    activation = fuzz.zmf(possible_values, lower_limit, upper_limit)
+    membership = fuzz.interp_membership(possible_values, activation, array)
+    return membership
+
+
+def segment_area_membership(segments: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    segment_areas = np.bincount(segments.ravel())[1:]
+    largest_segment = np.argmax(np.bincount(segments.flat, weights=weights.flat))
+    possible_segments = np.arange(1, np.sum(segments == largest_segment) + 10)
+    activation = 1 - fuzz.zmf(possible_segments, 3, 10)
+    segment_membership = np.zeros_like(segments)
+    for segment in range(1, segments.max()):
+        np.putmask(segment_membership, segments == segment,
+                   fuzz.interp_membership(possible_segments, activation, segment_areas[segment - 1]))
+    return segment_membership
+
+
 def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh_raster: Union[str, Path],
                    hand_raster: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
                    max_vv_threshold: float = -17., max_vh_threshold: float = -24.,
@@ -116,10 +160,22 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     if tile_shape[0] % 2 or tile_shape[1] % 2:
         raise ValueError(f'tile_shape {tile_shape} requires even values.')
 
-    hand_array = read_as_masked_array(hand_raster)
+    info = gdal.Info(str(vh_raster), format='json')
+    out_tranform = info['geoTransform']
+    out_epsg = get_epsg_code(info)
 
+    log.info(f'Determining HAND memberships from {hand_raster}')
+    hand_array = read_as_masked_array(hand_raster)
     hand_tiles = tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan)
+
+    hand_slopes = calculate_slope_magnitude(hand_array, out_tranform[1])
+    slope_membership = min_max_membership(hand_slopes, 0., 15., 0.1)
+
+    hand_lower_limit, hand_upper_limit = determine_membership_limits(hand_array)
+    hand_membership = min_max_membership(hand_array, hand_lower_limit, hand_upper_limit, 0.1)
+
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
+    log.debug(f'Selected HAND tile candidates {hand_candidates}')
 
     selected_tiles = None
     water_extent_maps = []
@@ -149,19 +205,45 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
             log.warning(f'Tile selection did not converge! using default threshold {max_threshold_db} db')
             threshold_gaussian = max_threshold_gaussian
 
-        tiles = np.ma.masked_less_equal(tiles, threshold_gaussian)
-        water_map = untile_array(tiles.mask, array.shape) & ~array.mask
+        gaussian_array = untile_array(tiles, array.shape)
+        water_map = np.ma.masked_less_equal(gaussian_array, threshold_gaussian).mask
+        water_map &= ~array.mask
+
+        file_end = '_VH.tif' if '_VH' in str(raster) else '_VV.tif'
+        write_cog(str(out_raster).replace('.tif', file_end), water_map, transform=out_tranform,
+                  epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+
+        log.info('Refining initial water extent map using Fuzzy Logic')
+        array = np.ma.masked_where(~water_map, array)
+        gaussian_lower_limit = np.log10(np.ma.median(array)) + 30.
+        gaussian_membership = min_max_membership(gaussian_array, gaussian_lower_limit, threshold_gaussian, 0.005)
+
+        water_segments = segment_image(water_map)
+        water_segment_membership = segment_area_membership(water_segments, water_map)
+
+        water_map = ~np.isclose(gaussian_membership, 0.)
+        water_map &= ~np.isclose(hand_membership, 0.)
+        water_map &= ~np.isclose(slope_membership, 0.)
+        water_map &= ~np.isclose(water_segment_membership, 0.)
+
+        water_map_weights = (gaussian_membership + hand_membership + slope_membership + water_segment_membership) / 4.
+        water_map &= water_map_weights >= 0.45
+
+        water_map &= ~array.mask
+
+        file_end = '_VH_fuzzy.tif' if '_VH' in str(raster) else '_VV_fuzzy.tif'
+        write_cog(str(out_raster).replace('.tif', file_end), water_map, transform=out_tranform,
+                  epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         water_extent_maps.append(water_map)
 
-        del array, tiles
+        del array, tiles, gaussian_array
 
-    log.info('Combining initial VH and VV extent map')
+    log.info('Combining Fuzzy VH and VV extent map')
     combined_water_map = np.logical_or(*water_extent_maps)
 
-    raster_info = gdal.Info(str(vh_raster), format='json')
-    write_cog(out_raster, combined_water_map, transform=raster_info['geoTransform'],
-              epsg_code=get_epsg_code(raster_info), dtype=gdal.GDT_Byte, nodata_value=False)
+    write_cog(out_raster, combined_water_map, transform=out_tranform,
+              epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
 
 def main():
