@@ -217,8 +217,8 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     selected_tiles = None
     water_extent_maps = []
-    for max_db_threshold, raster in ((max_vh_threshold, vh_raster), (max_vv_threshold, vv_raster)):
-        log.info(f'Creating initial water extent map from {raster}')
+    for max_db_threshold, raster, pol in ((max_vh_threshold, vh_raster, 'VH'), (max_vv_threshold, vv_raster, 'VV')):
+        log.info(f'Creating initial {pol} water extent map from {raster}')
         array = read_as_masked_array(raster)
         tiles = tile_array(array, tile_shape=tile_shape, pad_value=0.)
         # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
@@ -247,11 +247,10 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         water_map = np.ma.masked_less_equal(gaussian_array, gaussian_threshold).mask
         water_map &= ~array.mask
 
-        file_end = '_VH_initial.tif' if '_VH' in str(raster) else '_VV_initial.tif'
-        write_cog(str(out_raster).replace('.tif', file_end), water_map, transform=out_tranform,
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'), water_map, transform=out_tranform,
                   epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
-        log.info('Refining initial water extent map using Fuzzy Logic')
+        log.info(f'Refining initial {pol} water extent map using Fuzzy Logic')
         array = np.ma.masked_where(~water_map, array)
         gaussian_lower_limit = np.log10(np.ma.median(array)) + 30.
 
@@ -261,8 +260,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         )
         water_map &= ~array.mask
 
-        file_end = '_VH_fuzzy.tif' if '_VH' in str(raster) else '_VV_fuzzy.tif'
-        write_cog(str(out_raster).replace('.tif', file_end), water_map, transform=out_tranform,
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'), water_map, transform=out_tranform,
                   epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         water_extent_maps.append(water_map)
