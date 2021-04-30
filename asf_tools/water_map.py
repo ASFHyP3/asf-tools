@@ -187,12 +187,6 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     hand_array = read_as_masked_array(hand_raster)
     hand_tiles = tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan)
 
-    hand_slopes = calculate_slope_magnitude(hand_array, out_tranform[1])
-    slope_membership = min_max_membership(hand_slopes, 0., 15., 0.1)
-
-    hand_lower_limit, hand_upper_limit = determine_membership_limits(hand_array)
-    hand_membership = min_max_membership(hand_array, hand_lower_limit, hand_upper_limit, 0.1)
-
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
     log.debug(f'Selected HAND tile candidates {hand_candidates}')
 
@@ -228,22 +222,27 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         water_map = np.ma.masked_less_equal(gaussian_array, gaussian_threshold).mask
         water_map &= ~array.mask
 
-        file_end = '_VH.tif' if '_VH' in str(raster) else '_VV.tif'
+        file_end = '_VH_initial.tif' if '_VH' in str(raster) else '_VV_initial.tif'
         write_cog(str(out_raster).replace('.tif', file_end), water_map, transform=out_tranform,
                   epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         log.info('Refining initial water extent map using Fuzzy Logic')
+        water_segments = segment_image(water_map)
+        water_segment_membership = segment_area_membership(water_segments, water_map)
+        water_map = np.isclose(water_segment_membership, 0.)
+
         array = np.ma.masked_where(~water_map, array)
         gaussian_lower_limit = np.log10(np.ma.median(array)) + 30.
         gaussian_membership = min_max_membership(gaussian_array, gaussian_lower_limit, gaussian_threshold, 0.005)
+        water_map &= ~np.isclose(gaussian_membership, 0.)
 
-        water_segments = segment_image(water_map)
-        water_segment_membership = segment_area_membership(water_segments, water_map)
-
-        water_map = ~np.isclose(gaussian_membership, 0.)
+        hand_lower_limit, hand_upper_limit = determine_membership_limits(hand_array)
+        hand_membership = min_max_membership(hand_array, hand_lower_limit, hand_upper_limit, 0.1)
         water_map &= ~np.isclose(hand_membership, 0.)
+
+        hand_slopes = calculate_slope_magnitude(hand_array, out_tranform[1])
+        slope_membership = min_max_membership(hand_slopes, 0., 15., 0.1)
         water_map &= ~np.isclose(slope_membership, 0.)
-        water_map &= ~np.isclose(water_segment_membership, 0.)
 
         water_map_weights = (gaussian_membership + hand_membership + slope_membership + water_segment_membership) / 4.
         water_map &= water_map_weights >= membership_threshold
