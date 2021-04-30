@@ -3,7 +3,7 @@
 Create a surface water extent map from a dual-pol Sentinel-1 RTC product and
 a HAND image. The HAND image must be pixel-aligned (same extent and size) to
 the RTC images. The water extent maps are created using an adaptive Expectation
-Maximization thresholding approach.
+Maximization thresholding approach and refined using Fuzzy Logic.
 """
 
 import argparse
@@ -13,7 +13,9 @@ from pathlib import Path
 from typing import Tuple, Union
 
 import numpy as np
+import skfuzzy as fuzz
 from osgeo import gdal
+from skimage import filters, measure, morphology
 
 from asf_tools.composite import get_epsg_code, write_cog
 from asf_tools.raster import read_as_masked_array
@@ -72,10 +74,78 @@ def determine_em_threshold(tiles: np.ndarray, scaling: float) -> float:
     return np.median(np.sort(thresholds)[:4])
 
 
+def calculate_slope_magnitude(array: np.ndarray, pixel_size) -> np.ndarray:
+    dx, dy = np.gradient(array)
+    magnitude = np.sqrt(dx**2, dy**2) / pixel_size
+    slope = np.arctan(magnitude) / np.pi * 180.
+    return slope
+
+
+def determine_membership_limits(
+        array: np.ndarray, mask_percentile: float = 90., std_range: float = 3.0) -> Tuple[float, float]:
+    array = np.ma.masked_values(array, 0.)
+    array = np.ma.masked_greater(array, np.percentile(array, mask_percentile))
+    lower_limit = np.ma.median(array)
+    upper_limit = lower_limit + std_range * array.std()
+    return lower_limit, upper_limit
+
+
+def segment_image(image: np.ndarray) -> np.ndarray:
+    med = filters.median(image, morphology.disk(2))
+    selem = morphology.disk(3)
+    closed = morphology.closing(med, selem)
+    segments = measure.label(closed, connectivity=2)
+    return segments
+
+
+def min_max_membership(array: np.ndarray, lower_limit: float, upper_limit: float, resolution: float) -> np.ndarray:
+    possible_values = np.arange(array.min(), array.max(), resolution)
+    activation = fuzz.zmf(possible_values, lower_limit, upper_limit)
+    membership = fuzz.interp_membership(possible_values, activation, array)
+    return membership
+
+
+def segment_area_membership(segments: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    segment_areas = np.bincount(segments.ravel())[1:]
+    largest_segment = np.argmax(np.bincount(segments.flat, weights=weights.flat))
+    possible_segments = np.arange(1, np.sum(segments == largest_segment) + 10)
+    activation = 1 - fuzz.zmf(possible_segments, 3, 10)
+    segment_membership = np.zeros_like(segments)
+    for segment in range(1, segments.max()):
+        np.putmask(segment_membership, segments == segment,
+                   fuzz.interp_membership(possible_segments, activation, segment_areas[segment - 1]))
+    return segment_membership
+
+
+def fuzzy_refinement(intial_map: np.ndarray, gaussian_array: np.ndarray, hand_array: np.ndarray, pixel_size: float,
+                     gaussian_thresholds: Tuple[float, float], membership_threshold: float = 0.45) -> np.ndarray:
+    water_map = np.ones_like(intial_map)
+
+    water_segments = segment_image(intial_map)
+    water_segment_membership = segment_area_membership(water_segments, intial_map)
+    water_map &= ~np.isclose(water_segment_membership, 0.)
+
+    gaussian_membership = min_max_membership(gaussian_array, gaussian_thresholds[0], gaussian_thresholds[1], 0.005)
+    water_map &= ~np.isclose(gaussian_membership, 0.)
+
+    hand_lower_limit, hand_upper_limit = determine_membership_limits(hand_array)
+    hand_membership = min_max_membership(hand_array, hand_lower_limit, hand_upper_limit, 0.1)
+    water_map &= ~np.isclose(hand_membership, 0.)
+
+    hand_slopes = calculate_slope_magnitude(hand_array, pixel_size)
+    slope_membership = min_max_membership(hand_slopes, 0., 15., 0.1)
+    water_map &= ~np.isclose(slope_membership, 0.)
+
+    water_map_weights = (gaussian_membership + hand_membership + slope_membership + water_segment_membership) / 4.
+    water_map &= water_map_weights >= membership_threshold
+
+    return water_map
+
+
 def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh_raster: Union[str, Path],
                    hand_raster: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
                    max_vv_threshold: float = -17., max_vh_threshold: float = -24.,
-                   hand_threshold: float = 15., hand_fraction: float = 0.8):
+                   hand_threshold: float = 15., hand_fraction: float = 0.8, membership_threshold: float = 0.45):
     """Creates a surface water extent map from a Sentinel-1 RTC product
 
     Create a surface water extent map from a dual-pol Sentinel-1 RTC product and
@@ -100,6 +170,23 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     If there were not enough candidate tiles or the threshold is too high,
     `max_vh_threshold` and/or `max_vv_threshold` will be used instead.
 
+    From the initial threshold-based water extent maps, Fuzzy Logic is used to remove
+    spurious false detections and improve the water extent map quality. The fuzzy logic
+    uses these indicators for the presence of water:
+    * radar cross section in a pixel relative to the determined detection threshold
+    * the height above nearest drainage (HAND)
+    * the surface slope, which is derived from the HAND data
+    * the size of the detected water feature
+
+    For each indicator, a Z-shaped activation function is used to determine pixel membership.
+    The membership maps are combined to form the final water extent map. Pixels classified
+    as water pixels will:
+    * have non-zero membership in all of the indicators, and
+    * have an average membership above the `membership_threshold` value.
+
+    Finally, the VV and VH water masks will be combined to include all water pixels
+    from both masks, and the combined water map will be written to `out_raster`.
+
     Args:
         out_raster: Water map GeoTIFF to create
         vv_raster: Sentinel-1 RTC GeoTIFF, in power scale, with VV polarization
@@ -112,19 +199,26 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
             a pixel valid
         hand_fraction: The minimum fraction of valid HAND pixels required in a tile for
             thresholding
+        membership_threshold: The average membership to the fuzzy indicators required for a water pixel
     """
     if tile_shape[0] % 2 or tile_shape[1] % 2:
         raise ValueError(f'tile_shape {tile_shape} requires even values.')
 
-    hand_array = read_as_masked_array(hand_raster)
+    info = gdal.Info(str(vh_raster), format='json')
+    out_tranform = info['geoTransform']
+    out_epsg = get_epsg_code(info)
 
+    log.info(f'Determining HAND memberships from {hand_raster}')
+    hand_array = read_as_masked_array(hand_raster)
     hand_tiles = tile_array(hand_array, tile_shape=tile_shape, pad_value=np.nan)
+
     hand_candidates = select_hand_tiles(hand_tiles, hand_threshold, hand_fraction)
+    log.debug(f'Selected HAND tile candidates {hand_candidates}')
 
     selected_tiles = None
     water_extent_maps = []
-    for max_threshold_db, raster in ((max_vh_threshold, vh_raster), (max_vv_threshold, vv_raster)):
-        log.info(f'Creating initial water mask from {raster}')
+    for max_db_threshold, raster, pol in ((max_vh_threshold, vh_raster, 'VH'), (max_vv_threshold, vv_raster, 'VV')):
+        log.info(f'Creating initial {pol} water extent map from {raster}')
         array = read_as_masked_array(raster)
         tiles = tile_array(array, tile_shape=tile_shape, pad_value=0.)
         # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
@@ -133,33 +227,49 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
             selected_tiles = select_backscatter_tiles(tiles, hand_candidates)
             log.info(f'Selected tiles {selected_tiles} from {raster}')
 
-        tiles = np.log10(tiles) + 30.  # linear power scale -> Gaussian scale optimized for thresholding
-        max_threshold_gaussian = max_threshold_db / 10. + 30.  # db -> Gaussian scale optimized for thresholding
+        with np.testing.suppress_warnings() as sup:
+            sup.filter(RuntimeWarning)  # invalid value and divide by zero encountered in log10
+            tiles = np.log10(tiles) + 30.  # linear power scale -> Gaussian scale optimized for thresholding
+        max_gaussian_threshold = max_db_threshold / 10. + 30.  # db -> Gaussian scale optimized for thresholding
         if selected_tiles.size:
             scaling = 256 / (np.mean(tiles) + 3 * np.std(tiles))
-            threshold_gaussian = determine_em_threshold(tiles[selected_tiles, :, :], scaling)
-            threshold_db = 10. * (threshold_gaussian - 30.)
+            gaussian_threshold = determine_em_threshold(tiles[selected_tiles, :, :], scaling)
+            threshold_db = 10. * (gaussian_threshold - 30.)
             log.info(f'Threshold determined to be {threshold_db} db')
-            if threshold_gaussian > max_threshold_gaussian:
-                log.warning(f'Threshold too high! Using maximum threshold {max_threshold_db} db')
-                threshold_gaussian = max_threshold_gaussian
+            if gaussian_threshold > max_gaussian_threshold:
+                log.warning(f'Threshold too high! Using maximum threshold {max_db_threshold} db')
+                gaussian_threshold = max_gaussian_threshold
         else:
-            log.warning(f'Tile selection did not converge! using default threshold {max_threshold_db} db')
-            threshold_gaussian = max_threshold_gaussian
+            log.warning(f'Tile selection did not converge! using default threshold {max_db_threshold} db')
+            gaussian_threshold = max_gaussian_threshold
 
-        tiles = np.ma.masked_less_equal(tiles, threshold_gaussian)
-        water_map = untile_array(tiles.mask, array.shape) & ~array.mask
+        gaussian_array = untile_array(tiles, array.shape)
+        water_map = np.ma.masked_less_equal(gaussian_array, gaussian_threshold).mask
+        water_map &= ~array.mask
+
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'), water_map, transform=out_tranform,
+                  epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+
+        log.info(f'Refining initial {pol} water extent map using Fuzzy Logic')
+        array = np.ma.masked_where(~water_map, array)
+        gaussian_lower_limit = np.log10(np.ma.median(array)) + 30.
+
+        water_map = fuzzy_refinement(
+            water_map, gaussian_array, hand_array, pixel_size=out_tranform[1],
+            gaussian_thresholds=(gaussian_lower_limit, gaussian_threshold), membership_threshold=membership_threshold
+        )
+        water_map &= ~array.mask
+
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'), water_map, transform=out_tranform,
+                  epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         water_extent_maps.append(water_map)
 
-        del array, tiles
-
-    log.info('Combining VH and VV water masks')
+    log.info('Combining Fuzzy VH and VV extent map')
     combined_water_map = np.logical_or(*water_extent_maps)
 
-    raster_info = gdal.Info(str(vh_raster), format='json')
-    write_cog(out_raster, combined_water_map, transform=raster_info['geoTransform'],
-              epsg_code=get_epsg_code(raster_info), dtype=gdal.GDT_Byte, nodata_value=False)
+    write_cog(out_raster, combined_water_map, transform=out_tranform,
+              epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
 
 def main():
@@ -188,6 +298,8 @@ def main():
                         help='The maximum height above nearest drainage in meters to consider a pixel valid')
     parser.add_argument('--hand-fraction', type=float, default=0.8,
                         help='The minimum fraction of valid HAND pixels required in a tile for thresholding')
+    parser.add_argument('--membership-threshold', type=float, default=0.45,
+                        help='The average membership to the fuzzy indicators required for a water pixel')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -197,6 +309,7 @@ def main():
     log.debug(' '.join(sys.argv))
 
     make_water_map(args.out_raster, args.vv_raster, args.vh_raster, args.hand_raster, args.tile_shape,
-                   args.max_vv_threshold, args.max_vh_threshold, args.hand_threshold, args.hand_fraction)
+                   args.max_vv_threshold, args.max_vh_threshold, args.hand_threshold, args.hand_fraction,
+                   args.membership_threshold)
 
     log.info(f'Water map created successfully: {args.out_raster}')

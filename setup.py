@@ -36,6 +36,8 @@ setup(
         'gdal>=3.2.0',
         'numpy',
         'pysheds',
+        'scikit-fuzzy',
+        'scikit-image',
         'shapely',
         'rasterio',
     ],

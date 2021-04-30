@@ -34,7 +34,7 @@ def test_select_backscatter_tiles(hand_candidates):
 
 
 @pytest.mark.integration
-def test_em_threshold_water_map(tmp_path):
+def test_make_water_map(tmp_path):
     vv_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VV.tif'
     vh_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VH.tif'
     hand_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_HAND.tif'
@@ -45,6 +45,6 @@ def test_em_threshold_water_map(tmp_path):
     assert out_water_map.exists()
 
     golden_water_map = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/' \
-                       'em-threshold-initial-water-map.tif'
+                       'fuzzy-water-map.tif'
     diffs = find_diff(golden_water_map, str(out_water_map))
     assert diffs == 0

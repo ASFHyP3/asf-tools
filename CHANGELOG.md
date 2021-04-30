@@ -10,7 +10,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 * `asf_tools.water_map` and an associated `water_map` entrypoint for making
-  water extent maps using a multi-mode Expectation Maximization approach
+  water extent maps using a multi-mode Expectation Maximization approach and refined using Fuzzy Logic
 * `asf_tools.hand` and an associated `calculate_hand` entrypoint for calculating
   Height Above Nearest Drainage (HAND) from the Copernicus GLO-30 Public DEM
 * `asf_tools.dem` for creating a Copernicus GLO-30 Public DEM mosaic
