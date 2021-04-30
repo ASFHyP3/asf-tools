@@ -120,7 +120,7 @@ def segment_area_membership(segments: np.ndarray, weights: np.ndarray) -> np.nda
 def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh_raster: Union[str, Path],
                    hand_raster: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
                    max_vv_threshold: float = -17., max_vh_threshold: float = -24.,
-                   hand_threshold: float = 15., hand_fraction: float = 0.8):
+                   hand_threshold: float = 15., hand_fraction: float = 0.8, membership_threshold: float = 0.45):
     """Creates a surface water extent map from a Sentinel-1 RTC product
 
     Create a surface water extent map from a dual-pol Sentinel-1 RTC product and
@@ -145,6 +145,23 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     If there were not enough candidate tiles or the threshold is too high,
     `max_vh_threshold` and/or `max_vv_threshold` will be used instead.
 
+    From the initial threshold-based water extent maps, Fuzzy Logic is used to remove
+    spurious false detections and improve the water extent map quality. The fuzzy logic
+    uses these indicators for the presence of water:
+    * radar cross section in a pixel relative to the determined detection threshold
+    * the height above nearest drainage (HAND)
+    * the surface sloped, which is derived from the HAND data
+    * the size of the detected water feature
+
+    For each indicator, a Z-shaped activation function is used to determine pixel membership.
+    The membership maps are combined to form the final water extent map. Pixels classified
+    as water pixels will:
+    * have non-zero membership in all of the indicators, and
+    * have a average membership above the `membership_threshold` value.
+
+    Finally, the VV and VH water masks will be combined to include all water pixels
+    from both masks, and the combined water map will be written to `out_raster`.
+
     Args:
         out_raster: Water map GeoTIFF to create
         vv_raster: Sentinel-1 RTC GeoTIFF, in power scale, with VV polarization
@@ -157,6 +174,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
             a pixel valid
         hand_fraction: The minimum fraction of valid HAND pixels required in a tile for
             thresholding
+        membership_threshold: The average membership to the fuzzy indicators required for a water pixel
     """
     if tile_shape[0] % 2 or tile_shape[1] % 2:
         raise ValueError(f'tile_shape {tile_shape} requires even values.')
@@ -228,7 +246,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         water_map &= ~np.isclose(water_segment_membership, 0.)
 
         water_map_weights = (gaussian_membership + hand_membership + slope_membership + water_segment_membership) / 4.
-        water_map &= water_map_weights >= 0.45
+        water_map &= water_map_weights >= membership_threshold
 
         water_map &= ~array.mask
 
@@ -273,6 +291,8 @@ def main():
                         help='The maximum height above nearest drainage in meters to consider a pixel valid')
     parser.add_argument('--hand-fraction', type=float, default=0.8,
                         help='The minimum fraction of valid HAND pixels required in a tile for thresholding')
+    parser.add_argument('--membership-threshold', type=float, default=0.45,
+                        help='The average membership to the fuzzy indicators required for a water pixel')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -282,6 +302,7 @@ def main():
     log.debug(' '.join(sys.argv))
 
     make_water_map(args.out_raster, args.vv_raster, args.vh_raster, args.hand_raster, args.tile_shape,
-                   args.max_vv_threshold, args.max_vh_threshold, args.hand_threshold, args.hand_fraction)
+                   args.max_vv_threshold, args.max_vh_threshold, args.hand_threshold, args.hand_fraction,
+                   args.membership_threshold)
 
     log.info(f'Water map created successfully: {args.out_raster}')
