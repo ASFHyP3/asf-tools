@@ -80,6 +80,7 @@ def calculate_slope_magnitude(array: np.ndarray, pixel_size) -> np.ndarray:
     slope = np.arctan(magnitude) / np.pi * 180.
     return slope
 
+
 def determine_membership_limits(
         array: np.ndarray, mask_percentile: float = 90, std_range: float = 3.0) -> Tuple[float, float]:
     array = np.ma.masked_values(array, 0.)
