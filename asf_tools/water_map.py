@@ -82,7 +82,7 @@ def calculate_slope_magnitude(array: np.ndarray, pixel_size) -> np.ndarray:
 
 
 def determine_membership_limits(
-        array: np.ndarray, mask_percentile: float = 90, std_range: float = 3.0) -> Tuple[float, float]:
+        array: np.ndarray, mask_percentile: float = 90., std_range: float = 3.0) -> Tuple[float, float]:
     array = np.ma.masked_values(array, 0.)
     array = np.ma.masked_greater(array, np.percentile(array, mask_percentile))
     lower_limit = np.ma.median(array)
