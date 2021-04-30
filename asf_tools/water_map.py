@@ -117,6 +117,31 @@ def segment_area_membership(segments: np.ndarray, weights: np.ndarray) -> np.nda
     return segment_membership
 
 
+def fuzzy_refinement(intial_map: np.ndarray, gaussian_array: np.ndarray, hand_array: np.ndarray, pixel_size: float,
+                     gaussian_thresholds: Tuple[float, float], membership_threshold: float = 0.45) -> np.ndarray:
+    water_map = np.ones_like(intial_map)
+
+    water_segments = segment_image(intial_map)
+    water_segment_membership = segment_area_membership(water_segments, intial_map)
+    water_map &= np.isclose(water_segment_membership, 0.)
+
+    gaussian_membership = min_max_membership(gaussian_array, gaussian_thresholds[0], gaussian_thresholds[1], 0.005)
+    water_map &= ~np.isclose(gaussian_membership, 0.)
+
+    hand_lower_limit, hand_upper_limit = determine_membership_limits(hand_array)
+    hand_membership = min_max_membership(hand_array, hand_lower_limit, hand_upper_limit, 0.1)
+    water_map &= ~np.isclose(hand_membership, 0.)
+
+    hand_slopes = calculate_slope_magnitude(hand_array, pixel_size)
+    slope_membership = min_max_membership(hand_slopes, 0., 15., 0.1)
+    water_map &= ~np.isclose(slope_membership, 0.)
+
+    water_map_weights = (gaussian_membership + hand_membership + slope_membership + water_segment_membership) / 4.
+    water_map &= water_map_weights >= membership_threshold
+
+    return water_map
+
+
 def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh_raster: Union[str, Path],
                    hand_raster: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
                    max_vv_threshold: float = -17., max_vh_threshold: float = -24.,
@@ -227,26 +252,13 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
                   epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         log.info('Refining initial water extent map using Fuzzy Logic')
-        water_segments = segment_image(water_map)
-        water_segment_membership = segment_area_membership(water_segments, water_map)
-        water_map = np.isclose(water_segment_membership, 0.)
-
         array = np.ma.masked_where(~water_map, array)
         gaussian_lower_limit = np.log10(np.ma.median(array)) + 30.
-        gaussian_membership = min_max_membership(gaussian_array, gaussian_lower_limit, gaussian_threshold, 0.005)
-        water_map &= ~np.isclose(gaussian_membership, 0.)
 
-        hand_lower_limit, hand_upper_limit = determine_membership_limits(hand_array)
-        hand_membership = min_max_membership(hand_array, hand_lower_limit, hand_upper_limit, 0.1)
-        water_map &= ~np.isclose(hand_membership, 0.)
-
-        hand_slopes = calculate_slope_magnitude(hand_array, out_tranform[1])
-        slope_membership = min_max_membership(hand_slopes, 0., 15., 0.1)
-        water_map &= ~np.isclose(slope_membership, 0.)
-
-        water_map_weights = (gaussian_membership + hand_membership + slope_membership + water_segment_membership) / 4.
-        water_map &= water_map_weights >= membership_threshold
-
+        water_map = fuzzy_refinement(
+            water_map, gaussian_array, hand_array, pixel_size=out_tranform[1],
+            gaussian_thresholds=(gaussian_lower_limit, gaussian_threshold), membership_threshold=membership_threshold
+        )
         water_map &= ~array.mask
 
         file_end = '_VH_fuzzy.tif' if '_VH' in str(raster) else '_VV_fuzzy.tif'
@@ -254,8 +266,6 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
                   epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         water_extent_maps.append(water_map)
-
-        del array, tiles, gaussian_array
 
     log.info('Combining Fuzzy VH and VV extent map')
     combined_water_map = np.logical_or(*water_extent_maps)
