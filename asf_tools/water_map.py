@@ -123,7 +123,7 @@ def fuzzy_refinement(intial_map: np.ndarray, gaussian_array: np.ndarray, hand_ar
 
     water_segments = segment_image(intial_map)
     water_segment_membership = segment_area_membership(water_segments, intial_map)
-    water_map &= np.isclose(water_segment_membership, 0.)
+    water_map &= ~np.isclose(water_segment_membership, 0.)
 
     gaussian_membership = min_max_membership(gaussian_array, gaussian_thresholds[0], gaussian_thresholds[1], 0.005)
     water_map &= ~np.isclose(gaussian_membership, 0.)
