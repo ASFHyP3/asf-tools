@@ -151,7 +151,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     Create a surface water extent map from a dual-pol Sentinel-1 RTC product and
     a HAND image. The HAND image must be pixel-aligned (same extent and size) to
     the RTC images. The water extent maps are created using an adaptive Expectation
-    Maximization thresholding approach.
+    Maximization thresholding approach and refined with Fuzzy Logic.
 
     The input images are broken into a set of corresponding tiles with a shape of
     `tile_shape`, and a set of tiles are selected from the VH RTC
