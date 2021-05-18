@@ -46,7 +46,8 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
      Calculate the Height Above Nearest Drainage (HAND) using pySHEDS library. Because HAND
      is tied to watershed boundaries (hydrobasins), clipped/cut basins will produce weird edge
-     effects, and incomplete basins should be masked out
+     effects, and incomplete basins should be masked out. For watershed boundaries,
+     see: https://www.hydrosheds.org/page/hydrobasins
 
      This involves:
         * Filling depressions (regions of cells lower than their surrounding neighbors)
@@ -113,7 +114,9 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
                               dem_file: Union[str, Path]):
-    """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins)
+    """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
+
+    For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
 
     Args:
         out_raster: HAND GeoTIFF to create
@@ -121,23 +124,23 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         dem_file: DEM raster covering (containing) `geometries`
     """
     with rasterio.open(dem_file) as src:
-        basin_mask, basin_affine_tf, dem_window = rasterio.mask.raster_geometry_mask(
+        basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
             src, geometries, all_touched=True, crop=True, pad=True, pad_width=1
         )
-        dem_array = src.read(1, window=dem_window)
-        dem_affine_tf = src.transform
-        dem_crs = src.crs
+        basin_array = src.read(1, window=basin_window)
 
-    hand = calculate_hand(dem_array, dem_affine_tf, dem_crs, basin_mask)
+        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
 
-    write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=dem_crs.to_epsg())
+        write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
 
 
-def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
+def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
     """Copernicus GLO-30 Public Height Above Nearest Drainage (HAND)
 
     Make a Height Above Nearest Drainage (HAND) GeoTIFF from the Copernicus GLO-30 Public DEM
-    covering the watershed boundaries (hydrobasins) defined in a vector file
+    covering the watershed boundaries (hydrobasins) defined in a vector file.
+
+    For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
 
     Args:
         out_raster: HAND GeoTIFF to create
@@ -146,18 +149,15 @@ def copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]
     with fiona.open(vector_file) as vds:
         geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
 
-    with NamedTemporaryFile(suffix='.vrt', delete=False) as f:
-        dem_file = Path(f.name)
-        dem_file.touch()
-
-    prepare_dem_vrt(dem_file, geometries)
-
-    calculate_hand_for_basins(out_raster, geometries, dem_file)
+    with NamedTemporaryFile(suffix='.vrt', delete=False) as dem_vrt:
+        prepare_dem_vrt(dem_vrt.name, geometries)
+        calculate_hand_for_basins(out_raster, geometries, dem_vrt.name)
 
 
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
+        epilog='For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins',
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument('--vector-geometry', type=str,
@@ -174,7 +174,7 @@ def main():
     log.debug(' '.join(sys.argv))
     log.info(f'Calculating HAND for {args.vector_geometry}')
 
-    copernicus_hand(os.path.basename(args.key), args.vector_geometry)
+    make_copernicus_hand(os.path.basename(args.key), args.vector_geometry)
 
     log.info(f'uploading to s3://{args.bucket}/{args.key}')
     S3 = boto3.client('s3')
