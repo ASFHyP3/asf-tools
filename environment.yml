@@ -22,10 +22,12 @@ dependencies:
   - boto3
   - astropy
   - fiona
-  - gdal>=3.2.0
+  # - gdal>=3.2.0  # rio-cogeo is built against gdal 3.1.4
+  - gdal
   - numpy
   - pysheds
   - rasterio
+  - rio-cogeo
   - scikit-fuzzy
   - scikit-image
   - shapely
