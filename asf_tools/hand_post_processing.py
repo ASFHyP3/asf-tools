@@ -1,3 +1,5 @@
+"""Post-process HAND data to: Subset to DEM COG, set HAND values to zero for ocean pixels, and COG-ify"""
+import argparse
 import logging
 import multiprocessing
 import sys
@@ -67,14 +69,23 @@ def post_process_hand_for_dem_tile(dem_tile: str):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument('-p', '--processes', type=int, default=None, help='Number of processors to use')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
+    args = parser.parse_args()
+
+    level = logging.DEBUG if args.verbose else logging.INFO
     logger = multiprocessing.log_to_stderr()
-    logger.setLevel(logging.INFO)
+    logger.setLevel(level)
     logger.info(' '.join(sys.argv))
 
     with fiona.open(DEM_GEOJSON) as vds:
         tiles = [feature['properties']['file_path'] for feature in vds]
 
-    p = multiprocessing.Pool()
+    p = multiprocessing.Pool(processes=args.processes)
     p.map(post_process_hand_for_dem_tile, tiles)
     p.close()
     p.join()
