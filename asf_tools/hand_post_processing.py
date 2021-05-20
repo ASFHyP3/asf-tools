@@ -33,39 +33,44 @@ def post_process_hand_for_dem_tile(dem_tile: str):
     preliminary_hand = f'/vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{tile_id}.tif'
 
     logger.info(f'PROCESSING: {preliminary_hand}')
-    with rasterio.open(dem_tile) as sds:
-        dem_bounds = sds.bounds
-        dem_meta = sds.meta
-
     try:
-        with rasterio.open(water_mask) as sds:
-            window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
-            water_pixels = sds.read(1, window=window)
-    except rasterio.RasterioIOError:
-        logger.info(f'MISSING: {water_mask}')
-        return
+        with rasterio.open(dem_tile) as sds:
+            dem_bounds = sds.bounds
+            dem_meta = sds.meta
 
-    try:
-        with rasterio.open(preliminary_hand) as sds:
-            window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
-            out_image = sds.read(1, window=window)
-    except rasterio.RasterioIOError:
-        logger.info(f'MISSING: {preliminary_hand}')
-        return
+        try:
+            with rasterio.open(water_mask) as sds:
+                window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
+                water_pixels = sds.read(1, window=window)
+        except rasterio.RasterioIOError:
+            logger.info(f'MISSING: {water_mask}')
+            return
 
-    out_image = np.ma.masked_where(water_pixels == 1, out_image)
+        try:
+            with rasterio.open(preliminary_hand) as sds:
+                window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
+                out_image = sds.read(1, window=window)
+        except rasterio.RasterioIOError:
+            logger.info(f'MISSING: {preliminary_hand}')
+            return
 
-    with NamedTemporaryFile(suffix='.tif') as tmp_hand:
-        with rasterio.open(tmp_hand.name, 'w', **dem_meta) as ods:
-            ods.write(np.expand_dims(out_image.filled(0.), axis=0))
+        out_image = np.ma.masked_where(water_pixels == 1, out_image)
 
-        dst_profile = cog_profiles.get("deflate")
-        cog_translate(tmp_hand.name, hand_file, dst_profile, in_memory=True)
+        with NamedTemporaryFile(suffix='.tif') as tmp_hand:
+            with rasterio.open(tmp_hand.name, 'w', **dem_meta) as ods:
+                ods.write(np.expand_dims(out_image.filled(0.), axis=0))
 
-    logger.info(f'UPLOADING: /vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{hand_file}')
-    S3.upload_file(hand_file, HAND_BUCKET, f'GLOBAL_HAND/{hand_file}')
+            dst_profile = cog_profiles.get("deflate")
+            cog_translate(tmp_hand.name, hand_file, dst_profile, in_memory=True)
 
-    Path(hand_file).unlink()
+        logger.info(f'UPLOADING: /vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{hand_file}')
+        S3.upload_file(hand_file, HAND_BUCKET, f'GLOBAL_HAND/{hand_file}')
+
+        Path(hand_file).unlink()
+    except Exception:
+        logger.info(f'WOOPS: {preliminary_hand}')
+        logger.info(f'WOOPS: {water_mask}')
+        logger.info(f'WOOPS: {dem_tile}')
 
 
 def main():
