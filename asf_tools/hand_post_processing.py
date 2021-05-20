@@ -36,7 +36,7 @@ for tile in tiles:
         with rasterio.open(water_mask) as sds:
             window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
             water_pixels = sds.read(1, window=window)
-    except rasterio.RasterioIOError as e:
+    except rasterio.RasterioIOError:
         print(f'MISSING: {water_mask}')
         continue
 
@@ -44,7 +44,7 @@ for tile in tiles:
         with rasterio.open(preliminary_hand) as sds:
             window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
             out_image = sds.read(1, window=window)
-    except rasterio.RasterioIOError as e:
+    except rasterio.RasterioIOError:
         print(f'MISSING: {preliminary_hand}')
         continue
 
