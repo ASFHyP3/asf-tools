@@ -1,3 +1,6 @@
+import logging
+import multiprocessing
+import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -12,14 +15,14 @@ S3 = boto3.client('s3')
 
 HAND_BUCKET = 'asf-hand-data'
 HAND_BUCKET_URI = f'https://{HAND_BUCKET}.s3-us-west-2.amazonaws.com'
-
 DEM_GEOJSON = '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/cop30.geojson'
-with fiona.open(DEM_GEOJSON) as vds:
-    tiles = [feature['properties']['file_path'] for feature in vds]
 
-for tile in tiles:
-    tile_id = tile[-22:-8]
-    tile_file = Path(tile).name
+
+def post_process_hand_for_dem_tile(dem_tile: str):
+    logger = multiprocessing.get_logger()
+
+    tile_id = dem_tile[-22:-8]
+    tile_file = Path(dem_tile).name
 
     water_mask_file = tile_file.replace("COG_", "").replace("_DEM.tif", "_WBM.tif")
     water_mask = f'/vsicurl/{HAND_BUCKET_URI}/WATER_MASKS/{water_mask_file}'
@@ -27,8 +30,8 @@ for tile in tiles:
     hand_file = tile_file.replace('_DEM.tif', '_HAND.tif')
     preliminary_hand = f'/vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{tile_id}.tif'
 
-    print(f'PROCESSING: {preliminary_hand}')
-    with rasterio.open(tile) as sds:
+    logger.info(f'PROCESSING: {preliminary_hand}')
+    with rasterio.open(dem_tile) as sds:
         dem_bounds = sds.bounds
         dem_meta = sds.meta
 
@@ -37,16 +40,16 @@ for tile in tiles:
             window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
             water_pixels = sds.read(1, window=window)
     except rasterio.RasterioIOError:
-        print(f'MISSING: {water_mask}')
-        continue
+        logger.info(f'MISSING: {water_mask}')
+        return
 
     try:
         with rasterio.open(preliminary_hand) as sds:
             window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
             out_image = sds.read(1, window=window)
     except rasterio.RasterioIOError:
-        print(f'MISSING: {preliminary_hand}')
-        continue
+        logger.info(f'MISSING: {preliminary_hand}')
+        return
 
     out_image = np.ma.masked_where(water_pixels == 1, out_image)
 
@@ -57,7 +60,25 @@ for tile in tiles:
         dst_profile = cog_profiles.get("deflate")
         cog_translate(tmp_hand.name, hand_file, dst_profile, in_memory=True)
 
-    print(f'UPLOADING: /vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{hand_file}')
+    logger.info(f'UPLOADING: /vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{hand_file}')
     S3.upload_file(hand_file, HAND_BUCKET, f'GLOBAL_HAND/{hand_file}')
 
     Path(hand_file).unlink()
+
+
+def main():
+    logger = multiprocessing.log_to_stderr()
+    logger.setLevel(logging.INFO)
+    logger.info(' '.join(sys.argv))
+
+    with fiona.open(DEM_GEOJSON) as vds:
+        tiles = [feature['properties']['file_path'] for feature in vds]
+
+    p = multiprocessing.Pool()
+    p.map(post_process_hand_for_dem_tile, tiles)
+    p.close()
+    p.join()
+
+
+if __name__ == '__main__':
+    main()
