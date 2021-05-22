@@ -10,6 +10,7 @@ import boto3
 import fiona
 import numpy as np
 import rasterio.windows
+import rasterio.enums
 from rio_cogeo.cogeo import cog_translate
 from rio_cogeo.profiles import cog_profiles
 
@@ -31,8 +32,10 @@ def post_process_hand_for_dem_tile(dem_tile: str):
 
     hand_file = tile_file.replace('_DEM.tif', '_HAND.tif')
     preliminary_hand = f'/vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{tile_id}.tif'
+    hand = f'/vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{hand_file}'
 
     logger.info(f'PROCESSING: {preliminary_hand}')
+
     try:
         with rasterio.open(dem_tile) as sds:
             dem_bounds = sds.bounds
@@ -40,7 +43,7 @@ def post_process_hand_for_dem_tile(dem_tile: str):
 
         try:
             with rasterio.open(water_mask) as sds:
-                window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
+                window = rasterio.windows.Window(0, 0, height=dem_meta['height'], width=dem_meta['width'])
                 water_pixels = sds.read(1, window=window)
         except rasterio.RasterioIOError:
             logger.info(f'MISSING: {water_mask}')
@@ -49,7 +52,10 @@ def post_process_hand_for_dem_tile(dem_tile: str):
         try:
             with rasterio.open(preliminary_hand) as sds:
                 window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
-                out_image = sds.read(1, window=window)
+                out_image = sds.read(
+                    1, window=window, out_shape=(dem_meta['height'], dem_meta['width']),
+                    resampling=rasterio.enums.Resampling.bilinear
+                )
         except rasterio.RasterioIOError:
             logger.info(f'MISSING: {preliminary_hand}')
             return
@@ -63,14 +69,12 @@ def post_process_hand_for_dem_tile(dem_tile: str):
             dst_profile = cog_profiles.get("deflate")
             cog_translate(tmp_hand.name, hand_file, dst_profile, in_memory=True)
 
-        logger.info(f'UPLOADING: /vsicurl/{HAND_BUCKET_URI}/GLOBAL_HAND/{hand_file}')
+        logger.info(f'UPLOADING: {hand}')
         S3.upload_file(hand_file, HAND_BUCKET, f'GLOBAL_HAND/{hand_file}')
 
         Path(hand_file).unlink()
-    except Exception:
-        logger.info(f'WOOPS: {preliminary_hand}')
-        logger.info(f'WOOPS: {water_mask}')
-        logger.info(f'WOOPS: {dem_tile}')
+    except Exception as e:  # noqa: B902
+        logger.info(f'WOOPS: {preliminary_hand} {water_mask} {dem_tile} :{e}')
 
 
 def main():
