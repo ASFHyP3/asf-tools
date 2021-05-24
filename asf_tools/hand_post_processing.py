@@ -9,8 +9,8 @@ from tempfile import NamedTemporaryFile
 import boto3
 import fiona
 import numpy as np
-import rasterio.windows
 import rasterio.enums
+import rasterio.windows
 from rio_cogeo.cogeo import cog_translate
 from rio_cogeo.profiles import cog_profiles
 
