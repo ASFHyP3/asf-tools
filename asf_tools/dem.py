@@ -78,7 +78,7 @@ def shift_for_antimeridian(dem_file_paths: List[str], directory: Path) -> List[s
 def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection]):
     """Create a DEM mosaic VRT covering a given geometry
 
-    The DEM mosaic is assembled from the Copernicus GLO-30 Public DEM tiles that intersect the geometry.
+    The DEM mosaic is assembled from the Copernicus GLO-30 DEM tiles that intersect the geometry.
 
     Note: If the input geometry is a MULTIPOLYGON, this assumes the polygons are adjacent to the antimeridian.
 
@@ -92,7 +92,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
         if not intersects_dem(geometry):
-            raise ValueError(f'Copernicus GLO-30 Public DEM does not intersect this geometry: {geometry}')
+            raise ValueError(f'Copernicus GLO-30 DEM does not intersect this geometry: {geometry}')
 
         with TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)

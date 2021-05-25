@@ -1,4 +1,4 @@
-"""Calculate Height Above Nearest Drainage (HAND) from the Copernicus GLO-30 Public DEM"""
+"""Calculate Height Above Nearest Drainage (HAND) from the Copernicus GLO-30 DEM"""
 import argparse
 import logging
 import sys
@@ -133,9 +133,9 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
 
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
-    """Copernicus GLO-30 Public Height Above Nearest Drainage (HAND)
+    """Copernicus GLO-30 Height Above Nearest Drainage (HAND)
 
-    Make a Height Above Nearest Drainage (HAND) GeoTIFF from the Copernicus GLO-30 Public DEM
+    Make a Height Above Nearest Drainage (HAND) GeoTIFF from the Copernicus GLO-30 DEM
     covering the watershed boundaries (hydrobasins) defined in a vector file.
 
     For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
