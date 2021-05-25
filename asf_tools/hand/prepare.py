@@ -1,3 +1,4 @@
+"""Prepare a Height Above Nearest Drainage (HAND) virtual raster (VRT) covering a given geometry"""
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Generator, List, Union
@@ -36,10 +37,11 @@ def get_hand_file_paths(geometry: ogr.Geometry) -> List[str]:
 
 
 def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection]):
-    """Create a HAND mosaic VRT covering a given geometry
+    """Prepare a HAND mosaic VRT covering a given geometry
 
-    The Height Above Nearest Drainage (HAND) mosaic is assembled from the HAND tiles that intersect the geometry,
-    using a HAND derived from the Copernicus GLO-30 DEM.
+    Prepare a Height Above Nearest Drainage (HAND) virtual raster (VRT) covering a given geometry.
+    The Height Above Nearest Drainage (HAND) mosaic is assembled from the HAND tiles that intersect
+    the geometry, using a HAND derived from the Copernicus GLO-30 DEM.
 
     Note: If the input geometry is a MULTIPOLYGON, this assumes the polygons are adjacent to the antimeridian.
 

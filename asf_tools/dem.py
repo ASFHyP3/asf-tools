@@ -5,7 +5,7 @@ from typing import Generator, List, Union
 import shapely.geometry
 from osgeo import gdal, ogr
 
-__all__ = ['GDALConfigManager', 'prepare_dem_vrt']
+__all__ = ['GDALConfigManager', 'prepare_dem_vrt', 'shift_for_antimeridian']
 DEM_GEOJSON = '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/cop30.geojson'
 
 gdal.UseExceptions()
