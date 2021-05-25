@@ -20,7 +20,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * `convert_scale` in `asf_tools.raster` to transform calibrated raster between decibel, power, and amplitude scales
 
 ### Changed
-* ASF_Tools ArcGIS toolbox now accepts dB (decibles) raster input to the RGBDeomp and ScaleConversion tools. 
+* ASF_Tools ArcGIS toolbox now accepts dB (decibels) raster input to the RGBDeomp and ScaleConversion tools. 
 
 ## [0.2.0](https://github.com/ASFHyP3/asf-tools/compare/v0.1.1...v0.2.0)
 
