@@ -109,9 +109,9 @@ class UnzipFiles(object):
 class ScaleConversion(object):
     def __init__(self):
 
-        """Converts RTC products from power to amplitude"""
+        """Converts RTC products between Power, Amplitude, and dB scales"""
         self.label = "Scale Conversion (Power, Amplitude, dB)"
-        self.description = "This tool converts RTC products from Power or Amplitude scale to a different scale " \
+        self.description = "This tool converts RTC products from Power, Amplitude, or dB scale to a different scale " \
                            "(Power, Amplitude or dB)."
         self.canRunInBackground = True
 
@@ -129,18 +129,18 @@ class ScaleConversion(object):
         # Second parameter: input scale
         p_inscale = arcpy.Parameter(
             name="p_inscale",
-            displayName="Scale of input raster (power or amplitude)",
+            displayName="Scale of input raster (power, amplitude, or dB)",
             datatype="GPString",
             parameterType="Required",
             direction="Input")
 
         p_inscale.filter.type = "ValueList"
-        p_inscale.filter.list = ["Power", "Amplitude"]
+        p_inscale.filter.list = ["Power", "Amplitude", "dB"]
 
         # Third parameter: output scale
         p_outscale = arcpy.Parameter(
             name="p_outscale",
-            displayName="Scale of output raster (power, amplitude or dB)",
+            displayName="Scale of output raster (power, amplitude, or dB)",
             datatype="GPString",
             parameterType="Required",
             direction="Input")
@@ -209,6 +209,17 @@ class ScaleConversion(object):
                 out_t10 = arcpy.sa.Times(out_log10, 10)
                 out_t10.save(self.outpath)
 
+        elif self.inscale == 'dB':
+            if self.outscale == 'Power':
+                out_d10 = arcpy.sa.Divide(self.inpath, 10)
+                out_exp = arcpy.sa.Power(10, out_d10)
+                out_exp.save(self.outpath)
+
+            elif self.outscale == 'Amplitude':
+                out_d20 = arcpy.sa.Divide(self.inpath, 20)
+                out_exp = arcpy.sa.Power(10, out_d20)
+                out_exp.save(self.outpath)
+
         else:
             arcpy.AddMessage('Parameters entered incorrectly; no conversion performed.')
 
@@ -254,6 +265,8 @@ class ScaleConversion(object):
                 insc = 'Amplitude'
             elif inscale == 'p':
                 insc = 'Power'
+            elif inscale == 'd':
+                insc = 'dB'
             else:
                 insc = ''
             if not parameters[1].altered:
@@ -643,13 +656,13 @@ class RGBDecomp(object):
         # Second parameter: scale of input dataset
         scale = arcpy.Parameter(
             name="scale",
-            displayName="Scale of input RTC (Amplitude or Power)",
+            displayName="Scale of input RTC (Power, Amplitude, or dB)",
             datatype="GPString",
             parameterType="Required",
             direction="Input")
 
         scale.filter.type = "ValueList"
-        scale.filter.list = ["Power", "Amplitude"]
+        scale.filter.list = ["Power", "Amplitude", "dB"]
 
         # Third parameter: Primary polarization
         pol = arcpy.Parameter(
@@ -743,6 +756,8 @@ class RGBDecomp(object):
                 insc = 'Amplitude'
             elif inscale == 'p':
                 insc = 'Power'
+            elif inscale == 'd':
+                insc = 'dB'
             else:
                 insc = ''
             if not parameters[1].altered:
@@ -838,13 +853,18 @@ class RGBDecomp(object):
             xps = arcpy.sa.Square(xp)
             arcpy.AddMessage("Input scale is amplitude. Converted to power scale.")
 
+        elif scale == 'dB':
+            cps = arcpy.sa.Power(10, arcpy.sa.Divide(cp, 10))
+            xps = arcpy.sa.Power(10, arcpy.sa.Divide(xp, 10))
+            arcpy.AddMessage("Input scale is dB. Converted to power scale.")
+
         elif scale == 'Power':
             cps = cp
             xps = xp
             arcpy.AddMessage("Input scale is power. No conversion necessary.")
 
         else:
-            arcpy.AddError("Input scale must be set to Amplitude or Power.")
+            arcpy.AddError("Input scale must be set to Power Amplitude, or dB.")
             sys.exit(0)
 
         arcpy.AddMessage("Input rasters have been defined. Running pixel cleanup routine...")
