@@ -19,6 +19,9 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * `tile_array` and `untile_array` in `asf_tools.util` to transform a numpy array into a set of tiles
 * `convert_scale` in `asf_tools.raster` to transform calibrated raster between decibel, power, and amplitude scales
 
+### Changed
+* ASF_Tools ArcGIS toolbox now accepts dB (decibles) raster input to the RGBDeomp and ScaleConversion tools. 
+
 ## [0.2.0](https://github.com/ASFHyP3/asf-tools/compare/v0.1.1...v0.2.0)
 
 ### Added
