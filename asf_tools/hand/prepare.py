@@ -59,9 +59,9 @@ def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapel
 
         with TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            dem_file_paths = get_hand_file_paths(geometry)
+            hand_file_paths = get_hand_file_paths(geometry)
 
             if geometry.GetGeometryName() == 'MULTIPOLYGON':
-                dem_file_paths = shift_for_antimeridian(dem_file_paths, temp_path)
+                hand_file_paths = shift_for_antimeridian(hand_file_paths, temp_path)
 
-            gdal.BuildVRT(str(vrt), dem_file_paths)
+            gdal.BuildVRT(str(vrt), hand_file_paths)
