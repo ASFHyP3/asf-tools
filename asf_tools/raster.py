@@ -77,4 +77,3 @@ def shift_for_antimeridian(raster_paths: List[str], directory: Path) -> List[str
         else:
             shifted_file_paths.append(file_path)
     return shifted_file_paths
-
