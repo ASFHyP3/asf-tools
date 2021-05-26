@@ -55,22 +55,3 @@ def test_convert_scale_masked_arrays():
     a = raster.convert_scale(c, 'db', 'power')
     assert np.allclose(a.mask, [True, True, False, False, False])
     assert np.allclose(a, np.ma.MaskedArray([-1, 0, 1, 4, 9], mask=[True, True, False, False, False]))
-
-
-def test_shift_for_antimeridian(tmp_path):
-    file_paths = [
-        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/'
-        'Copernicus_DSM_COG_10_N51_00_W180_00_DEM/Copernicus_DSM_COG_10_N51_00_W180_00_DEM.tif',
-        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/'
-        'Copernicus_DSM_COG_10_N51_00_E179_00_DEM/Copernicus_DSM_COG_10_N51_00_E179_00_DEM.tif'
-    ]
-
-    with util.GDALConfigManager(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR'):
-        shifted_file_paths = raster.shift_for_antimeridian(file_paths, tmp_path)
-
-    assert shifted_file_paths[0] == str(tmp_path / 'Copernicus_DSM_COG_10_N51_00_W180_00_DEM.vrt')
-    assert shifted_file_paths[1] == file_paths[1]
-
-    info = gdal.Info(shifted_file_paths[0], format='json')
-    assert info['cornerCoordinates']['upperLeft'] == [179.9997917, 52.0001389]
-    assert info['cornerCoordinates']['lowerRight'] == [180.9997917, 51.0001389]

@@ -64,10 +64,5 @@ def test_prepare_dem_geotiff_antimeridian(tmp_path):
     }
     geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
 
-    dem.prepare_dem_vrt(str(dem_vrt), geometry)
-    assert dem_vrt.exists()
-
-    info = gdal.Info(str(dem_vrt), format='json')
-    assert info['geoTransform'] == \
-           [178.99979166666665, 0.0004166666666667, 0.0, 52.0001389, 0.0, -0.0002777777777778]
-    assert info['size'] == [4800, 3600]
+    with pytest.raises(ValueError):
+        dem.prepare_dem_vrt(str(dem_vrt), geometry)

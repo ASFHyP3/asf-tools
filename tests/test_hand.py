@@ -82,10 +82,5 @@ def test_prepare_hand_geotiff_antimeridian(tmp_path):
     }
     geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
 
-    hand.prepare_hand_vrt(str(hand_vrt), geometry)
-    assert hand_vrt.exists()
-
-    info = gdal.Info(str(hand_vrt), format='json')
-    assert info['geoTransform'] == \
-           [178.99979166666665, 0.0004166666666667, 0.0, 52.0001389, 0.0, -0.0002777777777778]
-    assert info['size'] == [4800, 3600]
+    with pytest.raises(ValueError):
+        hand.prepare_hand_vrt(str(hand_vrt), geometry)

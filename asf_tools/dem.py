@@ -32,16 +32,15 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely
         if isinstance(geometry, shapely.geometry.GeometryCollection):
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
+        min_lon, max_lon, _, _ = geometry.GetEnvelope()
+        if min_lon < -160. and max_lon > 160.:
+            raise ValueError(f'ASF Tools does not currently support geometries that cross the antimeridian: {geometry}')
+
         tile_features = vector.get_features(DEM_GEOJSON)
         if not vector.intersects_features(geometry, tile_features):
             raise ValueError(f'Copernicus GLO-30 DEM does not intersect this geometry: {geometry}')
 
-        with TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-            tile_features = vector.get_features(DEM_GEOJSON)
-            dem_file_paths = vector.intersecting_feature_properties(geometry, tile_features, 'file_path')
+        tile_features = vector.get_features(DEM_GEOJSON)
+        dem_file_paths = vector.intersecting_feature_properties(geometry, tile_features, 'file_path')
 
-            if geometry.GetGeometryName() == 'MULTIPOLYGON':
-                dem_file_paths = raster.shift_for_antimeridian(dem_file_paths, temp_path)
-
-            gdal.BuildVRT(str(vrt), dem_file_paths)
+        gdal.BuildVRT(str(vrt), dem_file_paths)
