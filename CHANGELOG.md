@@ -19,7 +19,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * `asf_tools.dem` to prepare a virtual raster (VRT) mosaic of the Copernicus GLO-30 Public DEM tiles
 * `expectation_maximization_threshold` in `asf_tools.threshold` to calculate water threshold value
   using a multi-mode Expectation Maximization approach
-* `tile_array` and `untile_array` in `asf_tools.util` to transform a numpy array into a set of tiles
+* `tile_array` and `untile_array` in `asf_tools.tile` to transform a numpy array into a set of tiles
 * `convert_scale` in `asf_tools.raster` to transform calibrated raster between decibel, power, and amplitude scales
 
 ## [0.2.0](https://github.com/ASFHyP3/asf-tools/compare/v0.1.1...v0.2.0)
