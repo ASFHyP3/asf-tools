@@ -23,7 +23,7 @@ from asf_tools.composite import get_epsg_code, write_cog
 from asf_tools.hand.prepare import prepare_hand_vrt
 from asf_tools.raster import read_as_masked_array
 from asf_tools.threshold import expectation_maximization_threshold as em_threshold
-from asf_tools.util import tile_array, untile_array
+from asf_tools.tile import tile_array, untile_array
 
 log = logging.getLogger(__name__)
 

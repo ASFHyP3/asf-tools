@@ -1,39 +1,19 @@
 """Prepare a Height Above Nearest Drainage (HAND) virtual raster (VRT) covering a given geometry"""
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Generator, List, Union
+from typing import Union
 
 import shapely.geometry
 from osgeo import gdal, ogr
 
-from asf_tools.dem import GDALConfigManager, shift_for_antimeridian
+from asf_tools import raster
+from asf_tools import vector
+from asf_tools.util import GDALConfigManager
 
 HAND_GEOJSON = '/vsicurl/https://asf-hand-data.s3.amazonaws.com/cop30-hand.geojson'
 
 gdal.UseExceptions()
 ogr.UseExceptions()
-
-
-def get_hand_features() -> Generator[ogr.Feature, None, None]:
-    ds = ogr.Open(HAND_GEOJSON)
-    layer = ds.GetLayer()
-    for feature in layer:
-        yield feature
-    del ds
-
-
-def intersects_hand(geometry: ogr.Geometry) -> bool:
-    for feature in get_hand_features():
-        if feature.GetGeometryRef().Intersects(geometry):
-            return True
-
-
-def get_hand_file_paths(geometry: ogr.Geometry) -> List[str]:
-    file_paths = []
-    for feature in get_hand_features():
-        if feature.GetGeometryRef().Intersects(geometry):
-            file_paths.append(feature.GetField('file_path'))
-    return file_paths
 
 
 def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection]):
@@ -54,14 +34,16 @@ def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapel
         if isinstance(geometry, shapely.geometry.GeometryCollection):
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
-        if not intersects_hand(geometry):
+        tile_features = vector.get_features(HAND_GEOJSON)
+        if not vector.intersects_features(geometry, tile_features):
             raise ValueError(f'Copernicus GLO-30 HAND does not intersect this geometry: {geometry}')
 
         with TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            hand_file_paths = get_hand_file_paths(geometry)
+            tile_features = vector.get_features(HAND_GEOJSON)
+            hand_file_paths = vector.intersecting_feature_properties(geometry, tile_features, 'file_path')
 
             if geometry.GetGeometryName() == 'MULTIPOLYGON':
-                hand_file_paths = shift_for_antimeridian(hand_file_paths, temp_path)
+                hand_file_paths = raster.shift_for_antimeridian(hand_file_paths, temp_path)
 
             gdal.BuildVRT(str(vrt), hand_file_paths)

@@ -1,7 +1,7 @@
 import logging
 import warnings
 from pathlib import Path
-from typing import Literal, Union
+from typing import List, Literal, Union
 
 import numpy as np
 from osgeo import gdal
@@ -58,3 +58,23 @@ def read_as_masked_array(raster: Union[str, Path], band: int = 1) -> np.ma.Maske
     if nodata is not None:
         return np.ma.masked_values(data, nodata)
     return data
+
+
+def shift_for_antimeridian(raster_paths: List[str], directory: Path) -> List[str]:
+    shifted_file_paths = []
+    for file_path in raster_paths:
+        if '_W' in file_path:
+            shifted_file_path = str(directory / Path(file_path).with_suffix('.vrt').name)
+            corners = gdal.Info(file_path, format='json')['cornerCoordinates']
+            output_bounds = [
+                corners['upperLeft'][0] + 360,
+                corners['upperLeft'][1],
+                corners['lowerRight'][0] + 360,
+                corners['lowerRight'][1]
+            ]
+            gdal.Translate(shifted_file_path, file_path, format='VRT', outputBounds=output_bounds)
+            shifted_file_paths.append(shifted_file_path)
+        else:
+            shifted_file_paths.append(file_path)
+    return shifted_file_paths
+

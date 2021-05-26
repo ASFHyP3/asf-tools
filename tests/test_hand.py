@@ -4,9 +4,7 @@ import pytest
 from osgeo import gdal, ogr
 from osgeo.utils.gdalcompare import find_diff
 
-from asf_tools import dem
 from asf_tools import hand
-from asf_tools.hand import prepare
 
 HAND_BASINS = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/' \
               'asf-tools/hand/hybas_af_lev12_v1c_firstpoly.geojson'
@@ -26,76 +24,6 @@ def test_make_copernicus_hand(tmp_path):
 
     diffs = find_diff(str(GOLDEN_HAND), str(out_hand))
     assert diffs == 0
-
-
-def test_intersects_hand():
-    geojson = {
-        'type': 'Point',
-        'coordinates': [169, -45],
-    }
-    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-    assert prepare.intersects_hand(geometry)
-
-    geojson = {
-        'type': 'Point',
-        'coordinates': [0, 0],
-    }
-    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-    assert not prepare.intersects_hand(geometry)
-
-
-def test_get_file_paths():
-    geojson = {
-        'type': 'Point',
-        'coordinates': [0, 0],
-    }
-    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-    assert prepare.get_hand_file_paths(geometry) == []
-
-    geojson = {
-        'type': 'Point',
-        'coordinates': [169, -45],
-    }
-    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-    assert prepare.get_hand_file_paths(geometry) == [
-        '/vsicurl/https://asf-hand-data.s3-us-west-2.amazonaws.com/'
-        'GLOBAL_HAND/Copernicus_DSM_COG_10_S46_00_E169_00_HAND.tif'
-    ]
-
-    geojson = {
-        'type': 'MultiPoint',
-        'coordinates': [[0, 0], [169, -45], [-121.5, 73.5]]
-    }
-    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-    assert prepare.get_hand_file_paths(geometry) == [
-        '/vsicurl/https://asf-hand-data.s3-us-west-2.amazonaws.com/'
-        'GLOBAL_HAND/Copernicus_DSM_COG_10_S46_00_E169_00_HAND.tif',
-        '/vsicurl/https://asf-hand-data.s3-us-west-2.amazonaws.com/'
-        'GLOBAL_HAND/Copernicus_DSM_COG_10_N73_00_W122_00_HAND.tif',
-    ]
-
-
-def test_get_hand_features():
-    assert len(list(prepare.get_hand_features())) == 26445
-
-
-def test_shift_for_antimeridian(tmp_path):
-    file_paths = [
-        '/vsicurl/https://asf-hand-data.s3-us-west-2.amazonaws.com/'
-        'GLOBAL_HAND/Copernicus_DSM_COG_10_N51_00_W180_00_HAND.tif',
-        '/vsicurl/https://asf-hand-data.s3-us-west-2.amazonaws.com/'
-        'GLOBAL_HAND/Copernicus_DSM_COG_10_N51_00_E179_00_HAND.tif'
-    ]
-
-    with dem.GDALConfigManager(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR'):
-        shifted_file_paths = dem.shift_for_antimeridian(file_paths, tmp_path)
-
-    assert shifted_file_paths[0] == str(tmp_path / 'Copernicus_DSM_COG_10_N51_00_W180_00_HAND.vrt')
-    assert shifted_file_paths[1] == file_paths[1]
-
-    info = gdal.Info(shifted_file_paths[0], format='json')
-    assert info['cornerCoordinates']['upperLeft'] == [179.9997917, 52.0001389]
-    assert info['cornerCoordinates']['lowerRight'] == [180.9997917, 51.0001389]
 
 
 def test_prepare_hand_vrt_no_coverage():
