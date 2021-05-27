@@ -14,8 +14,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * `asf_tools.hand` sub package containing:
   * `asf_tools.hand.calculate` and an associated `calculate_hand` entrypoint for calculating Height Above 
     Nearest Drainage (HAND) from the Copernicus GLO-30 DEM
-  * `asf_tools.hand.prepare` to prepare a virtual raster (VRT) mosaic of the Global HAND tiles
-    derived from the Copernicus GLO-30 DEM
+  * `asf_tools.hand.prepare` to prepare a raster from the Copernicus GLO-30 DEM derived Global HAND tiles
 * `asf_tools.dem` to prepare a virtual raster (VRT) mosaic of the Copernicus GLO-30 DEM tiles
 * `expectation_maximization_threshold` in `asf_tools.threshold` to calculate water threshold value
   using a multi-mode Expectation Maximization approach
