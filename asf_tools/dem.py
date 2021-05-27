@@ -21,7 +21,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely
 
     The DEM mosaic is assembled from the Copernicus GLO-30 DEM tiles that intersect the geometry.
 
-    Note: If the input geometry is a MULTIPOLYGON, this assumes the polygons are adjacent to the antimeridian.
+    Note: `asf_tools` does not currently support geometries that cross the antimeridian.
 
     Args:
         vrt: Path for the output VRT file
@@ -34,7 +34,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely
 
         min_lon, max_lon, _, _ = geometry.GetEnvelope()
         if min_lon < -160. and max_lon > 160.:
-            raise ValueError(f'ASF Tools does not currently support geometries that cross the antimeridian: {geometry}')
+            raise ValueError(f'asf_tools does not currently support geometries that cross the antimeridian: {geometry}')
 
         tile_features = vector.get_features(DEM_GEOJSON)
         if not vector.intersects_features(geometry, tile_features):
