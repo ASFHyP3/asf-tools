@@ -12,7 +12,7 @@ def get_features(vector_path: Union[str, Path]) -> List[ogr.Feature]:
     return [feature for feature in layer]
 
 
-def intersects_features(geometry: ogr.Geometry, features: Iterator) -> bool:
+def get_property_values_for_intersecting_features(geometry: ogr.Geometry, features: Iterator) -> bool:
     for feature in features:
         if feature.GetGeometryRef().Intersects(geometry):
             return True

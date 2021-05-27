@@ -16,14 +16,14 @@ def test_intersects_feature():
             'coordinates': [169, -45],
         }
         geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-        assert vector.intersects_features(geometry, features)
+        assert vector.get_property_values_for_intersecting_features(geometry, features)
 
         geojson = {
             'type': 'Point',
             'coordinates': [0, 0],
         }
         geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-        assert not vector.intersects_features(geometry, features)
+        assert not vector.get_property_values_for_intersecting_features(geometry, features)
 
 
 def test_get_intersecting_feature_properties():

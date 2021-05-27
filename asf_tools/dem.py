@@ -35,7 +35,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely
             raise ValueError(f'asf_tools does not currently support geometries that cross the antimeridian: {geometry}')
 
         tile_features = vector.get_features(DEM_GEOJSON)
-        if not vector.intersects_features(geometry, tile_features):
+        if not vector.get_property_values_for_intersecting_features(geometry, tile_features):
             raise ValueError(f'Copernicus GLO-30 DEM does not intersect this geometry: {geometry}')
 
         dem_file_paths = vector.intersecting_feature_properties(geometry, tile_features, 'file_path')

@@ -15,7 +15,6 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import skfuzzy as fuzz
 from osgeo import gdal
-
 from skimage import filters, measure, morphology
 
 from asf_tools.composite import get_epsg_code, write_cog
