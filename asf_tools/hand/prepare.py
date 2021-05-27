@@ -1,12 +1,10 @@
 """Prepare a Height Above Nearest Drainage (HAND) virtual raster (VRT) covering a given geometry"""
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Union
 
 import shapely.geometry
 from osgeo import gdal, ogr
 
-from asf_tools import raster
 from asf_tools import vector
 from asf_tools.util import GDALConfigManager
 
@@ -42,7 +40,6 @@ def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapel
         if not vector.intersects_features(geometry, tile_features):
             raise ValueError(f'Copernicus GLO-30 HAND does not intersect this geometry: {geometry}')
 
-        tile_features = vector.get_features(HAND_GEOJSON)
         hand_file_paths = vector.intersecting_feature_properties(geometry, tile_features, 'file_path')
 
         gdal.BuildVRT(str(vrt), hand_file_paths)

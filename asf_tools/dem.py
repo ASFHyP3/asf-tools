@@ -1,12 +1,10 @@
 """Prepare a Copernicus GLO-30 DEM virtual raster (VRT) covering a given geometry"""
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Union
 
 import shapely.geometry
 from osgeo import gdal, ogr
 
-from asf_tools import raster
 from asf_tools import vector
 from asf_tools.util import GDALConfigManager
 
@@ -40,7 +38,6 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely
         if not vector.intersects_features(geometry, tile_features):
             raise ValueError(f'Copernicus GLO-30 DEM does not intersect this geometry: {geometry}')
 
-        tile_features = vector.get_features(DEM_GEOJSON)
         dem_file_paths = vector.intersecting_feature_properties(geometry, tile_features, 'file_path')
 
         gdal.BuildVRT(str(vrt), dem_file_paths)
