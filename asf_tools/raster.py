@@ -1,7 +1,7 @@
 import logging
 import warnings
 from pathlib import Path
-from typing import List, Literal, Union
+from typing import Literal, Union
 
 import numpy as np
 from osgeo import gdal
