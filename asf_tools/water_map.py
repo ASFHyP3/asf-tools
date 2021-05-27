@@ -10,17 +10,16 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple, Union
 
 import numpy as np
 import skfuzzy as fuzz
 from osgeo import gdal
-from shapely.geometry import shape
+
 from skimage import filters, measure, morphology
 
 from asf_tools.composite import get_epsg_code, write_cog
-from asf_tools.hand.prepare import prepare_hand_vrt
+from asf_tools.hand.prepare import prepare_hand_for_raster
 from asf_tools.raster import read_as_masked_array
 from asf_tools.threshold import expectation_maximization_threshold as em_threshold
 from asf_tools.tile import tile_array, untile_array
@@ -215,12 +214,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     if hand_raster is None:
         hand_raster = str(out_raster).replace('.tif', '_hand.tif')
         log.info(f'Extracting HAND data to: {hand_raster}')
-        hand_geometry = shape(info['wgs84Extent'])
-        hand_bounds = [*info['cornerCoordinates']['upperLeft'], *info['cornerCoordinates']['lowerRight']]
-        with NamedTemporaryFile(suffix='.vrt', delete=False) as hand_vrt:
-            prepare_hand_vrt(hand_vrt.name, hand_geometry)
-            gdal.Warp(hand_raster, hand_vrt.name, dstSRS=f'EPSG:{out_epsg}',
-                      outputBounds=hand_bounds, width=info['size'][0], height=info['size'][1])
+        prepare_hand_for_raster(hand_raster, vh_raster)
 
     log.info(f'Determining HAND memberships from {hand_raster}')
     hand_array = read_as_masked_array(hand_raster)
