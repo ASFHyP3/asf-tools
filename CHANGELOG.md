@@ -13,10 +13,10 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   water extent maps using a multi-mode Expectation Maximization approach and refined using Fuzzy Logic
 * `asf_tools.hand` sub package containing:
   * `asf_tools.hand.calculate` and an associated `calculate_hand` entrypoint for calculating Height Above 
-    Nearest Drainage (HAND) from the Copernicus GLO-30 Public DEM
+    Nearest Drainage (HAND) from the Copernicus GLO-30 DEM
   * `asf_tools.hand.prepare` to prepare a virtual raster (VRT) mosaic of the Global HAND tiles
-    derived from the Copernicus GLO-30 Public DEM
-* `asf_tools.dem` to prepare a virtual raster (VRT) mosaic of the Copernicus GLO-30 Public DEM tiles
+    derived from the Copernicus GLO-30 DEM
+* `asf_tools.dem` to prepare a virtual raster (VRT) mosaic of the Copernicus GLO-30 DEM tiles
 * `expectation_maximization_threshold` in `asf_tools.threshold` to calculate water threshold value
   using a multi-mode Expectation Maximization approach
 * `tile_array` and `untile_array` in `asf_tools.tile` to transform a numpy array into a set of tiles
