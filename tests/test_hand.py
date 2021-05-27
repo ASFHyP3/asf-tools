@@ -59,8 +59,7 @@ def test_prepare_hand_vrt(tmp_path):
     assert info['size'] == [3600, 3600]
 
 
-def test_prepare_hand_geotiff_antimeridian(tmp_path):
-    hand_vrt = tmp_path / 'hand.vrt'
+def test_prepare_hand_vrt_antimeridian():
     geojson = {
         'type': 'MultiPolygon',
         'coordinates': [
@@ -83,4 +82,4 @@ def test_prepare_hand_geotiff_antimeridian(tmp_path):
     geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
 
     with pytest.raises(ValueError):
-        hand.prepare_hand_vrt(str(hand_vrt), geometry)
+        hand.prepare_hand_vrt('foo', geometry)
