@@ -1,10 +1,8 @@
 import json
 
-from osgeo import gdal, ogr
+from osgeo import ogr
 
 from asf_tools import dem, hand, vector
-
-gdal.UseExceptions()
 
 
 def test_intersects_feature():
