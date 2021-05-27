@@ -20,8 +20,8 @@ def intersects_features(geometry: ogr.Geometry, features: Iterator) -> bool:
 
 def intersecting_feature_properties(geometry: ogr.Geometry, features: Iterator,
                                     feature_property: str) -> List[str]:
-    file_paths = []
+    property_values = []
     for feature in features:
         if feature.GetGeometryRef().Intersects(geometry):
-            file_paths.append(feature.GetField(feature_property))
-    return file_paths
+            property_values.append(feature.GetField(feature_property))
+    return property_values
