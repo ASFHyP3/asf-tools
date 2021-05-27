@@ -1,11 +1,7 @@
 import numpy as np
 import pytest
 
-from osgeo import gdal
-
-from asf_tools import util, raster
-
-gdal.UseExceptions()
+from asf_tools import raster
 
 
 def test_convert_scale():
