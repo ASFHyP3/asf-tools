@@ -3,8 +3,8 @@ ArcGIS Toolbox
 
 [![DOI](https://zenodo.org/badge/295506894.svg)](https://zenodo.org/badge/latestdoi/295506894)
 
-The [ASF_Tools ArcGIS Python Toolbox](https://asf.alaska.edu/how-to/data-tools/gis-tools/) can be used with either ArcGIS Desktop or ArcGIS Pro, and contains tools that perform geoprocessing tasks useful for working with Synthetic Aperture Radar (SAR) data. The tools were designed to be used with [Sentinel-1 Radiometric Terrain Corrected (RTC) SAR datasets](https://asfhyp3.github.io/using/vertex), such as those available on-demand using ASF's [Data Search - Vertex](https://search.asf.alaska.edu/) portal, but several of the tools have the potential to be used with a variety of rasters, including non-SAR datasets.
-
+The [ASF_Tools ArcGIS Python Toolbox](https://asf.alaska.edu/how-to/data-tools/gis-tools/) can be used with either ArcGIS Desktop or ArcGIS Pro, and contains tools that perform geoprocessing tasks useful for working with Synthetic Aperture Radar (SAR) data. The tools were designed to be used with [Sentinel-1 Radiometric Terrain Corrected (RTC) SAR datasets](https://hyp3-docs.asf.alaska.edu/guides/rtc_product_guide/), such as those available on-demand using ASF's [Data Search - Vertex](https://hyp3-docs.asf.alaska.edu/using/vertex/) portal, but several of the tools have the potential to be used with a variety of rasters, including non-SAR datasets.
+https://hyp3-docs.asf.alaska.edu/using/vertex/
 The Toolbox is distributed as a zipped archive including the .pyt Toolbox script and associated .xml files. There is an XML file for the toolbox itself and one for each of the tools it contains. These XML files contain the metadata displayed in the item descriptions and tool help windows in ArcGIS, and must be kept in the same directory as the Python Toolbox (.pyt) file, or the information they contain will no longer be accessible.
 
 ### Toolbox Contents
