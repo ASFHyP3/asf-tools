@@ -3,9 +3,9 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Union
 
-
-import shapely.geometry
 from osgeo import gdal, ogr
+from shapely.geometry import shape
+from shapely.geometry.base import BaseGeometry
 
 from asf_tools import vector
 from asf_tools.composite import get_epsg_code
@@ -17,7 +17,7 @@ gdal.UseExceptions()
 ogr.UseExceptions()
 
 
-def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection]):
+def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGeometry]):
     """Prepare a HAND mosaic VRT covering a given geometry
 
     Prepare a Height Above Nearest Drainage (HAND) virtual raster (VRT) covering a given geometry.
@@ -32,7 +32,7 @@ def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapel
 
     """
     with GDALConfigManager(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR'):
-        if isinstance(geometry, shapely.geometry.GeometryCollection):
+        if isinstance(geometry, BaseGeometry):
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
         min_lon, max_lon, _, _ = geometry.GetEnvelope()
@@ -57,7 +57,7 @@ def prepare_hand_for_raster(hand_raster: Union[str, Path], source_raster: Union[
     """
     info = gdal.Info(str(source_raster), format='json')
 
-    hand_geometry = shapely.geometry.shape(info['wgs84Extent'])
+    hand_geometry = shape(info['wgs84Extent'])
     hand_bounds = [*info['cornerCoordinates']['upperLeft'], *info['cornerCoordinates']['lowerRight']]
 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as hand_vrt:

@@ -2,8 +2,8 @@
 from pathlib import Path
 from typing import Union
 
-import shapely.geometry
 from osgeo import gdal, ogr
+from shapely.geometry.base import BaseGeometry
 
 from asf_tools import vector
 from asf_tools.util import GDALConfigManager
@@ -14,7 +14,7 @@ gdal.UseExceptions()
 ogr.UseExceptions()
 
 
-def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely.geometry.GeometryCollection]):
+def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGeometry]):
     """Create a DEM mosaic VRT covering a given geometry
 
     The DEM mosaic is assembled from the Copernicus GLO-30 DEM tiles that intersect the geometry.
@@ -27,7 +27,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, shapely
 
     """
     with GDALConfigManager(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR'):
-        if isinstance(geometry, shapely.geometry.GeometryCollection):
+        if isinstance(geometry, BaseGeometry):
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
         min_lon, max_lon, _, _ = geometry.GetEnvelope()
