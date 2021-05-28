@@ -22,7 +22,7 @@ def _make_histogram(image):
             histogram[0, floor_value - 1] = histogram[0, floor_value - 1] + temp2
     histogram = np.convolve(histogram[0], [1, 2, 3, 2, 1])
     histogram = histogram[2:(histogram.size - 3)]
-    histogram = histogram / np.sum(histogram)
+    histogram /= np.sum(histogram)
     return histogram
 
 
@@ -99,7 +99,7 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
             )
             del class_posterior_probability, vr
         class_proportions += 1e-3
-        class_proportions = class_proportions / np.sum(class_proportions)
+        class_proportions /= np.sum(class_proportions)
         class_likelihood = _make_distribution(
             class_means, class_variances, class_proportions, nonzero_indices
         )

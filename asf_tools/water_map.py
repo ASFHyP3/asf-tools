@@ -10,7 +10,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import skfuzzy as fuzz
@@ -18,9 +18,10 @@ from osgeo import gdal
 from skimage import filters, measure, morphology
 
 from asf_tools.composite import get_epsg_code, write_cog
+from asf_tools.hand.prepare import prepare_hand_for_raster
 from asf_tools.raster import read_as_masked_array
 from asf_tools.threshold import expectation_maximization_threshold as em_threshold
-from asf_tools.util import tile_array, untile_array
+from asf_tools.tile import tile_array, untile_array
 
 log = logging.getLogger(__name__)
 
@@ -117,12 +118,12 @@ def segment_area_membership(segments: np.ndarray, weights: np.ndarray) -> np.nda
     return segment_membership
 
 
-def fuzzy_refinement(intial_map: np.ndarray, gaussian_array: np.ndarray, hand_array: np.ndarray, pixel_size: float,
+def fuzzy_refinement(initial_map: np.ndarray, gaussian_array: np.ndarray, hand_array: np.ndarray, pixel_size: float,
                      gaussian_thresholds: Tuple[float, float], membership_threshold: float = 0.45) -> np.ndarray:
-    water_map = np.ones_like(intial_map)
+    water_map = np.ones_like(initial_map)
 
-    water_segments = segment_image(intial_map)
-    water_segment_membership = segment_area_membership(water_segments, intial_map)
+    water_segments = segment_image(initial_map)
+    water_segment_membership = segment_area_membership(water_segments, initial_map)
     water_map &= ~np.isclose(water_segment_membership, 0.)
 
     gaussian_membership = min_max_membership(gaussian_array, gaussian_thresholds[0], gaussian_thresholds[1], 0.005)
@@ -143,7 +144,7 @@ def fuzzy_refinement(intial_map: np.ndarray, gaussian_array: np.ndarray, hand_ar
 
 
 def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh_raster: Union[str, Path],
-                   hand_raster: Union[str, Path], tile_shape: Tuple[int, int] = (100, 100),
+                   hand_raster: Optional[Union[str, Path]] = None, tile_shape: Tuple[int, int] = (100, 100),
                    max_vv_threshold: float = -17., max_vh_threshold: float = -24.,
                    hand_threshold: float = 15., hand_fraction: float = 0.8, membership_threshold: float = 0.45):
     """Creates a surface water extent map from a Sentinel-1 RTC product
@@ -205,8 +206,14 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         raise ValueError(f'tile_shape {tile_shape} requires even values.')
 
     info = gdal.Info(str(vh_raster), format='json')
+
     out_tranform = info['geoTransform']
     out_epsg = get_epsg_code(info)
+
+    if hand_raster is None:
+        hand_raster = str(out_raster).replace('.tif', '_hand.tif')
+        log.info(f'Extracting HAND data to: {hand_raster}')
+        prepare_hand_for_raster(hand_raster, vh_raster)
 
     log.info(f'Determining HAND memberships from {hand_raster}')
     hand_array = read_as_masked_array(hand_raster)
@@ -278,16 +285,16 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument('out_raster', type=Path, help='Water map GeoTIFF to create')
+    parser.add_argument('out_raster', help='Water map GeoTIFF to create')
     # FIXME: Decibel RTCs would be real nice.
-    parser.add_argument('vv_raster', type=Path,
+    parser.add_argument('vv_raster',
                         help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
-    parser.add_argument('vh_raster', type=Path,
+    parser.add_argument('vh_raster',
                         help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization')
-    # FIXME: Don't assume pixel-aligned HAND
-    parser.add_argument('hand_raster', type=Path,
-                        help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters')
 
+    parser.add_argument('--hand-raster',
+                        help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
+                             'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
     parser.add_argument('--tile-shape', type=int, nargs=2, default=(100, 100),
                         help='shape (height, width) in pixels to tile the image to')
     parser.add_argument('--max-vv-threshold', type=float, default=-17.,

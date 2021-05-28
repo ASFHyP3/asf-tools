@@ -4,7 +4,7 @@ from osgeo.utils.gdalcompare import find_diff
 
 from asf_tools import water_map
 from asf_tools.composite import read_as_array
-from asf_tools.util import tile_array
+from asf_tools.tile import tile_array
 
 
 def test_determine_em_threshold(raster_tiles):

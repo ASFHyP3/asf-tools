@@ -9,5 +9,5 @@ def test_water_map(script_runner):
 
 
 def test_make_hand(script_runner):
-    ret = script_runner.run('make_hand', '-h')
+    ret = script_runner.run('calculate_hand', '-h')
     assert ret.success
