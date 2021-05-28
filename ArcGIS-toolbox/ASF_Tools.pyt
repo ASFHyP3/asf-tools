@@ -864,7 +864,7 @@ class RGBDecomp(object):
             arcpy.AddMessage("Input scale is power. No conversion necessary.")
 
         else:
-            arcpy.AddError("Input scale must be set to Power Amplitude, or dB.")
+            arcpy.AddError("Input scale must be set to Power, Amplitude, or dB.")
             sys.exit(0)
 
         arcpy.AddMessage("Input rasters have been defined. Running pixel cleanup routine...")
