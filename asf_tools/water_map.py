@@ -285,14 +285,14 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument('out_raster', type=Path, help='Water map GeoTIFF to create')
+    parser.add_argument('out_raster', help='Water map GeoTIFF to create')
     # FIXME: Decibel RTCs would be real nice.
-    parser.add_argument('vv_raster', type=Path,
+    parser.add_argument('vv_raster',
                         help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
-    parser.add_argument('vh_raster', type=Path,
+    parser.add_argument('vh_raster',
                         help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization')
 
-    parser.add_argument('--hand-raster', type=Path,
+    parser.add_argument('--hand-raster',
                         help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
                              'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
     parser.add_argument('--tile-shape', type=int, nargs=2, default=(100, 100),
