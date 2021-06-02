@@ -87,7 +87,7 @@ def determine_membership_limits(
     array = np.ma.masked_values(array, 0.)
     array = np.ma.masked_greater(array, np.percentile(array, mask_percentile))
     lower_limit = np.ma.median(array)
-    upper_limit = lower_limit + std_range * array.std()
+    upper_limit = lower_limit + std_range * array.std() + 5.0
     return lower_limit, upper_limit
 
 
