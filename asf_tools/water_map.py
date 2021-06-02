@@ -91,14 +91,6 @@ def determine_membership_limits(
     return lower_limit, upper_limit
 
 
-def segment_image(image: np.ndarray) -> np.ndarray:
-    med = filters.median(image, morphology.disk(2))
-    selem = morphology.disk(3)
-    closed = morphology.closing(med, selem)
-    segments = measure.label(closed, connectivity=2)
-    return segments
-
-
 def min_max_membership(array: np.ndarray, lower_limit: float, upper_limit: float, resolution: float) -> np.ndarray:
     possible_values = np.arange(array.min(), array.max(), resolution)
     activation = fuzz.zmf(possible_values, lower_limit, upper_limit)
@@ -122,7 +114,7 @@ def fuzzy_refinement(initial_map: np.ndarray, gaussian_array: np.ndarray, hand_a
                      gaussian_thresholds: Tuple[float, float], membership_threshold: float = 0.45) -> np.ndarray:
     water_map = np.ones_like(initial_map)
 
-    water_segments = segment_image(initial_map)
+    water_segments = measure.label(initial_map, connectivity=2)
     water_segment_membership = segment_area_membership(water_segments, initial_map)
     water_map &= ~np.isclose(water_segment_membership, 0.)
 
