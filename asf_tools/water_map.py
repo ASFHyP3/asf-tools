@@ -98,24 +98,22 @@ def min_max_membership(array: np.ndarray, lower_limit: float, upper_limit: float
     return membership
 
 
-def segment_area_membership(segments: np.ndarray, min_area: int = 3, max_area: int = 10) -> np.ndarray:
+def segment_area_membership(segments: np.ndarray, initial_mask: np.ndarray, min_area: int = 3, max_area: int = 10) -> \
+        np.ndarray:
     segment_areas = np.bincount(segments.ravel())
-    segment_index = np.arange(segment_areas.size)
 
     possible_areas = np.arange(min_area, max_area + 1)
     activation = 1 - fuzz.zmf(possible_areas, min_area, max_area)
 
     segment_membership = np.zeros_like(segments)
 
-    segments_above_threshold = segment_index[segment_areas > max_area]
+    segments_above_threshold = (segment_areas > max_area).nonzero()
     np.putmask(segment_membership, np.isin(segment_membership, segments_above_threshold), 1)
 
-    segments_to_interp = segment_index[
-        np.logical_and(segment_areas >= min_area, segment_areas <= max_area)
-    ]
-    for segment in segments_to_interp:
-        np.putmask(segment_membership, segments == segment,
-                   fuzz.interp_membership(possible_areas, activation, segment_areas[segment]))
+    for area in possible_areas:
+        possible_pixels = np.isin(segments, (segment_areas == area).nonzero())
+        mask = np.logical_and(possible_pixels, initial_mask)
+        np.putmask(segment_membership, mask, fuzz.interp_membership(possible_areas, activation, area))
     return segment_membership
 
 
@@ -124,7 +122,7 @@ def fuzzy_refinement(initial_map: np.ndarray, gaussian_array: np.ndarray, hand_a
     water_map = np.ones_like(initial_map)
 
     water_segments = measure.label(initial_map, connectivity=2)
-    water_segment_membership = segment_area_membership(water_segments)
+    water_segment_membership = segment_area_membership(water_segments, initial_map)
     water_map &= ~np.isclose(water_segment_membership, 0.)
 
     gaussian_membership = min_max_membership(gaussian_array, gaussian_thresholds[0], gaussian_thresholds[1], 0.005)
