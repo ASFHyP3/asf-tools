@@ -28,7 +28,7 @@ def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGe
 
     Args:
         vrt: Path for the output VRT file
-        geometry: Geometry in EPSG:4326 (lon/lat) projection for which to prepare a DEM mosaic
+        geometry: Geometry in EPSG:4326 (lon/lat) projection for which to prepare a HAND mosaic
 
     """
     with GDALConfigManager(GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR'):
