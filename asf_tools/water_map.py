@@ -98,8 +98,7 @@ def min_max_membership(array: np.ndarray, lower_limit: float, upper_limit: float
     return membership
 
 
-def segment_area_membership(segments: np.ndarray, min_area: int = 3, max_area: int = 10) -> \
-        np.ndarray:
+def segment_area_membership(segments: np.ndarray, min_area: int = 3, max_area: int = 10) -> np.ndarray:
     segment_areas = np.bincount(segments.ravel())
 
     possible_areas = np.arange(min_area, max_area + 1)
