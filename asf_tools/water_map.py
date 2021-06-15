@@ -116,6 +116,16 @@ def segment_area_membership(segments: np.ndarray, min_area: int = 3, max_area: i
     return segment_membership
 
 
+def remove_small_segments(segments: np.ndarray, min_area: int = 3) -> np.ndarray:
+    valid_segments = segments != 0
+
+    segment_areas = np.bincount(segments.ravel())
+    segments_below_threshold = (segment_areas < min_area).nonzero()
+    np.putmask(valid_segments, np.isin(segments, segments_below_threshold), False)
+
+    return valid_segments
+
+
 def fuzzy_refinement(initial_map: np.ndarray, gaussian_array: np.ndarray, hand_array: np.ndarray, pixel_size: float,
                      gaussian_thresholds: Tuple[float, float], membership_threshold: float = 0.45) -> np.ndarray:
     water_map = np.ones_like(initial_map)
@@ -272,6 +282,9 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     log.info('Combining Fuzzy VH and VV extent map')
     combined_water_map = np.logical_or(*water_extent_maps)
+
+    combined_segments = measure.label(combined_water_map, connectivity=2)
+    combined_water_map = remove_small_segments(combined_segments)
 
     write_cog(out_raster, combined_water_map, transform=out_tranform,
               epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
