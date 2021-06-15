@@ -106,8 +106,9 @@ def segment_area_membership(segments: np.ndarray, min_area: int = 3, max_area: i
 
     segment_membership = np.zeros_like(segments)
 
-    segments_above_threshold = (segment_areas > max_area).nonzero()
-    np.putmask(segment_membership, np.isin(segment_membership, segments_above_threshold), 1)
+    segments_above_threshold = np.squeeze((segment_areas > max_area).nonzero())
+    segments_above_threshold = np.delete(segments_above_threshold, (segments_above_threshold == 0).nonzero())
+    np.putmask(segment_membership, np.isin(segments, segments_above_threshold), 1)
 
     for area in possible_areas:
         mask = np.isin(segments, (segment_areas == area).nonzero())
