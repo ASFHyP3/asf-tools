@@ -215,7 +215,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     info = gdal.Info(str(vh_raster), format='json')
 
-    out_tranform = info['geoTransform']
+    out_transform = info['geoTransform']
     out_epsg = get_epsg_code(info)
 
     if hand_raster is None:
@@ -262,7 +262,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         water_map = np.ma.masked_less_equal(gaussian_array, gaussian_threshold).mask
         water_map &= ~array.mask
 
-        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'), water_map, transform=out_tranform,
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'), water_map, transform=out_transform,
                   epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         log.info(f'Refining initial {pol} water extent map using Fuzzy Logic')
@@ -270,12 +270,12 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         gaussian_lower_limit = np.log10(np.ma.median(array)) + 30.
 
         water_map = fuzzy_refinement(
-            water_map, gaussian_array, hand_array, pixel_size=out_tranform[1],
+            water_map, gaussian_array, hand_array, pixel_size=out_transform[1],
             gaussian_thresholds=(gaussian_lower_limit, gaussian_threshold), membership_threshold=membership_threshold
         )
         water_map &= ~array.mask
 
-        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'), water_map, transform=out_tranform,
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'), water_map, transform=out_transform,
                   epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         water_extent_maps.append(water_map)
@@ -286,7 +286,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     combined_segments = measure.label(combined_water_map, connectivity=2)
     combined_water_map = remove_small_segments(combined_segments)
 
-    write_cog(out_raster, combined_water_map, transform=out_tranform,
+    write_cog(out_raster, combined_water_map, transform=out_transform,
               epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
 
