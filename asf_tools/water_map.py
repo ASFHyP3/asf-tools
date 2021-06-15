@@ -142,7 +142,7 @@ def fuzzy_refinement(initial_map: np.ndarray, gaussian_array: np.ndarray, hand_a
 
 def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh_raster: Union[str, Path],
                    hand_raster: Optional[Union[str, Path]] = None, tile_shape: Tuple[int, int] = (100, 100),
-                   max_vv_threshold: float = -17., max_vh_threshold: float = -24.,
+                   max_vv_threshold: float = -15.5, max_vh_threshold: float = -23.0,
                    hand_threshold: float = 15., hand_fraction: float = 0.8, membership_threshold: float = 0.45):
     """Creates a surface water extent map from a Sentinel-1 RTC product
 
@@ -294,9 +294,9 @@ def main():
                              'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
     parser.add_argument('--tile-shape', type=int, nargs=2, default=(100, 100),
                         help='shape (height, width) in pixels to tile the image to')
-    parser.add_argument('--max-vv-threshold', type=float, default=-17.,
+    parser.add_argument('--max-vv-threshold', type=float, default=-15.5,
                         help='Maximum threshold value to use for `vv_raster` in decibels (db)')
-    parser.add_argument('--max-vh-threshold', type=float, default=-25.,
+    parser.add_argument('--max-vh-threshold', type=float, default=-23.0,
                         help='Maximum threshold value to use for `vh_raster` in decibels (db)')
     parser.add_argument('--hand-threshold', type=float, default=15.,
                         help='The maximum height above nearest drainage in meters to consider a pixel valid')
