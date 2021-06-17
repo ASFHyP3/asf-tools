@@ -4,6 +4,7 @@ from tempfile import NamedTemporaryFile
 from typing import Union
 
 from osgeo import gdal, ogr
+from rasterio.enums import Resampling
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
@@ -48,19 +49,26 @@ def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGe
         gdal.BuildVRT(str(vrt), hand_file_paths)
 
 
-def prepare_hand_for_raster(hand_raster: Union[str, Path], source_raster: Union[str, Path]):
+def prepare_hand_for_raster(hand_raster: Union[str, Path], source_raster: Union[str, Path],
+                            resampling_method: str = 'lanczos'):
     """Create a HAND raster pixel-aligned to a source raster
 
     Args:
         hand_raster: Path for the output HAND raster
         source_raster: Path for the source raster
+        resampling_method: Name of the resampling method to use. For available methods, see:
+            https://gdal.org/programs/gdalwarp.html#cmdoption-gdalwarp-r
     """
     info = gdal.Info(str(source_raster), format='json')
 
     hand_geometry = shape(info['wgs84Extent'])
-    hand_bounds = [*info['cornerCoordinates']['upperLeft'], *info['cornerCoordinates']['lowerRight']]
+    hand_bounds = [info['cornerCoordinates']['upperLeft'][0],
+                   info['cornerCoordinates']['lowerRight'][1],
+                   info['cornerCoordinates']['lowerRight'][0],
+                   info['cornerCoordinates']['upperLeft'][1]]
 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as hand_vrt:
         prepare_hand_vrt(hand_vrt.name, hand_geometry)
         gdal.Warp(str(hand_raster), hand_vrt.name, dstSRS=f'EPSG:{get_epsg_code(info)}',
-                  outputBounds=hand_bounds, width=info['size'][0], height=info['size'][1])
+                  outputBounds=hand_bounds, width=info['size'][0], height=info['size'][1],
+                  resampleAlg=Resampling[resampling_method].value)
