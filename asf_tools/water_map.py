@@ -215,11 +215,15 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     info = gdal.Info(str(vh_raster), format='json')
 
+    out_bounds = [info['cornerCoordinates']['upperLeft'][0],
+                  info['cornerCoordinates']['lowerRight'][1],
+                  info['cornerCoordinates']['lowerRight'][0],
+                  info['cornerCoordinates']['upperLeft'][1]]
     out_transform = info['geoTransform']
     out_epsg = get_epsg_code(info)
 
     if hand_raster is None:
-        hand_raster = str(out_raster).replace('.tif', '_hand.tif')
+        hand_raster = str(out_raster).replace('.tif', '_HAND.tif')
         log.info(f'Extracting HAND data to: {hand_raster}')
         prepare_hand_for_raster(hand_raster, vh_raster)
 

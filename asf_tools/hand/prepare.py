@@ -62,7 +62,10 @@ def prepare_hand_for_raster(hand_raster: Union[str, Path], source_raster: Union[
     info = gdal.Info(str(source_raster), format='json')
 
     hand_geometry = shape(info['wgs84Extent'])
-    hand_bounds = [*info['cornerCoordinates']['upperLeft'], *info['cornerCoordinates']['lowerRight']]
+    hand_bounds = [info['cornerCoordinates']['upperLeft'][0],
+                   info['cornerCoordinates']['lowerRight'][1],
+                   info['cornerCoordinates']['lowerRight'][0],
+                   info['cornerCoordinates']['upperLeft'][1]]
 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as hand_vrt:
         prepare_hand_vrt(hand_vrt.name, hand_geometry)
