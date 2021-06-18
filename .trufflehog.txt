@@ -1,2 +1,3 @@
 .*gitleaks.toml$
 .*\.pyt\.xml$
+.*water-extent-map-on-demand.ipynb$
