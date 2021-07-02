@@ -33,7 +33,7 @@ setup(
     install_requires=[
         'astropy',
         'fiona',
-        'gdal>=3.2.0',
+        'gdal>=3.3',
         'numpy',
         'pysheds',
         'scikit-fuzzy',
@@ -48,6 +48,7 @@ setup(
             'flake8-import-order',
             'flake8-blind-except',
             'flake8-builtins',
+            'gdal-utils',
             'pytest',
             'pytest-cov',
             'pytest-console-scripts',
