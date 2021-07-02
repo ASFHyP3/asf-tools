@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from osgeo.utils.gdalcompare import find_diff
+from osgeo_utils.gdalcompare import find_diff
 
 from asf_tools import water_map
 from asf_tools.composite import read_as_array

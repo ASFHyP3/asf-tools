@@ -2,7 +2,7 @@ import json
 
 import pytest
 from osgeo import gdal, ogr
-from osgeo.utils.gdalcompare import find_diff
+from osgeo_utils.gdalcompare import find_diff
 
 from asf_tools import hand
 
