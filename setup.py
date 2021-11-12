@@ -31,8 +31,15 @@ setup(
     python_requires='~=3.8',
 
     install_requires=[
+        'astropy',
+        'fiona',
+        'gdal>=3.3',
         'numpy',
-        'gdal>=3.2.0',
+        'pysheds',
+        'scikit-fuzzy',
+        'scikit-image',
+        'shapely',
+        'rasterio',
     ],
 
     extras_require={
@@ -41,6 +48,7 @@ setup(
             'flake8-import-order',
             'flake8-blind-except',
             'flake8-builtins',
+            'gdal-utils',
             'pytest',
             'pytest-cov',
             'pytest-console-scripts',
@@ -52,6 +60,8 @@ setup(
     entry_points={
         'console_scripts': [
             'make_composite = asf_tools.composite:main',
+            'water_map = asf_tools.water_map:main',
+            'calculate_hand = asf_tools.hand.calculate:main',
         ]
     },
 

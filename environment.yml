@@ -4,6 +4,7 @@ channels:
   # - esri  # windows only
   - nodefaults
 dependencies:
+  - python>=3.8
   - pip
   # For packaging, and testing
   # - arcpy  # windows only
@@ -18,9 +19,16 @@ dependencies:
   - pytest-console-scripts
   - pytest-cov
   # For running
+  - astropy
+  - fiona
+  - gdal>=3.3
   - numpy
-  - gdal>=3.2.0
+  - pysheds
+  - rasterio
+  - scikit-fuzzy
+  - scikit-image
+  - shapely
   - pip:
     # for packaging and testing
     - s3pypi
-    - safety
+    - gdal-utils

@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/ASFHyP3/asf-tools/compare/v0.2.0...v0.3.0)
+
+### Added
+* `asf_tools.water_map` and an associated `water_map` entrypoint for making
+  water extent maps using a multi-mode Expectation Maximization approach and refined using Fuzzy Logic
+* `asf_tools.hand` sub package containing:
+  * `asf_tools.hand.calculate` and an associated `calculate_hand` entrypoint for calculating Height Above 
+    Nearest Drainage (HAND) from the Copernicus GLO-30 DEM
+  * `asf_tools.hand.prepare` to prepare a raster from the Copernicus GLO-30 DEM derived Global HAND tiles
+* `asf_tools.dem` to prepare a virtual raster (VRT) mosaic of the Copernicus GLO-30 DEM tiles
+* `expectation_maximization_threshold` in `asf_tools.threshold` to calculate water threshold value
+  using a multi-mode Expectation Maximization approach
+* `tile_array` and `untile_array` in `asf_tools.tile` to transform a numpy array into a set of tiles
+* `convert_scale` in `asf_tools.raster` to transform calibrated raster between decibel, power, and amplitude scales
+
+### Changed
+* ASF_Tools ArcGIS toolbox now accepts inputs in dB (decibel) scale for the RGBDecomp and ScaleConversion tools. 
+
 ## [0.2.0](https://github.com/ASFHyP3/asf-tools/compare/v0.1.1...v0.2.0)
 
 ### Added

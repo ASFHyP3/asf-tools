@@ -8,16 +8,17 @@ is created as a Cloud Optimized GeoTIFF (COG). Additionally, a COG specifying
 the number of rasters contributing to each composite pixel is created.
 
 References:
-    David Small, 2012: https://doi.org/10.1109/IGARSS.2012.6350465
+    David Small, 2012: <https://doi.org/10.1109/IGARSS.2012.6350465>
 """
 
 import argparse
 import logging
 import os
 import sys
+from pathlib import Path
 from statistics import multimode
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import List
+from typing import List, Union
 
 import numpy as np
 from osgeo import gdal, osr
@@ -185,7 +186,7 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
     return data
 
 
-def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_code: int,
+def write_cog(file_name: Union[str, Path], data: np.ndarray, transform: List[float], epsg_code: int,
               dtype=gdal.GDT_Float32, nodata_value=None):
     """Creates a Cloud Optimized GeoTIFF
 
@@ -213,7 +214,7 @@ def write_cog(file_name: str, data: np.ndarray, transform: List[float], epsg_cod
 
         driver = gdal.GetDriverByName('COG')
         options = ['COMPRESS=LZW', 'OVERVIEW_RESAMPLING=AVERAGE', 'NUM_THREADS=ALL_CPUS', 'BIGTIFF=YES']
-        driver.CreateCopy(file_name, temp_geotiff, options=options)
+        driver.CreateCopy(str(file_name), temp_geotiff, options=options)
 
         del temp_geotiff  # How to close w/ gdal
     return file_name
