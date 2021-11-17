@@ -25,9 +25,6 @@ def test_select_hand_tiles(hand_candidates):
     with pytest.raises(ValueError):
         _ = water_map.select_hand_tiles(np.zeros(shape=(10, 10, 10), dtype=float), 15., 0.8)
 
-    with pytest.raises(ValueError):
-        _ = water_map.select_hand_tiles(11.3*np.ones(shape=(10, 10, 10), dtype=float), 15., 0.8)
-
 
 @pytest.mark.integration
 def test_select_backscatter_tiles(hand_candidates):
