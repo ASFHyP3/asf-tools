@@ -35,7 +35,12 @@ def mean_of_subtiles(tiles: np.ndarray) -> np.ndarray:
     return sub_tiles_mean
 
 
-def select_hand_tiles(tiles: np.ndarray, hand_threshold: float, hand_fraction: float) -> np.ndarray:
+def select_hand_tiles(tiles: Union[np.ndarray, np.ma.MaskedArray],
+                      hand_threshold: float, hand_fraction: float) -> np.ndarray:
+    if np.allclose(tiles, 0.0):
+        raise ValueError(f'All pixels in scene have a HAND value of {0.0} (all water); '
+                         f'scene is not a good candidate for water mapping.')
+
     tile_indexes = np.arange(tiles.shape[0])
 
     tiles = np.ma.masked_greater_equal(tiles, hand_threshold)
