@@ -1,8 +1,5 @@
 import logging
-import os
-from zipfile import ZipFile
 
-from hyp3lib.fetch import download_file
 from osgeo import gdal
 
 log = logging.getLogger(__name__)
