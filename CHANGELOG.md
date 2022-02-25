@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2]
+
+### Added
+* Dockerfile to build the Hyp3 plugin container
+* Hyp3 entrypoint added as `asf_tools/etc/entrypoint.sh`
+* `__main__.py` to asf_tools to parse arguments and run watermap
+* `hyplib3>=1.6.8,<2` requirement
+
+### Changed 
+* Testing and tagging workflow spit to `test-and-build.yml` and `tag-version.yml` to test with Dockerfile
 
 ## [0.3.1](https://github.com/ASFHyP3/asf-tools/compare/v0.3.0...v0.3.1)
 

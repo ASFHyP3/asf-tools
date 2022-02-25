@@ -1,10 +1,17 @@
+import logging
+import os
+from zipfile import ZipFile
+
+from hyp3lib.fetch import download_file
 from osgeo import gdal
 
+log = logging.getLogger(__name__)
 gdal.UseExceptions()
 
 
 class GDALConfigManager:
     """Context manager for setting GDAL config options temporarily"""
+
     def __init__(self, **options):
         """
         Args:
