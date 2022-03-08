@@ -12,7 +12,6 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Dockerfile to build the Hyp3 plugin container
 * Hyp3 entrypoint added as `asf_tools/etc/entrypoint.sh`
 * `__main__.py` to asf_tools to parse arguments and run watermap
-* `hyplib3>=1.6.8,<2` requirement
 
 ### Changed 
 * Testing and tagging workflow spit to `test-and-build.yml` and `tag-version.yml` to test with Dockerfile
