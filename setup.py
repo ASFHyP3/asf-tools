@@ -34,7 +34,6 @@ setup(
         'astropy',
         'fiona',
         'gdal>=3.3',
-        'hyp3lib>=1.6.8,<2',
         'numpy',
         'pysheds',
         'scikit-fuzzy',
