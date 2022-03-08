@@ -9,10 +9,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.3.2]
 
 ### Added
-* Dockerfile to build the Hyp3 plugin container
-
-### Changed 
-* Testing and tagging workflow spit to `test-and-build.yml` and `tag-version.yml` to test with Dockerfile
+* We now provide an ASF Tools docker image: `ghcr.io/asfhyp3/asf-tools`. To pull the lastest stable release, use the 
+ `latest` tag; to pull the development version, use the `test` tag. 
 
 ## [0.3.1](https://github.com/ASFHyP3/asf-tools/compare/v0.3.0...v0.3.1)
 

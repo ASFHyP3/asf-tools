@@ -21,16 +21,34 @@ environments via [Anaconda/Miniconda](https://docs.conda.io/projects/conda/en/la
 It is also possible to use [Python virtual environments](https://docs.python.org/3/tutorial/venv.html),
 but installation of non-python dependencies (e.g., `gdal`) can be challenging. 
 
-`asf_tools` can be installed into a conda environment with
+`asf_tools` can be installed into a conda environment with:
 
 ```
 conda install -c conda-forge asf_tools
 ```
 
-or into a virtual environment with
+or into a virtual environment with:
 
 ```
 python -m pip install asf_tools
+```
+
+#### Running as a Docker container 
+`asf-tools` can also be run in a [Docker](https://docs.docker.com/get-started/) container, which runs isolated from . 
+After [installing](https://docs.docker.com/get-docker/) Docker, pull the image by running:
+```
+docker pull ghcr.io/asfhyp3/asf-tools:latest
+```
+in the terminal. Use the `latest` tag to pull the latest version or the `test` tag to pull the development version.
+
+An interactive shell is run with: 
+```
+docker run --rm -it ghcr.io/asfhyp3/asf-tools:latest
+```
+
+Data can be mapped from a host/local machine to the container using [volumes](https://docs.docker.com/storage/volumes/):
+```
+docker run --rm -it -v /path/to/data:/home/work/ ghcr.io/asfhyp3/asf-tools:latest bash
 ```
 
 ## Quick Usage
