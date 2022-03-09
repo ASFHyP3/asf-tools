@@ -49,14 +49,14 @@ Or, the development version with:
 docker pull ghcr.io/asfhyp3/asf-tools:test
 ```
 
-And then run the container with  
+And then run the container with:
 ```
 docker run --rm -it ghcr.io/asfhyp3/asf-tools:latest
 ```
 which will drop you into a `bash` shell inside the container with an active `asf-tools` conda environment. 
 
 To move data between your local (host) machine and the container, you can mount a 
-[volume](https://docs.docker.com/storage/volumes/) like:
+[volume](https://docs.docker.com/storage/volumes/) with:
 ```
 docker run --rm -it -v /path/to/data:/home/conda/data ghcr.io/asfhyp3/asf-tools:latest
 ```
