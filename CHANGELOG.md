@@ -9,8 +9,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.3.2]
 
 ### Added
-* We now provide an ASF Tools docker image: `ghcr.io/asfhyp3/asf-tools`. To pull the lastest stable release, use the 
- `latest` tag; to pull the development version, use the `test` tag. 
+* We now provide an ASF Tools docker image: `ghcr.io/asfhyp3/asf-tools`. For usage, see the `asf_tools` [README](asf_tools/README.md).
 
 ## [0.3.1](https://github.com/ASFHyP3/asf-tools/compare/v0.3.0...v0.3.1)
 
