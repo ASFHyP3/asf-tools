@@ -33,22 +33,32 @@ or into a virtual environment with:
 python -m pip install asf_tools
 ```
 
-#### Running as a Docker container 
-`asf-tools` can also be run in a [Docker](https://docs.docker.com/get-started/) container, which runs isolated from . 
-After [installing](https://docs.docker.com/get-docker/) Docker, pull the image by running:
+### Running as a Docker container
+
+We also publish a [Docker](https://docs.docker.com/get-started/) image for `asf_tools`, with all the dependencies
+pre-installed, to the GitHub Container Registry:
+<https://github.com/ASFHyP3/asf-tools/pkgs/container/asf-tools>.
+
+You can pull an image with the latest released version of `asf_tools`  with the command:
 ```
 docker pull ghcr.io/asfhyp3/asf-tools:latest
 ```
-in the terminal. Use the `latest` tag to pull the latest version or the `test` tag to pull the development version.
 
-An interactive shell is run with: 
+Or, the development version with: 
+```
+docker pull ghcr.io/asfhyp3/asf-tools:test
+```
+
+And then run the container with:
 ```
 docker run --rm -it ghcr.io/asfhyp3/asf-tools:latest
 ```
+which will drop you into a `bash` shell inside the container with an active `asf-tools` conda environment. 
 
-Data can be mapped from a host/local machine to the container using [volumes](https://docs.docker.com/storage/volumes/):
+To move data between your local (host) machine and the container, you can mount a 
+[volume](https://docs.docker.com/storage/volumes/) with:
 ```
-docker run --rm -it -v /path/to/data:/home/work/ ghcr.io/asfhyp3/asf-tools:latest bash
+docker run --rm -it -v /path/to/data:/home/conda/data ghcr.io/asfhyp3/asf-tools:latest
 ```
 
 ## Quick Usage
