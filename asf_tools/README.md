@@ -33,7 +33,7 @@ or into a virtual environment with:
 python -m pip install asf_tools
 ```
 
-### Running as a Docker container 
+### Running as a Docker container
 
 We also publish a [Docker](https://docs.docker.com/get-started/) image for `asf_tools`, with all the dependencies
 pre-installed, to the GitHub Container Registry:
