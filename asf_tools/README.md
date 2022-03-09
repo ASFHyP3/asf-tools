@@ -39,7 +39,7 @@ We also publish a [Docker](https://docs.docker.com/get-started/) image for `asf_
 pre-installed, to the GitHub Container Registry:
 <https://github.com/ASFHyP3/asf-tools/pkgs/container/asf-tools>.
 
-You can pull and image with the latest released version of `asf_tools`  with the command:
+You can pull an image with the latest released version of `asf_tools`  with the command:
 ```
 docker pull ghcr.io/asfhyp3/asf-tools:latest
 ```
