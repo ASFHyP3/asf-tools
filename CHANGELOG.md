@@ -6,12 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.2]
+
+## [0.3.1](https://github.com/ASFHyP3/asf-tools/compare/v0.3.0...v0.3.1)
 
 ### Added
 * We now provide an ASF Tools docker image: `ghcr.io/asfhyp3/asf-tools`. For usage, see the `asf_tools` [README](asf_tools/README.md).
-
-## [0.3.1](https://github.com/ASFHyP3/asf-tools/compare/v0.3.0...v0.3.1)
 
 ### Changed
 * `asf_tools.water_map` will raise a `ValueError` error if the HAND data is all zero
