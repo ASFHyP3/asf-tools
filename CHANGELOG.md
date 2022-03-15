@@ -8,8 +8,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.3.2](https://github.com/ASFHyP3/asf-tools/compare/v0.3.1...v0.3.2)
 
-### Changed
-* Pinned `numpy=1.21.4` to resolve `ValueError: output array is read-only` issue as described in [#99](https://github.com/ASFHyP3/asf-tools/issues/99)
+### Fixed
+* [#99](https://github.com/ASFHyP3/asf-tools/issues/99) with better masked array handling
 
 ## [0.3.1](https://github.com/ASFHyP3/asf-tools/compare/v0.3.0...v0.3.1)
 
