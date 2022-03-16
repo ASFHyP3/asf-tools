@@ -55,14 +55,14 @@ def select_backscatter_tiles(backscatter_tiles: np.ndarray, hand_candidates: np.
     sub_tile_means = mean_of_subtiles(backscatter_tiles)
     sub_tile_means_std = sub_tile_means.std(axis=1)
     tile_medians = np.ma.median(backscatter_tiles, axis=(1, 2))
-    tile_variance = sub_tile_means_std / tile_medians  # OK
+    tile_variance = sub_tile_means_std / tile_medians
 
     low_mean_threshold = np.ma.median(tile_medians[hand_candidates])
     low_mean_candidates = tile_indexes[tile_medians < low_mean_threshold]
 
     potential_candidates = np.intersect1d(hand_candidates, low_mean_candidates)
 
-    for variance_threshold in np.percentile(tile_variance, np.arange(5, 96)[::-1]):
+    for variance_threshold in np.nanpercentile(tile_variance.filled(np.nan), np.arange(5, 96)[::-1]):
         variance_candidates = tile_indexes[tile_variance > variance_threshold]
         selected = np.intersect1d(variance_candidates, potential_candidates)
         sort_index = np.argsort(sub_tile_means_std[selected])[::-1]
@@ -90,7 +90,7 @@ def calculate_slope_magnitude(array: np.ndarray, pixel_size) -> np.ndarray:
 def determine_membership_limits(
         array: np.ndarray, mask_percentile: float = 90., std_range: float = 3.0) -> Tuple[float, float]:
     array = np.ma.masked_values(array, 0.)
-    array = np.ma.masked_greater(array, np.percentile(array, mask_percentile))
+    array = np.ma.masked_greater(array, np.nanpercentile(array.filled(np.nan), mask_percentile))
     lower_limit = np.ma.median(array)
     upper_limit = lower_limit + std_range * array.std() + 5.0
     return lower_limit, upper_limit
