@@ -295,6 +295,7 @@ def point_coordinates_to_geometry(coordinates, geometry_type='Polygon'):
       raise NotImplementedError
 
 
+'''
 def fill_nan(arr):
     """
     filled_arr=fill_nan(arr)
@@ -308,6 +309,7 @@ def fill_nan(arr):
             arr = astropy.convolution.interpolate_replace_nans(arr.astype(float), kernel,
                                                                convolve=astropy.convolution.convolve)
     return arr.astype(arr_type)
+'''
 
 
 def get_tight_dem(dem_vrt_name, shpfile):
@@ -324,8 +326,9 @@ def get_tight_dem(dem_vrt_name, shpfile):
         geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
         bounds = geometries.bounds
         os.system(f'gdal_translate {dem_vrt_name} {os.path.join(tmp_dir,"dem.tif")}')
-        outfile = "out_dem.tif"
+        outfile = "/tmp/out_dem.tif"
         gdal.Warp(outfile, os.path.join(tmp_dir, "dem.tif"), outputBounds=list(bounds))
+
     return outfile
 
 
@@ -401,7 +404,7 @@ def calculate_hand_orig(dem_array, dem_affine: rasterio.Affine, dem_proj4, basin
     return hand
 
 
-def calculate_hand(dem_array, dem_gT, dem_proj4, mask=None, verbose=False, acc_thresh=100):
+def calculate_hand(dem_array, dem_gt, dem_proj4, mask=None, verbose=False, acc_thresh=100):
     """
     hand=calculate_hand(dem, dem_gT, dem_proj4, mask=None, verbose=False)
     Calculate the height above nearest drainage using pySHEDS library. This is done over a few steps:
@@ -416,7 +419,7 @@ def calculate_hand(dem_array, dem_gT, dem_proj4, mask=None, verbose=False, acc_t
 
     Inputs:
       dem=Numpy array of Digital Elevation Model (DEM) to convert to HAND.
-      dem_gT= GeoTransform of the input DEM
+      dem_gt= GeoTransform of the input DEM
       dem_proj4=Proj4 string of DEM
       mask=If provided parts of DEM can be masked out. If not entire DEM is evaluated.
       verbose=If True, provides information about where NaN values are encountered.
@@ -428,24 +431,24 @@ def calculate_hand(dem_array, dem_gT, dem_proj4, mask=None, verbose=False, acc_t
     # N , NE , E ,SE,S,SW, W , NW
     dirmap = (64, 128, 1, 2, 4, 8, 16, 32)
     # Load DEM into pySheds
-    if type(dem_gT) == Affine:
-        aff = dem_gT
+    if type(dem_gt) == Affine:
+        aff = dem_gt
     else:
-        aff = Affine.from_gdal(*tuple(dem_gT))
+        aff = Affine.from_gdal(*tuple(dem_gt))
     if mask is None:
         mask = np.ones(dem_array.shape, dtype=np.bool)
     grid = Pgrid()  # (shape=dem.shape,affine=aff, crs=dem_proj4, mask=mask)
     grid.add_gridded_data(dem_array, data_name='dem', affine=aff, crs=dem_proj4, mask=mask)
     # Fill Depressions
     grid.fill_depressions('dem', out_name='flooded_dem')
-    if verbose:
-        set_trace()
+
     if np.any(np.isnan(grid.flooded_dem)):
         if verbose:
             print('NaN:fill_depressions')
             grid.flooded_dem = fill_nan(grid.flooded_dem)
             # Resolve_Flats
-    # Please note that Resolve_Flats currently has an open bug and can fail on occasion. https://github.com/mdbartos/pysheds/issues/118
+    # Please note that Resolve_Flats currently has an open bug and can fail on occasion.
+    # https://github.com/mdbartos/pysheds/issues/118
     try:
         grid.resolve_flats('flooded_dem', out_name='inflated_dem')
     except:
@@ -460,7 +463,7 @@ def calculate_hand(dem_array, dem_gT, dem_proj4, mask=None, verbose=False, acc_t
         # grid.inflated_dem=fill_nan(grid.inflated_dem)
         grid.inflated_dem[np.isnan(grid.inflated_dem)] = dem_array[
             np.isnan(grid.inflated_dem)]  # 10000  # setting nan to 10.000 to ensure drainage
-        ### Ref: https://github.com/mdbartos/pysheds/issues/90
+        # Ref: https://github.com/mdbartos/pysheds/issues/90
     # Obtain flow direction
     grid.flowdir(data='inflated_dem', out_name='dir', dirmap=dirmap, apply_mask=True)
     if np.any(np.isnan(grid.dir)):
@@ -492,13 +495,14 @@ def calculate_hand(dem_array, dem_gT, dem_proj4, mask=None, verbose=False, acc_t
             valid_mask = np.logical_and(mask, ~np.isnan(hand))
             mean_height = grid.inflated_dem[valid_mask].mean()
             # calculate gradient and set mean gradient magnitude as threshold for flatness.
-            g0, g1 = np.gradient(grid.inflated_dem);
+            g0, g1 = np.gradient(grid.inflated_dem)
             gMag = np.sqrt(g0 ** 2 + g1 ** 2)
             gMagTh = np.min(1, np.mean(gMag * np.isnan(
                 hand)))  # Make sure this threshold is not too high. We don't want to set rough surfaces to zero.
 
             # define low lying (<mean) pixels inside valid area.
-            # valid_flats=np.logical_and(valid_nanmask, grid.dir==0) #I thought grid.dir=0 meant flats. But this is not the case always apparently.
+            # valid_flats=np.logical_and(valid_nanmask, grid.dir==0)
+            # I thought grid.dir=0 meant flats. But this is not the case always apparently.
             valid_flats = np.logical_and(valid_nanmask, gMag < gMagTh)
             valid_low_flats = np.logical_and(valid_flats, grid.inflated_dem < mean_height)
             hand[valid_low_flats] = 0
@@ -570,9 +574,9 @@ def get_land_mask(hand, dem_file, dem):
 
 
 def fill_data_with_nan(hand, dem, mask_labels, num_labels, joint_mask):
-    # new nan_fill needs DEM. Might be better to NOT load it in the memory See: https://rasterio.readthedocs.io/en/latest/topics/windowed-rw.html
+    # new nan_fill needs DEM. Might be better to NOT load it in the memory
+    # See: https://rasterio.readthedocs.io/en/latest/topics/windowed-rw.html
     demarray = dem.read(1)
-
     if np.any(np.isnan(hand)):
         object_slices = ndimage.find_objects(mask_labels)
         tq = tqdm(range(1, num_labels))
@@ -689,9 +693,9 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
 
     # write the hand
     # hand_file = os.path.splitext(dem_file)[0]+f"_hand_{version.replace('.','_')}.tif"
-    dem_gT = gdal_get_geotransform(dem_file)
+    dem_gt = gdal_get_geotransform(dem_file)
     dem_proj4 = get_projection(dem_file)
-    gdal_write(hand, dem_gT, filename=str(out_raster), srs_proj4=dem_proj4, nodata=np.nan, data_format=gdal.GDT_Float32)
+    gdal_write(hand, dem_gt, filename=str(out_raster), srs_proj4=dem_proj4, nodata=np.nan, data_format=gdal.GDT_Float32)
 
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
