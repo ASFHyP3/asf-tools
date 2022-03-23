@@ -295,44 +295,7 @@ def point_coordinates_to_geometry(coordinates, geometry_type='Polygon'):
       raise NotImplementedError
 
 
-'''
-def fill_nan(arr):
-    """
-    filled_arr=fill_nan(arr)
-    Fills Not-a-number values in arr using astropy.
-    """
-    kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)  # kernel x_size=8*stddev
-    arr_type = arr.dtype
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        while np.any(np.isnan(arr)):
-            arr = astropy.convolution.interpolate_replace_nans(arr.astype(float), kernel,
-                                                               convolve=astropy.convolution.convolve)
-    return arr.astype(arr_type)
-'''
-
-
-def get_tight_dem(dem_vrt_name, shpfile):
-    # clip the dem_vrt according to geometries
-    dem = rasterio.open(dem_vrt_name)
-    # shp = fiona.open(shpfile)
-    # shp_crs = shp.crs
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        shpfile1 = shpfile
-        if dem.crs.to_string() != 'EPSG:4326':
-            shpfile1 = reproject(shpfile, dem.crs, output_file=os.path.join(tmp_dir,'shp.shp'))
-
-        vds = fiona.open(shpfile1)
-        geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
-        bounds = geometries.bounds
-        os.system(f'gdal_translate {dem_vrt_name} {os.path.join(tmp_dir,"dem.tif")}')
-        outfile = "/tmp/out_dem.tif"
-        gdal.Warp(outfile, os.path.join(tmp_dir, "dem.tif"), outputBounds=list(bounds))
-
-    return outfile
-
-
-def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_proj4, basin_mask,
+def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask,
                    acc_thresh: Optional[int] = 100):
     """Calculate the Height Above Nearest Drainage (HAND)
 
@@ -363,7 +326,7 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_proj4, basin_mask
     """
 
     grid = Pgrid()
-    grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_proj4, mask=~basin_mask)
+    grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_crs.to_dict(), mask=~basin_mask)
 
     log.info('Filling depressions')
     grid.fill_depressions('dem', out_name='flooded_dem')
@@ -401,113 +364,6 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_proj4, basin_mask
     # ensure non-basin is masked after fill_nan
     hand[basin_mask] = np.nan
 
-    return hand
-
-
-def calculate_hand_new(dem_array, dem_gt, dem_proj4, mask=None, verbose=False, acc_thresh=100):
-    """
-    hand=calculate_hand(dem, dem_gT, dem_proj4, mask=None, verbose=False)
-    Calculate the height above nearest drainage using pySHEDS library. This is done over a few steps:
-
-    Fill_Depressions fills depressions in a DEM (regions of cells lower than their surrounding neighbors).
-    Resolve_Flats resolves drainable flats in a DEM.
-    FlowDir converts the DEM to flow direction based on dirmap.
-    Accumulation converts from flow direction to flow accumulation.
-    Compute_Hand is used to convert directions to height above nearest drainage.
-
-    NaN values are filled at the end of resolve_flats and final steps.
-
-    Inputs:
-      dem=Numpy array of Digital Elevation Model (DEM) to convert to HAND.
-      dem_gt= GeoTransform of the input DEM
-      dem_proj4=Proj4 string of DEM
-      mask=If provided parts of DEM can be masked out. If not entire DEM is evaluated.
-      verbose=If True, provides information about where NaN values are encountered.
-      acc_thresh=Accumulation threshold. By default is set to 100. If none,
-                 mean value of accumulation array (acc.mean()) is used.
-    """
-
-    # Specify  directional mapping
-    # N , NE , E ,SE,S,SW, W , NW
-    dirmap = (64, 128, 1, 2, 4, 8, 16, 32)
-    # Load DEM into pySheds
-    if type(dem_gt) == Affine:
-        aff = dem_gt
-    else:
-        aff = Affine.from_gdal(*tuple(dem_gt))
-    if mask is None:
-        mask = np.ones(dem_array.shape, dtype=np.bool)
-    grid = Pgrid()  # (shape=dem.shape,affine=aff, crs=dem_proj4, mask=mask)
-    grid.add_gridded_data(dem_array, data_name='dem', affine=aff, crs=dem_proj4, mask=mask)
-    # Fill Depressions
-    grid.fill_depressions('dem', out_name='flooded_dem')
-
-    if np.any(np.isnan(grid.flooded_dem)):
-        if verbose:
-            print('NaN:fill_depressions')
-            grid.flooded_dem = fill_nan(grid.flooded_dem)
-            # Resolve_Flats
-    # Please note that Resolve_Flats currently has an open bug and can fail on occasion.
-    # https://github.com/mdbartos/pysheds/issues/118
-    try:
-        grid.resolve_flats('flooded_dem', out_name='inflated_dem')
-    except:
-        grid.inflated_dem = grid.flooded_dem
-    # if np.sum(np.isnan(grid.inflated_dem))<dem.size*0.5: #if nans account for less than 50% of the dem nanfill.
-    #    if verbose:
-    #        print('NaN:resolve_flats but less than 50%. Applying large value')
-    #    grid.inflated_dem=fill_nan(grid.inflated_dem)
-    if np.any(np.isnan(grid.inflated_dem)):
-        if verbose:
-            print('NaN:resolve_flats replacing with inflated_dem')
-        # grid.inflated_dem=fill_nan(grid.inflated_dem)
-        grid.inflated_dem[np.isnan(grid.inflated_dem)] = dem_array[
-            np.isnan(grid.inflated_dem)]  # 10000  # setting nan to 10.000 to ensure drainage
-        # Ref: https://github.com/mdbartos/pysheds/issues/90
-    # Obtain flow direction
-    grid.flowdir(data='inflated_dem', out_name='dir', dirmap=dirmap, apply_mask=True)
-    if np.any(np.isnan(grid.dir)):
-        if verbose:
-            print('NaN:flowdir')
-            grid.dir = fill_nan(grid.dir)
-            # Obtain accumulation
-    grid.accumulation(data='dir', dirmap=dirmap, out_name='acc')
-    if np.any(np.isnan(grid.acc)):
-        if verbose:
-            print('NaN:accumulation')
-            grid.acc = fill_nan(grid.acc)
-            # Generate HAND
-    if acc_thresh is None:
-        acc_thresh = grid.acc.mean()
-    # grid.compute_hand('dir', 'inflated_dem', grid.acc >100, out_name='hand')
-    # Copy HAND as an array.
-    # hand=grid.view('hand')
-    hand = grid.compute_hand('dir', 'inflated_dem', grid.acc > acc_thresh, inplace=False)
-    if np.any(np.isnan(hand)):
-        if verbose:
-            print('NaN:compute_hand')
-            # attempt to fill low-lying flat areas with zeros. In radar DEMs vegetation alongside river, can trap
-            # the river and not let any water go into the river. This was seen in Bangladesh with SRTM 1 arcsec
-            # and NASADEM at Hydro Basin with ID: 4120928640
-
-            # get nans inside masked area and find mean height for pixels outside the nans (but inside basin mask)
-            valid_nanmask = np.logical_and(mask, np.isnan(hand))
-            valid_mask = np.logical_and(mask, ~np.isnan(hand))
-            mean_height = grid.inflated_dem[valid_mask].mean()
-            # calculate gradient and set mean gradient magnitude as threshold for flatness.
-            g0, g1 = np.gradient(grid.inflated_dem)
-            gMag = np.sqrt(g0 ** 2 + g1 ** 2)
-            gMagTh = np.min(1, np.mean(gMag * np.isnan(
-                hand)))  # Make sure this threshold is not too high. We don't want to set rough surfaces to zero.
-
-            # define low lying (<mean) pixels inside valid area.
-            # valid_flats=np.logical_and(valid_nanmask, grid.dir==0)
-            # I thought grid.dir=0 meant flats. But this is not the case always apparently.
-            valid_flats = np.logical_and(valid_nanmask, gMag < gMagTh)
-            valid_low_flats = np.logical_and(valid_flats, grid.inflated_dem < mean_height)
-            hand[valid_low_flats] = 0
-        if np.any(np.isnan(hand)):
-            grid.hand = fill_nan(hand)
     return hand
 
 
@@ -636,68 +492,6 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
 
 
-def calculate_hand_for_basins_new(out_raster:  Union[str, Path], geometries: GeometryCollection,
-                              dem_file: Union[str, Path]):
-    nodata_fill_value = np.finfo(float).eps
-    # dem_nodata_value = 0
-    # Loop over each basin and calculate HAND
-    # with rasterio.open(dem_file) as dem:
-    dem = rasterio.open(dem_file, 'r')
-    dem_nodata_value = dem.nodatavals[0]
-    if dem_nodata_value is None:
-        print('DEM does not have a defined no-data value.')
-        print('Assuming all valid pixels. If not, expect long processing times.')
-        dem_nodata_mask = np.zeros(dem.shape, dtype=np.byte)
-    else:
-        dem_nodata_mask = dem.read(1) == dem_nodata_value
-
-    hand = np.zeros(dem.shape)
-    hand[:] = np.nan  # set the hand to nan to make sure untouched pixels remain that value and not zero, which is a valid HAND height.
-    for k, p in enumerate(tqdm(geometries.geoms)):
-        verbose = False
-        mask, tf, win = rasterio.mask.raster_geometry_mask(dem, [p], all_touched=True, crop=True, pad=True,
-                                                           pad_width=1)  # add 1 pixel. calculate_hand needs it.
-        # basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
-        #    src, geometries, all_touched=True, crop=True, pad=True, pad_width=1)
-
-        if win.width == 1 or win.height == 1:  # padding may require this limit to change.
-            continue  # The DEM is a thin line, skip this patch
-        not_mask = np.bitwise_not(mask)
-        # if polygon_ids[k] == 4120928640: #k=15 for polygon_ids, in hybas_id[70883]
-        #    verbose=True
-        if dem_nodata_mask[win.row_off:win.row_off + win.height, win.col_off:win.col_off + win.width].all():
-            continue  # do not process if the entire polygon is nodata
-        # with warnings.catch_warnings():
-        #    warnings.filterwarnings("ignore", category=FutureWarning)
-            # h = calculate_hand(np.squeeze(src.read(window=win)), tf, pyproj.Proj(init=src.crs.to_string()),
-            #                   mask=not_mask, verbose=verbose, acc_thresh=accumulation_threshold)
-        if dem_nodata_mask[win.row_off:win.row_off + win.height, win.col_off:win.col_off + win.width].all():
-            continue  # do not process if the entire polygon is nodata
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=FutureWarning)
-            h = calculate_hand(np.squeeze(dem.read(window=win)), tf, pyproj.Proj(init=dem.crs.to_string()),
-                               mask=not_mask)
-            # calculate_hand(dem_array, dem_gT, dem_proj4, mask=None, verbose=False, acc_thresh=100)
-            # h = calculate_hand(dem_array, tf, proj, not_mask)
-        clip_hand = hand[win.row_off:win.row_off + win.height, win.col_off:win.col_off + win.width]  # By reference
-        clip_hand[not_mask] = h[not_mask]
-
-    hand[dem_nodata_mask] = nodata_fill_value
-
-    #write_cog(str(out_raster), hand, transform=tf.to_gdal(), epsg_code=src.crs.to_epsg())
-
-    # create land mask
-    hand, mask_labels, num_labels, joint_mask = get_land_mask(hand, dem_file, dem)
-    # fill nan
-    hand = fill_data_with_nan(hand, dem, mask_labels, num_labels, joint_mask)
-
-    # write the hand
-    # hand_file = os.path.splitext(dem_file)[0]+f"_hand_{version.replace('.','_')}.tif"
-    dem_gt = gdal_get_geotransform(dem_file)
-    dem_proj4 = get_projection(dem_file)
-    gdal_write(hand, dem_gt, filename=str(out_raster), srs_proj4=dem_proj4, nodata=np.nan, data_format=gdal.GDT_Float32)
-
-
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
     """Copernicus GLO-30 Height Above Nearest Drainage (HAND)
 
@@ -716,8 +510,8 @@ def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as dem_vrt:
         prepare_dem_vrt(dem_vrt.name, geometries)
         # cut off the dem_vrt with envelop of geometries
-        dem_file = get_tight_dem(dem_vrt.name, vector_file)
-        calculate_hand_for_basins(out_raster, geometries, dem_file)
+        # dem_file = get_tight_dem(dem_vrt.name, vector_file)
+        calculate_hand_for_basins(out_raster, geometries, dem_vrt.name)
 
 
 def main():
