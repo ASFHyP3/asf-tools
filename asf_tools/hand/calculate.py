@@ -332,7 +332,7 @@ def get_tight_dem(dem_vrt_name, shpfile):
     return outfile
 
 
-def calculate_hand_orig(dem_array, dem_affine: rasterio.Affine, dem_proj4, basin_mask,
+def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_proj4, basin_mask,
                    acc_thresh: Optional[int] = 100):
     """Calculate the Height Above Nearest Drainage (HAND)
 
@@ -404,7 +404,7 @@ def calculate_hand_orig(dem_array, dem_affine: rasterio.Affine, dem_proj4, basin
     return hand
 
 
-def calculate_hand(dem_array, dem_gt, dem_proj4, mask=None, verbose=False, acc_thresh=100):
+def calculate_hand_new(dem_array, dem_gt, dem_proj4, mask=None, verbose=False, acc_thresh=100):
     """
     hand=calculate_hand(dem, dem_gT, dem_proj4, mask=None, verbose=False)
     Calculate the height above nearest drainage using pySHEDS library. This is done over a few steps:
@@ -614,7 +614,7 @@ def fill_data_with_nan(hand, dem, mask_labels, num_labels, joint_mask):
     return hand
 
 
-def calculate_hand_for_basins_orig(out_raster:  Union[str, Path], geometries: GeometryCollection,
+def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
                               dem_file: Union[str, Path]):
     """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
 
@@ -636,7 +636,7 @@ def calculate_hand_for_basins_orig(out_raster:  Union[str, Path], geometries: Ge
         write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
 
 
-def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
+def calculate_hand_for_basins_new(out_raster:  Union[str, Path], geometries: GeometryCollection,
                               dem_file: Union[str, Path]):
     nodata_fill_value = np.finfo(float).eps
     # dem_nodata_value = 0
