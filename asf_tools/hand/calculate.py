@@ -9,7 +9,6 @@ from typing import Optional, Union
 
 import astropy.convolution
 import fiona
-import fiona.crs
 import numpy as np
 import rasterio.crs
 import rasterio.mask
