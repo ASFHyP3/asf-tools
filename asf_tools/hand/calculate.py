@@ -158,11 +158,10 @@ def main():
         epilog='For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins',
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('out_raster', type=Path,
-                        help='HAND GeoTIFF to create')
-    parser.add_argument('vector_file', type=Path,
-                        help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over. '
-                             'Vector file Must be openable by GDAL, see: https://gdal.org/drivers/vector/index.html')
+    parser.add_argument('out_raster', help='HAND GeoTIFF to create')
+    parser.add_argument('vector_file', help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND '
+                                            'over. Vector file Must be openable by GDAL, see: '
+                                            'https://gdal.org/drivers/vector/index.html')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
