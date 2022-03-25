@@ -35,7 +35,7 @@ setup(
         'fiona',
         'gdal>=3.3',
         'numpy',
-        'pysheds',
+        'pysheds>=0.3',
         'scikit-fuzzy',
         'scikit-image',
         'shapely',
