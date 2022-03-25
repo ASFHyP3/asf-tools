@@ -12,7 +12,7 @@ import fiona
 import numpy as np
 import rasterio.crs
 import rasterio.mask
-from pysheds.grid import Grid
+from pysheds.pgrid import Grid as Pgrid
 from shapely.geometry import GeometryCollection, shape
 
 from asf_tools.composite import write_cog
@@ -68,7 +68,7 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
             If `None`, the mean accumulation value is used
     """
 
-    grid = Grid()
+    grid = Pgrid()
     grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_crs.to_dict(), mask=~basin_mask)
 
     log.info('Filling depressions')
