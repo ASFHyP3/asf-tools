@@ -1,3 +1,4 @@
+
 import argparse
 import logging
 import os
@@ -10,9 +11,7 @@ import numpy as np
 from asf_tools.composite import write_cog
 from osgeo import gdal
 from osgeo.gdal_array import LoadFile
-from scipy import ndimage
-from scipy import optimize
-from scipy import stats
+from scipy import ndimage, optimize, stats
 
 log = logging.getLogger(__name__)
 
@@ -41,8 +40,9 @@ def get_waterbody(input_info, ths=30.):
     west, south, east, north = get_coordinates(input_info)
     width, height = input_info['size']
 
-    water_extent_vrt = str(Path.cwd() / 'data/water_extent.vrt')  # All Perennial Flood Data
-    wimage_file = str(Path.cwd() / 'data/surface_water_map_clip.tif')
+    gitdir = os.path.dirname(__file__)
+    water_extent_vrt = str(str(gitdir) + '/data/water_extent.vrt')  # All Perennial Flood Data
+    wimage_file = str(str(gitdir) + '/data/surface_water_map_clip.tif')
 
     gdal.Warp(wimage_file, water_extent_vrt, dstSRS=epsg_code,
               outputBounds=[west, south, east, north],
@@ -94,8 +94,10 @@ def logstat(data, func=np.nanstd):
     return np.exp(st)
 
 
-def estimate_flood_depth(l, hand_clip, flood_mask_labels_clip, estimator='nmad', water_level_sigma=3,
-                         iterative_bounds=[0, 15]):
+def estimate_flood_depth(l, hand_clip, flood_mask_labels_clip, estimator='nmad', water_level_sigma=3.,
+                         iterative_bounds=None):
+    if iterative_bounds is None:
+        iterative_bounds = [0, 15]
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
         if estimator.lower() == "iterative":
@@ -116,8 +118,8 @@ def estimate_flood_depth(l, hand_clip, flood_mask_labels_clip, estimator='nmad',
 
 
 def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
-                   hand_raster: Optional[Union[str, Path]] = None,
-                   estimator: str = 'nmad', water_level_sigma: float = 3.,
+                   hand_raster: Union[str, Path], estimator: str = 'nmad',
+                   water_level_sigma: float = 3.,
                    known_water_threshold: float = 30.,
                    iterative_bounds: Tuple[int, int] = (0, 15)):
     """Creates a flood depth map from a water extent map.
@@ -154,7 +156,6 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
               width=width,
               height=height, resampleAlg='lanczos', format="GTiff")
     hand_array = read_data(str(hand_raster).replace('.tif', '_clip_HAND.tif'))
-
 
     log.info('Fetching perennial flood data.')
     known_water_mask = get_waterbody(info, ths=known_water_threshold)
@@ -208,12 +209,14 @@ def main():
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-
-    parser.add_argument('--water-extent',
+    parser.add_argument('--out-raster',
+                        help='File flood depth map will be saved to.')
+    parser.add_argument('--water-extent-map',
                         help='Hyp3-Generated water extent raster file.')
     parser.add_argument('--hand-raster',
                         help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
                              'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
+
     parser.add_argument('--water-level-sigma', type=float, default=3,
                         help='Estimate max water height for each object.')
     parser.add_argument('--known-water-threshold', type=float, default=30,
@@ -222,8 +225,6 @@ def main():
                         help='Flood depth estimation approach.')
     parser.add_argument('--iterative-bounds', type=float, default=[0, 15],
                         help='.')
-    parser.add_argument('--out-raster',
-                        help='File flood depth map will be saved to.')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -232,12 +233,7 @@ def main():
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
 
-    estimate_flood_depth(args.out_raster, args.water_extent, args.hand_raster, args.estimator, args.water_level_sigma,
+    make_flood_map(args.out_raster, args.water_extent_map, args.hand_raster, args.estimator, args.water_level_sigma,
                          args.known_water_threshold, args.iterative_bounds)
 
     log.info(f"Flood Map written to {args.out_raster}.")
-
-
-# Press the green button in the gutter to run the script.git
-if __name__ == '__main__':
-    main()
