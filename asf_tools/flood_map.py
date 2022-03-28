@@ -5,7 +5,7 @@ import os
 import sys
 import warnings
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union
 
 import numpy as np
 from asf_tools.composite import write_cog
@@ -29,7 +29,7 @@ def get_coordinates(info):
 
 def read_data(filename, ndtype=np.float64):
     if os.path.isfile(filename):
-        return LoadFile(filename).astype(ndtype);
+        return LoadFile(filename).astype(ndtype)
     else:
         return gdal.Open(filename, gdal.GA_ReadOnly).readAsArray()
 
@@ -61,7 +61,7 @@ def iterative(hand, extent, water_levels=range(15)):
         return 1 - tp / (tp + fp + fn)  # threat score #we will minimize goal func, hence 1-threat_score.
 
     class MyBounds(object):
-        def __init__(self, xmax=[max(water_levels)], xmin=[min(water_levels)]):
+        def __init__(self, xmax=tuple(max(water_levels)), xmin=tuple(min(water_levels))):
             self.xmax = np.array(xmax)
             self.xmin = np.array(xmin)
 
@@ -74,8 +74,8 @@ def iterative(hand, extent, water_levels=range(15)):
     bounds = MyBounds()
     x0 = [np.mean(water_levels)]
     opt_res = optimize.basinhopping(_goal_ts, x0, niter=10000, niter_success=100, accept_test=bounds)
-    if opt_res.message[0] == 'success condition satisfied' or opt_res.message[
-        0] == 'requested number of basinhopping iterations completed successfully':
+    if opt_res.message[0] == 'success condition satisfied' \
+            or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
         best_water_level = opt_res.x[0]
     else:
         best_water_level = np.inf  # unstable solution.
@@ -95,9 +95,7 @@ def logstat(data, func=np.nanstd):
 
 
 def estimate_flood_depth(l, hand_clip, flood_mask_labels_clip, estimator='nmad', water_level_sigma=3.,
-                         iterative_bounds=None):
-    if iterative_bounds is None:
-        iterative_bounds = [0, 15]
+                         iterative_bounds=(0, 15)):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
         if estimator.lower() == "iterative":
@@ -140,14 +138,14 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     the variation to increase robustness in the presence of outliers.
     *Logstat: Calculates the mean and standard deviation of HAND heights in the logarithmic
     domain to improve robustness for very non-Gaussian data distributions.
-    *Numpy: Calculates statistics in a linear scale. Least robust to outliers and non-Gaussian
+    *Numpy: Calculates statistics in a linear scale. Least robust to outliers and non-Ga      ussian
     distributions.
 
     """
 
     info = gdal.Info(str(water_raster), format='json')
     epsg = check_coordinate_system(info)
-    gT = info['geoTransform']
+    geotransform = info['geoTransform']
 
     west, south, east, north = get_coordinates(info)
     width, height = info['size']
@@ -192,15 +190,15 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
 
     flood_depth[flood_depth < 0] = 0
 
-    write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=gT,
+    write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=geotransform,
               epsg_code=int(epsg), dtype=gdal.GDT_Byte, nodata_value=False)
-    write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask, transform=gT,
+    write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask, transform=geotransform,
               epsg_code=int(epsg), dtype=gdal.GDT_Byte, nodata_value=False)
 
     flood_mask[known_water_mask] = 0
     flood_depth[np.bitwise_not(flood_mask)] = 0
 
-    write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=gT,
+    write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
               epsg_code=int(epsg), dtype=gdal.GDT_Byte, nodata_value=False)
 
 
@@ -234,6 +232,6 @@ def main():
     log.debug(' '.join(sys.argv))
 
     make_flood_map(args.out_raster, args.water_extent_map, args.hand_raster, args.estimator, args.water_level_sigma,
-                         args.known_water_threshold, args.iterative_bounds)
+                   args.known_water_threshold, args.iterative_bounds)
 
     log.info(f"Flood Map written to {args.out_raster}.")
