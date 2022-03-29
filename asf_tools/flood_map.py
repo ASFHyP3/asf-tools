@@ -40,7 +40,7 @@ def get_waterbody(input_info, ths=30.):
               outputBounds=[west, south, east, north],
               width=width, height=height, resampleAlg='lanczos', format='GTiff')
 
-    wimage = gdal.Open(wimage_file, gdal.GA_ReadOnly).readAsArray()
+    wimage = gdal.Open(wimage_file, gdal.GA_ReadOnly).ReadAsArray()
     return wimage > ths  # higher than 30% possibility (present water)
 
 
@@ -143,7 +143,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     epsg = check_coordinate_system(info)
     geotransform = info['geoTransform']
 
-    hand_array = gdal.Open(str(hand_raster), gdal.GA_ReadOnly).readAsArray()
+    hand_array = gdal.Open(str(hand_raster), gdal.GA_ReadOnly).ReadAsArray()
 
     log.info('Fetching perennial flood data.')
     known_water_mask = get_waterbody(info, ths=known_water_threshold)
