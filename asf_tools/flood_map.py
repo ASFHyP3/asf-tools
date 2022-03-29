@@ -162,13 +162,14 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
         min0, max0 = slices[0].start, slices[0].stop
         min1, max1 = slices[1].start, slices[1].stop
 
-        flood_window = labeled_flood_mask[min0: max0, min1: max1]
-        hand_window = hand_array[min0: max0, min1: max1]
+        flood_window = labeled_flood_mask[min0:max0, min1:max1]
+        hand_window = hand_array[min0:max0, min1:max1]
 
         water_height = estimate_flood_depth(ll, hand_window, flood_window, estimator=estimator,
                                             water_level_sigma=water_level_sigma, iterative_bounds=iterative_bounds)
 
-        flood_depth[labeled_flood_mask == ll] = water_height - hand_window[flood_window == ll]
+        flood_depth_window = flood_depth[min0:max0, min1:max1]
+        flood_depth_window[flood_window == ll] = water_height - hand_window[flood_window == ll]
 
     flood_depth[flood_depth < 0] = 0
 
