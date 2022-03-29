@@ -8,16 +8,11 @@ from pathlib import Path
 from typing import Tuple, Union
 
 import numpy as np
-from asf_tools.composite import write_cog
+from asf_tools.composite import write_cog, get_epsg_code
 from osgeo import gdal
 from scipy import ndimage, optimize, stats
 
 log = logging.getLogger(__name__)
-
-
-def check_coordinate_system(info):
-    info = info['coordinateSystem']['wkt']
-    return info.split('ID')[-1].split(',')[1].replace(']', '')
 
 
 def get_coordinates(info):
@@ -27,7 +22,7 @@ def get_coordinates(info):
 
 
 def get_waterbody(input_info, ths=30.):
-    epsg_code = 'EPSG:' + check_coordinate_system(input_info)
+    epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
     width, height = input_info['size']
@@ -36,7 +31,7 @@ def get_waterbody(input_info, ths=30.):
     water_extent_vrt = str(str(gitdir) + '/data/water_extent.vrt')  # All Perennial Flood Data
     wimage_file = str(str(gitdir) + '/data/surface_water_map_clip.tif')
 
-    gdal.Warp(wimage_file, water_extent_vrt, dstSRS=epsg_code,
+    gdal.Warp(wimage_file, water_extent_vrt, dstSRS=f'EPSG:{epsg}',
               outputBounds=[west, south, east, north],
               width=width, height=height, resampleAlg='lanczos', format='GTiff')
 
@@ -140,7 +135,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     """
 
     info = gdal.Info(str(water_raster), format='json')
-    epsg = check_coordinate_system(info)
+    epsg = get_epsg_code(info)
     geotransform = info['geoTransform']
 
     hand_array = gdal.Open(str(hand_raster), gdal.GA_ReadOnly).ReadAsArray()
@@ -174,15 +169,15 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     flood_depth[flood_depth < 0] = 0
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=int(epsg), dtype=gdal.GDT_Byte, nodata_value=False)
+              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask, transform=geotransform,
-              epsg_code=int(epsg), dtype=gdal.GDT_Byte, nodata_value=False)
+              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
     flood_mask[known_water_mask] = 0
     flood_depth[np.bitwise_not(flood_mask)] = 0
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=int(epsg), dtype=gdal.GDT_Byte, nodata_value=False)
+              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
 
 def main():
