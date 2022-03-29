@@ -10,7 +10,6 @@ from typing import Tuple, Union
 import numpy as np
 from asf_tools.composite import write_cog
 from osgeo import gdal
-from osgeo.gdal_array import LoadFile
 from scipy import ndimage, optimize, stats
 
 log = logging.getLogger(__name__)
@@ -27,13 +26,6 @@ def get_coordinates(info):
     return west, south, east, north
 
 
-def read_data(filename, ndtype=np.float64):
-    if os.path.isfile(filename):
-        return LoadFile(filename).astype(ndtype)
-    else:
-        return gdal.Open(filename, gdal.GA_ReadOnly).readAsArray()
-
-
 def get_waterbody(input_info, ths=30.):
     epsg_code = 'EPSG:' + check_coordinate_system(input_info)
 
@@ -48,8 +40,8 @@ def get_waterbody(input_info, ths=30.):
               outputBounds=[west, south, east, north],
               width=width, height=height, resampleAlg='lanczos', format='GTiff')
 
-    wmask = read_data(wimage_file) > ths  # higher than 30% possibility (present water)
-    return wmask
+    wimage = gdal.Open(wimage_file, gdal.GA_ReadOnly).readAsArray()
+    return wimage > ths  # higher than 30% possibility (present water)
 
 
 def iterative(hand, extent, water_levels=range(15)):
@@ -94,25 +86,29 @@ def logstat(data, func=np.nanstd):
     return np.exp(st)
 
 
-def estimate_flood_depth(l, hand_clip, flood_mask_labels_clip, estimator='nmad', water_level_sigma=3.,
-                         iterative_bounds=(0, 15)):
+def estimate_flood_depth(label, hand, flood_labels, estimator='nmad', water_level_sigma=3., iterative_bounds=(0, 15)):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
+
         if estimator.lower() == "iterative":
-            return iterative(hand_clip, flood_mask_labels_clip == l, water_levels=iterative_bounds)
+            return iterative(hand, flood_labels == label, water_levels=iterative_bounds)
+
         if estimator.lower() == "numpy":
-            m = np.nanmean(hand_clip[flood_mask_labels_clip == l])
-            s = np.nanstd(hand_clip[flood_mask_labels_clip == l])
+            hand_mean = np.nanmean(hand[flood_labels == label])
+            hand_std = np.nanstd(hand[flood_labels == label])
+
         elif estimator.lower() == "nmad":
-            m = np.nanmean(hand_clip[flood_mask_labels_clip == l])
-            s = stats.median_abs_deviation(hand_clip[flood_mask_labels_clip == l], scale='normal',
-                                           nan_policy='omit')
+            hand_mean = np.nanmean(hand[flood_labels == label])
+            hand_std = stats.median_abs_deviation(hand[flood_labels == label], scale='normal',
+                                                  nan_policy='omit')
         elif estimator.lower() == "logstat":
-            m = logstat(hand_clip[flood_mask_labels_clip == l], func=np.nanmean)
-            s = logstat(hand_clip[flood_mask_labels_clip == l])
+            hand_mean = logstat(hand[flood_labels == label], func=np.nanmean)
+            hand_std = logstat(hand[flood_labels == label])
+
         else:
-            raise ValueError
-    return m + water_level_sigma * s
+            raise ValueError(f'Unknown flood depth estimator {estimator}')
+
+    return hand_mean + water_level_sigma * hand_std
 
 
 def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
@@ -147,20 +143,12 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     epsg = check_coordinate_system(info)
     geotransform = info['geoTransform']
 
-    west, south, east, north = get_coordinates(info)
-    width, height = info['size']
-
-    gdal.Warp(str(hand_raster).replace('.tif', '_clip_HAND.tif'), hand_raster, outputBounds=[west, south, east, north],
-              width=width,
-              height=height, resampleAlg='lanczos', format="GTiff")
-    hand_array = read_data(str(hand_raster).replace('.tif', '_clip_HAND.tif'))
+    hand_array = gdal.Open(str(hand_raster), gdal.GA_ReadOnly).readAsArray()
 
     log.info('Fetching perennial flood data.')
     known_water_mask = get_waterbody(info, ths=known_water_threshold)
 
-    hyp3_map = gdal.Open(water_raster)
-    water_map = hyp3_map.ReadAsArray()
-
+    water_map = gdal.Open(water_raster).ReadAsArray()
     flood_mask = np.bitwise_or(water_map, known_water_mask)
 
     flood_mask_labels, num_labels = ndimage.label(flood_mask)
@@ -169,20 +157,15 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
 
     flood_depth = np.zeros(flood_mask.shape)
 
-    for l in range(1, num_labels):  # Skip first, largest label.
-        slices = object_slices[l - 1]
-        min0 = slices[0].start
-        max0 = slices[0].stop
-        min1 = slices[1].start
-        max1 = slices[1].stop
+    for ll in range(1, num_labels):  # Skip first, largest label.
+        slices = object_slices[ll - 1]
+        min0, max0 = slices[0].start, slices[0].stop
+        min1, max1 = slices[1].start, slices[1].stop
 
         flood_mask_labels_clip = flood_mask_labels[min0: max0, min1: max1]
-        flood_mask_clip = flood_mask[min0: max0, min1: max1].copy()
-
-        flood_mask_clip[flood_mask_labels_clip != l] = 0
         hand_clip = hand_array[min0: max0, min1: max1]
 
-        water_height = estimate_flood_depth(l, hand_clip, flood_mask_labels_clip, estimator=estimator,
+        water_height = estimate_flood_depth(ll, hand_clip, flood_mask_labels_clip, estimator=estimator,
                                             water_level_sigma=water_level_sigma, iterative_bounds=iterative_bounds)
 
         flood_depth_clip = flood_depth[min0:max0, min1:max1]
@@ -215,12 +198,12 @@ def main():
                         help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
                              'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
 
-    parser.add_argument('--water-level-sigma', type=float, default=3,
-                        help='Estimate max water height for each object.')
-    parser.add_argument('--known-water-threshold', type=float, default=30,
-                        help='Threshold for extracting known water area in percent')
     parser.add_argument('--estimator', type=str, default='nmad', choices=['iterative', 'logstat', 'nmad', 'numpy'],
                         help='Flood depth estimation approach.')
+    parser.add_argument('--water-level-sigma', type=float, default=3.,
+                        help='Estimate max water height for each object.')
+    parser.add_argument('--known-water-threshold', type=float, default=30.,
+                        help='Threshold for extracting known water area in percent')
     parser.add_argument('--iterative-bounds', type=float, default=[0, 15],
                         help='.')
 
