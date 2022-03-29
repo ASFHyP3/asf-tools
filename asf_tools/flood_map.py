@@ -27,11 +27,11 @@ def get_waterbody(input_info, ths=30.):
     west, south, east, north = get_coordinates(input_info)
     width, height = input_info['size']
 
-    gitdir = os.path.dirname(__file__)
-    water_extent_vrt = str(str(gitdir) + '/data/water_extent.vrt')  # All Perennial Flood Data
-    wimage_file = str(str(gitdir) + '/data/surface_water_map_clip.tif')
+    data_dir = Path(__file__).parent / 'data'
+    water_extent_vrt = data_dir / 'water_extent.vrt'  # All Perennial Flood Data
+    wimage_file = data_dir / 'surface_water_map_clip.tif'
 
-    gdal.Warp(wimage_file, water_extent_vrt, dstSRS=f'EPSG:{epsg}',
+    gdal.Warp(str(wimage_file), str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
               outputBounds=[west, south, east, north],
               width=width, height=height, resampleAlg='lanczos', format='GTiff')
 
