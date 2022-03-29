@@ -1,16 +1,15 @@
-
 import argparse
 import logging
-import os
 import sys
 import warnings
 from pathlib import Path
 from typing import Tuple, Union
 
 import numpy as np
-from asf_tools.composite import write_cog, get_epsg_code
 from osgeo import gdal
 from scipy import ndimage, optimize, stats
+
+from asf_tools.composite import get_epsg_code, write_cog
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ def get_coordinates(info):
     return west, south, east, north
 
 
-def get_waterbody(input_info, ths=30.):
+def get_waterbody(input_info, threshold=30.):
     epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
@@ -29,14 +28,14 @@ def get_waterbody(input_info, ths=30.):
 
     data_dir = Path(__file__).parent / 'data'
     water_extent_vrt = data_dir / 'water_extent.vrt'  # All Perennial Flood Data
-    wimage_file = data_dir / 'surface_water_map_clip.tif'
+    water_extent_file = data_dir / 'surface_water_map_clip.tif'
 
-    gdal.Warp(str(wimage_file), str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
+    gdal.Warp(str(water_extent_file), str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
               outputBounds=[west, south, east, north],
               width=width, height=height, resampleAlg='lanczos', format='GTiff')
 
-    wimage = gdal.Open(wimage_file, gdal.GA_ReadOnly).ReadAsArray()
-    return wimage > ths  # higher than 30% possibility (present water)
+    water_array = gdal.Open(water_extent_file, gdal.GA_ReadOnly).ReadAsArray()
+    return water_array > threshold
 
 
 def iterative(hand, extent, water_levels=range(15)):
@@ -141,7 +140,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     hand_array = gdal.Open(str(hand_raster), gdal.GA_ReadOnly).ReadAsArray()
 
     log.info('Fetching perennial flood data.')
-    known_water_mask = get_waterbody(info, ths=known_water_threshold)
+    known_water_mask = get_waterbody(info, threshold=known_water_threshold)
 
     water_map = gdal.Open(water_raster).ReadAsArray()
     flood_mask = np.bitwise_or(water_map, known_water_mask)
