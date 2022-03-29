@@ -168,7 +168,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
         water_height = estimate_flood_depth(ll, hand_window, flood_window, estimator=estimator,
                                             water_level_sigma=water_level_sigma, iterative_bounds=iterative_bounds)
 
-        flood_depth[labeled_flood_mask == ll] = water_height - hand_window[labeled_flood_mask == ll]
+        flood_depth[labeled_flood_mask == ll] = water_height - hand_window[flood_window == ll]
 
     flood_depth[flood_depth < 0] = 0
 
