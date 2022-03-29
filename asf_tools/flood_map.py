@@ -169,7 +169,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
                                             water_level_sigma=water_level_sigma, iterative_bounds=iterative_bounds)
 
         flood_depth_clip = flood_depth[min0:max0, min1:max1]
-        flood_depth_clip[flood_mask_labels_clip == l] = water_height - hand_clip[flood_mask_labels_clip == l]
+        flood_depth_clip[flood_mask_labels_clip == ll] = water_height - hand_clip[flood_mask_labels_clip == ll]
 
     flood_depth[flood_depth < 0] = 0
 
