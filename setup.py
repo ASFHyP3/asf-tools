@@ -38,6 +38,7 @@ setup(
         'pysheds>=0.3',
         'scikit-fuzzy',
         'scikit-image',
+        'scipy',
         'shapely',
         'rasterio',
     ],
