@@ -128,7 +128,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     the variation to increase robustness in the presence of outliers.
     *Logstat: Calculates the mean and standard deviation of HAND heights in the logarithmic
     domain to improve robustness for very non-Gaussian data distributions.
-    *Numpy: Calculates statistics in a linear scale. Least robust to outliers and non-Ga      ussian
+    *Numpy: Calculates statistics in a linear scale. Least robust to outliers and non-Gaussian
     distributions.
 
     """
