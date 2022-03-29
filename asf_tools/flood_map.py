@@ -151,8 +151,8 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     water_map = gdal.Open(water_raster).ReadAsArray()
     flood_mask = np.bitwise_or(water_map, known_water_mask)
 
-    flood_mask_labels, num_labels = ndimage.label(flood_mask)
-    object_slices = ndimage.find_objects(flood_mask_labels)
+    labeled_flood_mask, num_labels = ndimage.label(flood_mask)
+    object_slices = ndimage.find_objects(labeled_flood_mask)
     log.info(f'Detected {num_labels} water bodies...')
 
     flood_depth = np.zeros(flood_mask.shape)
@@ -162,14 +162,13 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
         min0, max0 = slices[0].start, slices[0].stop
         min1, max1 = slices[1].start, slices[1].stop
 
-        flood_mask_labels_clip = flood_mask_labels[min0: max0, min1: max1]
-        hand_clip = hand_array[min0: max0, min1: max1]
+        flood_window = labeled_flood_mask[min0: max0, min1: max1]
+        hand_window = hand_array[min0: max0, min1: max1]
 
-        water_height = estimate_flood_depth(ll, hand_clip, flood_mask_labels_clip, estimator=estimator,
+        water_height = estimate_flood_depth(ll, hand_window, flood_window, estimator=estimator,
                                             water_level_sigma=water_level_sigma, iterative_bounds=iterative_bounds)
 
-        flood_depth_clip = flood_depth[min0:max0, min1:max1]
-        flood_depth_clip[flood_mask_labels_clip == ll] = water_height - hand_clip[flood_mask_labels_clip == ll]
+        flood_depth[labeled_flood_mask == ll] = water_height - hand_window[labeled_flood_mask == ll]
 
     flood_depth[flood_depth < 0] = 0
 
