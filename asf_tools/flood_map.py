@@ -1,9 +1,19 @@
+"""Generate flood depth map from surface water extent map.
+
+Create a flood depth map from a surface water extent map and
+a HAND image. The HAND image must be pixel-aligned (same extent and size) to
+the water extent map, and the surface water extent map should be a byte GeoTIFF
+indicating water (true), not water (false). Flood depth maps are estimated
+using either a numerical, normalized median absolute deviation, logarithmic
+or iterative approach.
+"""
+
 import argparse
 import logging
 import sys
 import warnings
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Callable, Tuple, Union
 
 import numpy as np
 from osgeo import gdal
@@ -14,13 +24,13 @@ from asf_tools.composite import get_epsg_code, write_cog
 log = logging.getLogger(__name__)
 
 
-def get_coordinates(info):
+def get_coordinates(info: dict) -> Tuple[int, int, int, int]:
     west, south = info['cornerCoordinates']['lowerLeft']
     east, north = info['cornerCoordinates']['upperRight']
     return west, south, east, north
 
 
-def get_waterbody(input_info, threshold=30.):
+def get_waterbody(input_info: dict, threshold: float = 30.) -> np.array:
     epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
@@ -38,7 +48,7 @@ def get_waterbody(input_info, threshold=30.):
     return water_array > threshold
 
 
-def iterative(hand, extent, water_levels=range(15)):
+def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(15)):
     def _goal_ts(w):
         iterative_flood_extent = hand < w  # w=water level
         tp = np.nansum(np.logical_and(iterative_flood_extent == 1, extent == 1))  # true positive
@@ -68,11 +78,15 @@ def iterative(hand, extent, water_levels=range(15)):
     return best_water_level
 
 
-def logstat(data, func=np.nanstd):
-    """ stat=logstat(data, func=np.nanstd)
-       calculates the statistic after taking the log and returns the statistic in linear scale.
-       INF values inside the data array are set to nan.
-       The func has to be able to handle nan values.
+def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, float]:
+    """ Calculate a function in logarithmic scale and return in linear scale.
+        INF values inside the data array are set to nan.
+
+        Args:
+            data: array of data
+            func: statistical function to calculate in logarithmic scale
+        Returns:
+            statistic: statistic of data in linear scale
     """
     ld = np.log(data)
     ld[np.isinf(ld)] = np.nan
@@ -110,27 +124,38 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
                    water_level_sigma: float = 3.,
                    known_water_threshold: float = 30.,
                    iterative_bounds: Tuple[int, int] = (0, 15)):
-    """Creates a flood depth map from a water extent map.
+    """Create a flood depth map from a surface water extent map.
 
-    Create a flood depth map from a single Hyp3-generated surface water extent map and
-    a HAND image. The HAND image must completely cover the water extent map.
+    Create a flood depth map from a single surface water extent map and
+    a HAND image. The HAND image must be pixel-aligned to the surface water extent map.
+    The the surface water extent map should be a byte GeoTIFF indicating water (true) and
+    not water (false)
 
-    Known perennial Global Surface water data are produced under the Copernicus Programme,
-    and are pulled to ensure this information is accounted for in the Flood Depth Map calculation.
-    This is added to the SAR-derived surface water detection maps to generate the
-    final Flood Depth product.
+    Known perennial Global Surface-water data are produced under the Copernicus Programme (Pekel et al., 2016),
+    and are included with surface-water detection maps when generating the flood depth product.
 
     Flood depth maps are estimated using one of the approaches:
-    *Iterative: Basin hopping optimization method to match flooded areas to flood depth
-    estimates given by the HAND layer. This is the most accurate method, but also the
+    *Iterative: Basin hopping optimization method matches flooded areas to flood depth
+    estimates given by the HAND layer. This is the most accurate method but also the
     most time-intensive.
     *Normalized Median Absolute Deviation (nmad): (Default) Uses a median operator to estimate
     the variation to increase robustness in the presence of outliers.
     *Logstat: Calculates the mean and standard deviation of HAND heights in the logarithmic
     domain to improve robustness for very non-Gaussian data distributions.
-    *Numpy: Calculates statistics in a linear scale. Least robust to outliers and non-Gaussian
+    *Numpy: Calculates statistics on a linear scale. Least robust to outliers and non-Gaussian
     distributions.
 
+    Args:
+        out_raster: Flood depth GeoTIFF to create
+        water_raster: Surface water extent GeoTIFF
+        hand_raster: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the surface water extent raster
+        estimator: Estimation approach for determining flood depth
+        water_level_sigma: Max water height used in logstat, nmad, and numpy estimations
+        known_water_threshold: Threshold for extracting the known water area in percent
+        iterative_bounds: Bounds on basin-hopping algorithm used in iterative estimation
+
+    References:
+        Jean-Francios Pekel, Andrew Cottam, Noel Gorelik, Alan S. Belward. 2016. <https://doi:10.1038/nature20584>
     """
 
     info = gdal.Info(str(water_raster), format='json')
@@ -184,11 +209,11 @@ def main():
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument('--out-raster',
+    parser.add_argument('out_raster',
                         help='File flood depth map will be saved to.')
-    parser.add_argument('--water-extent-map',
+    parser.add_argument('water_extent_map',
                         help='Hyp3-Generated water extent raster file.')
-    parser.add_argument('--hand-raster',
+    parser.add_argument('hand_raster',
                         help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
                              'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
 
