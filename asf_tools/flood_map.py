@@ -2,9 +2,10 @@
 
 Create a flood depth map from a surface water extent map and
 a HAND image. The HAND image must be pixel-aligned (same extent and size) to
-the water extent map, and the surface water extent map should only have one class
-of water. Flood depth maps are estimated using either a numerical, normalized
-median absolute deviation, logarithmic or iterative approach.
+the water extent map, and the surface water extent map should be a byte GeoTIFF
+indicating water (true), not water (false).. Flood depth maps are estimated
+using either a numerical, normalized median absolute deviation, logarithmic
+or iterative approach.
 """
 
 import argparse
@@ -12,7 +13,7 @@ import logging
 import sys
 import warnings
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Callable, Tuple, Union
 
 import numpy as np
 from osgeo import gdal
@@ -77,8 +78,8 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
     return best_water_level
 
 
-def logstat(data: np.array, func=np.nanstd):
-    """ Calculate a function in logarithmic scale and return in linear scale
+def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, float]:
+    """ Calculate a function in logarithmic scale and return in linear scale.
         INF values inside the data array are set to nan.
 
         Args:
@@ -151,7 +152,6 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
         water_level_sigma: Max water height used in logstat, nmad, and numpy estimations
         known_water_threshold: Threshold for extracting the known water area in percent
         iterative_bounds: Bounds on basin-hopping algorithm used in iterative estimation
-
 
     References:
         Jean-Francios Pekel, Andrew Cottam, Noel Gorelik, Alan S. Belward. 2016. <https://doi:10.1038/nature20584>
