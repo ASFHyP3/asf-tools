@@ -193,7 +193,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     flood_depth[flood_depth < 0] = 0
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=True)
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
@@ -201,7 +201,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     flood_depth[np.bitwise_not(flood_mask)] = 0
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=True)
 
 
 def main():
