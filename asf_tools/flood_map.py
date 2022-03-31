@@ -42,9 +42,9 @@ def get_waterbody(input_info: dict, threshold: float = 30.) -> np.array:
 
     gdal.Warp(str(water_extent_file), str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
               outputBounds=[west, south, east, north],
-              width=width, height=height, resampleAlg='lanczos', format='GTiff')
+              width=width, height=height, resampleAlg='nearest', format='GTiff')
 
-    water_array = gdal.Open(water_extent_file, gdal.GA_ReadOnly).ReadAsArray()
+    water_array = gdal.Open(str(water_extent_file), gdal.GA_ReadOnly).ReadAsArray()
     return water_array > threshold
 
 
