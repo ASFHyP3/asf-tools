@@ -57,7 +57,7 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
         return 1 - tp / (tp + fp + fn)  # threat score #we will minimize goal func, hence 1-threat_score.
 
     class MyBounds(object):
-        def __init__(self, xmax=tuple(max(water_levels)), xmin=tuple(min(water_levels))):
+        def __init__(self, xmax=max(water_levels), xmin=min(water_levels)):
             self.xmax = np.array(xmax)
             self.xmin = np.array(xmin)
 
