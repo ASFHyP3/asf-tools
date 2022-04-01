@@ -57,7 +57,7 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
         return 1 - tp / (tp + fp + fn)  # threat score #we will minimize goal func, hence 1-threat_score.
 
     class MyBounds(object):
-        def __init__(self, xmax=tuple(max(water_levels)), xmin=tuple(min(water_levels))):
+        def __init__(self, xmax=max(water_levels), xmin=min(water_levels)):
             self.xmax = np.array(xmax)
             self.xmin = np.array(xmin)
 
@@ -193,7 +193,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     flood_depth[flood_depth < 0] = 0
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=True)
+              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=False)
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
@@ -201,7 +201,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     flood_depth[np.bitwise_not(flood_mask)] = 0
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=True)
+              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=False)
 
 
 def main():
