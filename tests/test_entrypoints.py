@@ -11,3 +11,8 @@ def test_water_map(script_runner):
 def test_make_hand(script_runner):
     ret = script_runner.run('calculate_hand', '-h')
     assert ret.success
+
+
+def test_flood_map(script_runner):
+    ret = script_runner.run('flood_map', '-h')
+    assert ret.success
