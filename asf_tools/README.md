@@ -126,3 +126,24 @@ water_map --help
 
 For details on the algorithm see the `asf_tools.water_map.make_water_map` docstring.
 <!-- FIXME: Link to API reference on our docs page! -->
+
+### Flood depth mapping
+
+The `flood_map` tool allows you to create an estimated flood depth map from the surface
+water extent map created by the `water_map` tool. 
+
+Additionally, a HAND (height above nearest drainage) GeoTIFF that is pixel aligned to
+the surface water extent map is required. An ideal candidate is the HAND image created 
+by the `water_map` tool. 
+
+To make a flood depth map, run:
+```
+flood_map [OUT_RASTER] [SURFACE_WATER_MAP] [HAND_RASTER]
+```
+
+For more information and to see the options available, see:
+```
+flood_map --help
+```
+
+For details on the algorithm see the `asf_tools.flood_map.make_flood_map` docstring.

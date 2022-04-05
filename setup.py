@@ -38,6 +38,7 @@ setup(
         'pysheds>=0.3',
         'scikit-fuzzy',
         'scikit-image',
+        'scipy',
         'shapely',
         'rasterio',
     ],
@@ -62,6 +63,7 @@ setup(
             'make_composite = asf_tools.composite:main',
             'water_map = asf_tools.water_map:main',
             'calculate_hand = asf_tools.hand.calculate:main',
+            'flood_map = asf_tools.flood_map:main',
         ]
     },
 
