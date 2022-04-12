@@ -4,8 +4,8 @@ import logging
 import os
 import sys
 import warnings
-from pathlib import Path
 import urllib
+from pathlib import Path
 import zipfile
 from tempfile import NamedTemporaryFile
 from typing import Optional, Union
