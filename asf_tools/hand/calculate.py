@@ -2,10 +2,13 @@
 import argparse
 import logging
 import sys
+import os
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Optional, Union
+import urllib
+import zipfile
 
 import astropy.convolution
 import fiona
@@ -14,6 +17,7 @@ import rasterio.crs
 import rasterio.mask
 from pysheds.pgrid import Grid as Pgrid
 from shapely.geometry import GeometryCollection, shape
+from scipy import ndimage
 
 from asf_tools.composite import write_cog
 from asf_tools.dem import prepare_dem_vrt
@@ -36,6 +40,44 @@ def fill_nan(array: np.ndarray) -> np.ndarray:
         )
 
     return array
+
+
+def fill_nan_based_on_dem(arr, dem):
+    """
+    filled_arr=fill_nan_based_on_DEM(arr, dem)
+    Fills Not-a-number values in arr using astropy.
+    """
+    hond = dem - arr # height of the nearest drainage
+    kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3) #kernel x_size=8*stddev
+    arr_type = hond.dtype
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        while np.any(np.isnan(hond)):
+            hond = astropy.convolution.interpolate_replace_nans(hond.astype(float),
+                                                                kernel, convolve=astropy.convolution.convolve)
+    my_mask = np.isnan(arr)
+    arr[my_mask] = dem[my_mask]-hond[my_mask]
+    return arr.astype(arr_type)
+
+
+def fiona_read_vectorfile(vectorfile, get_property=None):
+    """shapes=fiona_read_vectorfile(vectorfile, get_property=None)
+       shapes, props=fiona_read_vectorfile(vectorfile, get_property='Property_Name')
+       Returns a list of shapes (and optionally properties) using fiona.
+
+       vectorfile: any fiona compatible vector file.
+       get_property: String for the property to be read.
+       shapes: List of vector "geometry"
+       props:  List of vector "properties"
+    """
+    with fiona.open(vectorfile, "r") as shpf:
+        shapes = [feature["geometry"] for feature in shpf]
+        print(f"Number of shapes loaded: {len(shapes)}")
+        if get_property is not None:
+            props = [feature["properties"][get_property] for feature in shpf]
+            return shapes, props
+        else:
+            return shapes
 
 
 def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask,
@@ -105,11 +147,123 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         hand = fill_nan(hand)
 
     # ensure non-basin is masked after fill_nan
-    hand[basin_mask] = np.nan
+    # hand[basin_mask] = np.nan
 
     return hand
 
 
+def get_land_mask(hand, dem):
+    nodata_fill_value = np.finfo(float).eps
+    # generate nan_mask
+    nan_mask = np.isnan(hand)
+    # Download GSHHG
+    gshhg_dir = '/media/jzhu4/data/hand/external_data'
+    gshhg_url = 'http://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip'
+    gshhg_zipfile = os.path.join(gshhg_dir, "gshhg-shp-2.3.7.zip")
+    gshhg_file = os.path.join(gshhg_dir, "GSHHS_shp/f/GSHHS_f_L1.shp")
+    if not os.path.exists(gshhg_zipfile) and not os.path.exists(gshhg_file):
+        urllib.request.urlretrieve(gshhg_url, gshhg_zipfile)
+    if not os.path.exists(gshhg_file):
+        with zipfile.ZipFile(gshhg_zipfile, 'r') as zip_ref:
+            zip_ref.extractall(path=gshhg_dir)
+
+    gshhg = fiona_read_vectorfile(gshhg_file)
+    # generate land_mask for the DEM
+    land_mask, tf, win = rasterio.mask.raster_geometry_mask(dem, gshhg, crop=False,
+                                                            invert=True)
+    # invert=If False (default), mask will be False inside shapes and True outside
+    # set ocean/sea values in hand to epsilon
+    hand[np.invert(land_mask)] = nodata_fill_value  # sea_mask=np.invert(land_mask)
+    # find nan areas that are within land_mask
+    joint_mask = np.bitwise_and(nan_mask, land_mask)
+    mask_labels, num_labels = ndimage.label(joint_mask)
+    print(f"Number of NaN areas to fill: {num_labels}")
+
+    return hand, mask_labels, num_labels, joint_mask
+
+
+def fill_data_with_nan(hand, dem, mask_labels, num_labels, joint_mask):
+    # new nan_fill needs DEM. Might be better to NOT load it in the memory
+    # See: https://rasterio.readthedocs.io/en/latest/topics/windowed-rw.html
+    demarray = dem.read(1)
+    object_slices = ndimage.find_objects(mask_labels)
+    tq = range(1, num_labels)
+    for l in tq:  # Skip first, largest label.
+        slices = object_slices[l - 1]  # osl label=1 is in object_slices[0]
+        min0 = max(slices[0].start - 1, 0)
+        max0 = min(slices[0].stop + 1, mask_labels.shape[0])
+        min1 = max(slices[1].start - 1, 0)
+        max1 = min(slices[1].stop + 1, mask_labels.shape[1])
+        mask_labels_clip = mask_labels[min0:max0, min1:max1]
+        h = hand[min0:max0, min1:max1]  # by reference
+        d = demarray[min0:max0, min1:max1]
+        m = joint_mask[min0:max0, min1:max1].copy()
+        m[mask_labels_clip != l] = 0  # Mask out other flooded areas (labels) for this area. Use only one label.
+        hf = fill_nan_based_on_dem(h.copy(), d.copy())  # break reference
+        h[m] = hf[m]  # copy nanfill by reference
+
+    return hand
+
+
+def get_basin_dem_file(dem, basin_affine_tf, basin_array, basin_dem_file):
+    # optional, fill_nan
+    # produce tmp_dem.tif based on basin_array and basin_affine_tf
+    out_meta = dem.meta.copy()
+    out_meta.update({
+        'driver': 'GTiff',
+        'width': basin_array.shape[1],
+        'height': basin_array.shape[0],
+        'transform': basin_affine_tf
+    })
+    with rasterio.open(fp=basin_dem_file, mode='w', **out_meta) as dst:
+        dst.write(basin_array, 1)
+
+    return basin_dem_file
+
+
+def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
+                                  dem_file: Union[str, Path]):
+    """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
+
+    For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
+
+    Args:
+        out_raster: HAND GeoTIFF to create
+        geometries: watershed boundary (hydrobasin) polygons to calculate HAND over
+        dem_file: DEM raster covering (containing) `geometries`
+    """
+    with rasterio.open(dem_file) as src:
+        basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
+            src, geometries, all_touched=True, crop=True, pad=True, pad_width=1
+        )
+        basin_array = src.read(1, window=basin_window)
+
+        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
+        # fill non basin_mask with nodata_fill_value
+        nodata_fill_value = np.finfo(float).eps
+        hand[basin_mask] = nodata_fill_value
+        if np.isnan(hand).any():
+            basin_dem_file = "/tmp/tmp_dem.tif"
+            get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
+            # get joint_mask which is the nan_mask and the land_mask.
+            # fill ocean pixels with minimum value of the float32.
+            basin_dem = rasterio.open(basin_dem_file, 'r')
+            hand, mask_labels, num_labels, joint_mask = get_land_mask(hand, basin_dem)
+            # fill nan pixels
+            hand = fill_data_with_nan(hand, basin_dem, mask_labels, num_labels, joint_mask)
+            tf_gdal = basin_dem.meta['transform'].to_gdal()
+            epsg_code = basin_dem.crs.to_epsg()
+        else:
+            tf_gdal = basin_affine_tf.to_gdal()
+            epsg_code = src.crs.to_epsg()
+
+        # fill non basin_mask with nan
+        hand[basin_mask] = np.nan
+        # write the HAND
+        write_cog(str(out_raster), hand, transform=tf_gdal, epsg_code=epsg_code)
+
+
+'''
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
                               dem_file: Union[str, Path]):
     """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
@@ -130,7 +284,7 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
 
         write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
-
+'''
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
     """Copernicus GLO-30 Height Above Nearest Drainage (HAND)
