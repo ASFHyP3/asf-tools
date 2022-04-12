@@ -73,7 +73,6 @@ def fiona_read_vectorfile(vectorfile, get_property=None):
     """
     with fiona.open(vectorfile, "r") as shpf:
         shapes = [feature["geometry"] for feature in shpf]
-        print(f"Number of shapes loaded: {len(shapes)}")
         if get_property is not None:
             props = [feature["properties"][get_property] for feature in shpf]
             return shapes, props
@@ -147,16 +146,10 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         log.debug('NaNs encountered in HAND; filling.')
         hand = fill_nan(hand)
 
-    # ensure non-basin is masked after fill_nan
-    # hand[basin_mask] = np.nan
-
     return hand
 
 
-def get_land_mask(hand, dem):
-    nodata_fill_value = np.finfo(float).eps
-    # generate nan_mask
-    nan_mask = np.isnan(hand)
+def get_hand_by_land_mask(hand, nodata_fill_value, dem):
     # Download GSHHG
     gshhg_dir = '/media/jzhu4/data/hand/external_data'
     gshhg_url = 'http://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip'
@@ -169,39 +162,11 @@ def get_land_mask(hand, dem):
             zip_ref.extractall(path=gshhg_dir)
 
     gshhg = fiona_read_vectorfile(gshhg_file)
-    # generate land_mask for the DEM
+    # generate land_mask for the DEM. invert=If False (default), mask will be False inside shapes and True outside
     land_mask, tf, win = rasterio.mask.raster_geometry_mask(dem, gshhg, crop=False,
                                                             invert=True)
-    # invert=If False (default), mask will be False inside shapes and True outside
-    # set ocean/sea values in hand to epsilon
-    hand[np.invert(land_mask)] = nodata_fill_value  # sea_mask=np.invert(land_mask)
-    # find nan areas that are within land_mask
-    joint_mask = np.bitwise_and(nan_mask, land_mask)
-    mask_labels, num_labels = ndimage.label(joint_mask)
-    print(f"Number of NaN areas to fill: {num_labels}")
-
-    return hand, mask_labels, num_labels, joint_mask
-
-
-def fill_data_with_nan(hand, dem, mask_labels, num_labels, joint_mask):
-    # new nan_fill needs DEM. Might be better to NOT load it in the memory
-    # See: https://rasterio.readthedocs.io/en/latest/topics/windowed-rw.html
-    demarray = dem.read(1)
-    object_slices = ndimage.find_objects(mask_labels)
-    tq = range(1, num_labels)
-    for lb in tq:
-        slices = object_slices[lb - 1]
-        min0 = max(slices[0].start - 1, 0)
-        max0 = min(slices[0].stop + 1, mask_labels.shape[0])
-        min1 = max(slices[1].start - 1, 0)
-        max1 = min(slices[1].stop + 1, mask_labels.shape[1])
-        mask_labels_clip = mask_labels[min0:max0, min1:max1]
-        h = hand[min0:max0, min1:max1]
-        d = demarray[min0:max0, min1:max1]
-        m = joint_mask[min0:max0, min1:max1].copy()
-        m[mask_labels_clip != lb] = 0
-        hf = fill_nan_based_on_dem(h.copy(), d.copy())
-        h[m] = hf[m]
+    # set ocean/sea values in hand to epsilon, sea_mask=np.invert(land_mask)
+    hand[np.invert(land_mask)] = nodata_fill_value
 
     return hand
 
@@ -243,15 +208,19 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         # fill non basin_mask with nodata_fill_value
         nodata_fill_value = np.finfo(float).eps
         hand[basin_mask] = nodata_fill_value
+
         if np.isnan(hand).any():
             basin_dem_file = "/tmp/tmp_dem.tif"
             get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
-            # get joint_mask which is the nan_mask and the land_mask.
-            # fill ocean pixels with minimum value of the float32.
             basin_dem = rasterio.open(basin_dem_file, 'r')
-            hand, mask_labels, num_labels, joint_mask = get_land_mask(hand, basin_dem)
+
+            # fill ocean pixels with the minimum value of data type of float32
+            hand = get_hand_by_land_mask(hand, nodata_fill_value, basin_dem)
+
             # fill nan pixels
-            hand = fill_data_with_nan(hand, basin_dem, mask_labels, num_labels, joint_mask)
+            basin_dem_data = basin_dem.read(1)
+            hand = fill_nan_based_on_dem(hand, basin_dem_data)
+
             tf_gdal = basin_dem.meta['transform'].to_gdal()
             epsg_code = basin_dem.crs.to_epsg()
         else:
@@ -263,29 +232,6 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         # write the HAND
         write_cog(str(out_raster), hand, transform=tf_gdal, epsg_code=epsg_code)
 
-
-'''
-def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
-                              dem_file: Union[str, Path]):
-    """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
-
-    For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
-
-    Args:
-        out_raster: HAND GeoTIFF to create
-        geometries: watershed boundary (hydrobasin) polygons to calculate HAND over
-        dem_file: DEM raster covering (containing) `geometries`
-    """
-    with rasterio.open(dem_file) as src:
-        basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
-            src, geometries, all_touched=True, crop=True, pad=True, pad_width=1
-        )
-        basin_array = src.read(1, window=basin_window)
-
-        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
-
-        write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
-'''
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
     """Copernicus GLO-30 Height Above Nearest Drainage (HAND)
