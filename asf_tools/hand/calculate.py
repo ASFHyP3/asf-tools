@@ -5,10 +5,10 @@ import os
 import sys
 import warnings
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 import urllib
-from typing import Optional, Union
 import zipfile
+from tempfile import NamedTemporaryFile
+from typing import Optional, Union
 
 import astropy.convolution
 import fiona
@@ -16,9 +16,7 @@ import numpy as np
 import rasterio.crs
 import rasterio.mask
 from pysheds.pgrid import Grid as Pgrid
-from scipy import ndimage
 from shapely.geometry import GeometryCollection, shape
-
 
 from asf_tools.composite import write_cog
 from asf_tools.dem import prepare_dem_vrt
@@ -188,7 +186,7 @@ def get_basin_dem_file(dem, basin_affine_tf, basin_array, basin_dem_file):
 
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
-                                  dem_file: Union[str, Path]):
+                              dem_file: Union[str, Path]):
     """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
 
     For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
