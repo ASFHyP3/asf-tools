@@ -1,13 +1,13 @@
 """Calculate Height Above Nearest Drainage (HAND) from the Copernicus GLO-30 DEM"""
 import argparse
 import logging
-import sys
 import os
+import sys
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Optional, Union
 import urllib
+from typing import Optional, Union
 import zipfile
 
 import astropy.convolution
@@ -16,8 +16,9 @@ import numpy as np
 import rasterio.crs
 import rasterio.mask
 from pysheds.pgrid import Grid as Pgrid
-from shapely.geometry import GeometryCollection, shape
 from scipy import ndimage
+from shapely.geometry import GeometryCollection, shape
+
 
 from asf_tools.composite import write_cog
 from asf_tools.dem import prepare_dem_vrt
@@ -47,8 +48,8 @@ def fill_nan_based_on_dem(arr, dem):
     filled_arr=fill_nan_based_on_DEM(arr, dem)
     Fills Not-a-number values in arr using astropy.
     """
-    hond = dem - arr # height of the nearest drainage
-    kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3) #kernel x_size=8*stddev
+    hond = dem - arr
+    kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)
     arr_type = hond.dtype
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -188,19 +189,19 @@ def fill_data_with_nan(hand, dem, mask_labels, num_labels, joint_mask):
     demarray = dem.read(1)
     object_slices = ndimage.find_objects(mask_labels)
     tq = range(1, num_labels)
-    for l in tq:  # Skip first, largest label.
-        slices = object_slices[l - 1]  # osl label=1 is in object_slices[0]
+    for lb in tq:
+        slices = object_slices[lb - 1]
         min0 = max(slices[0].start - 1, 0)
         max0 = min(slices[0].stop + 1, mask_labels.shape[0])
         min1 = max(slices[1].start - 1, 0)
         max1 = min(slices[1].stop + 1, mask_labels.shape[1])
         mask_labels_clip = mask_labels[min0:max0, min1:max1]
-        h = hand[min0:max0, min1:max1]  # by reference
+        h = hand[min0:max0, min1:max1]
         d = demarray[min0:max0, min1:max1]
         m = joint_mask[min0:max0, min1:max1].copy()
-        m[mask_labels_clip != l] = 0  # Mask out other flooded areas (labels) for this area. Use only one label.
-        hf = fill_nan_based_on_dem(h.copy(), d.copy())  # break reference
-        h[m] = hf[m]  # copy nanfill by reference
+        m[mask_labels_clip != lb] = 0
+        hf = fill_nan_based_on_dem(h.copy(), d.copy())
+        h[m] = hf[m]
 
     return hand
 
