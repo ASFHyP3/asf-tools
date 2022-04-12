@@ -3,10 +3,10 @@ import argparse
 import logging
 import os
 import sys
-import warnings
 import urllib
-from pathlib import Path
+import warnings
 import zipfile
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Optional, Union
 
