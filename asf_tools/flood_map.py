@@ -233,6 +233,6 @@ def main():
     log.debug(' '.join(sys.argv))
 
     make_flood_map(args.out_raster, args.water_extent_map, args.hand_raster, args.estimator, args.water_level_sigma,
-                   args.known_water_threshold, args.iterative_bounds)
+                   args.known_water_threshold, tuple(args.iterative_bounds))
 
     log.info(f"Flood Map written to {args.out_raster}.")
