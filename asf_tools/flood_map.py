@@ -223,7 +223,7 @@ def main():
                         help='Estimate max water height for each object.')
     parser.add_argument('--known-water-threshold', type=float, default=30.,
                         help='Threshold for extracting known water area in percent')
-    parser.add_argument('--iterative-bounds', type=float, nargs=2, default=[0, 15], help='.')
+    parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15], help='.')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
