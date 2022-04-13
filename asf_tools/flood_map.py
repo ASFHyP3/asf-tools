@@ -223,8 +223,7 @@ def main():
                         help='Estimate max water height for each object.')
     parser.add_argument('--known-water-threshold', type=float, default=30.,
                         help='Threshold for extracting known water area in percent')
-    parser.add_argument('--iterative-bounds', type=float, default=[0, 15],
-                        help='.')
+    parser.add_argument('--iterative-bounds', type=float, nargs=2, default=[0, 15], help='.')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -234,6 +233,6 @@ def main():
     log.debug(' '.join(sys.argv))
 
     make_flood_map(args.out_raster, args.water_extent_map, args.hand_raster, args.estimator, args.water_level_sigma,
-                   args.known_water_threshold, args.iterative_bounds)
+                   args.known_water_threshold, tuple(args.iterative_bounds))
 
     log.info(f"Flood Map written to {args.out_raster}.")
