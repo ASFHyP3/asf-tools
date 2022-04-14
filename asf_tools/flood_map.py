@@ -94,7 +94,7 @@ def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, f
     return np.exp(st)
 
 
-def estimate_flood_depth(label, hand, flood_labels, estimator='nmad', water_level_sigma=3., iterative_bounds=(0, 15)):
+def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water_level_sigma=3., iterative_bounds=(0, 15)):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
 
@@ -120,8 +120,7 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='nmad', water_leve
 
 
 def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
-                   hand_raster: Union[str, Path], estimator: str = 'nmad',
-                   water_level_sigma: float = 3.,
+                   hand_raster: Union[str, Path], estimator: str = 'iterative',
                    known_water_threshold: float = 30.,
                    iterative_bounds: Tuple[int, int] = (0, 15)):
     """Create a flood depth map from a surface water extent map.
@@ -217,7 +216,7 @@ def main():
                         help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
                              'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
 
-    parser.add_argument('--estimator', type=str, default='nmad', choices=['iterative', 'logstat', 'nmad', 'numpy'],
+    parser.add_argument('--estimator', type=str, default='iterative', choices=['iterative', 'logstat', 'nmad', 'numpy'],
                         help='Flood depth estimation approach.')
     parser.add_argument('--water-level-sigma', type=float, default=3.,
                         help='Estimate max water height for each object.')
