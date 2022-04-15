@@ -79,12 +79,12 @@ def test_make_flood_map(tmp_path):
 
     out_flood_map = tmp_path / 'flood_map.tif'
     flood_map.make_flood_map(out_flood_map, water_raster, hand_geotif)
-    out_flood_map = out_flood_map.parent / f'{out_flood_map.stem}_nmad_FloodDepth.tif'
+    out_flood_map = out_flood_map.parent / f'{out_flood_map.stem}_iterative_FloodDepth.tif'
 
     assert out_flood_map.exists()
 
     golden_flood_map = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/flood_map/' \
-                       'flood_map_nmad.tif'
+                       'flood_map_iterative.tif'
 
     diffs = find_diff(golden_flood_map, str(out_flood_map))
     assert diffs == 0
