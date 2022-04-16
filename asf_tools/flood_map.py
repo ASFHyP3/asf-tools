@@ -11,6 +11,7 @@ or iterative approach.
 import argparse
 import logging
 import sys
+import tempfile
 import warnings
 from pathlib import Path
 from typing import Callable, Tuple, Union
@@ -38,13 +39,13 @@ def get_waterbody(input_info: dict, threshold: float = 30.) -> np.array:
 
     data_dir = Path(__file__).parent / 'data'
     water_extent_vrt = data_dir / 'water_extent.vrt'  # All Perennial Flood Data
-    water_extent_file = data_dir / 'surface_water_map_clip.tif'
 
-    gdal.Warp(str(water_extent_file), str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
-              outputBounds=[west, south, east, north],
-              width=width, height=height, resampleAlg='nearest', format='GTiff')
+    with tempfile.NamedTemporaryFile() as water_extent_file:
+        gdal.Warp(water_extent_file.name, str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
+                  outputBounds=[west, south, east, north],
+                  width=width, height=height, resampleAlg='nearest', format='GTiff')
+        water_array = gdal.Open(water_extent_file.name, gdal.GA_ReadOnly).ReadAsArray()
 
-    water_array = gdal.Open(str(water_extent_file), gdal.GA_ReadOnly).ReadAsArray()
     return water_array > threshold
 
 
