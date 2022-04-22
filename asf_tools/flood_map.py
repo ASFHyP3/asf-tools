@@ -94,7 +94,8 @@ def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, f
     return np.exp(st)
 
 
-def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water_level_sigma=3., iterative_bounds=(0, 15)):
+def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water_level_sigma=3.,
+                         iterative_bounds=(0, 15)):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
 
