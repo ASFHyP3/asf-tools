@@ -11,6 +11,7 @@ or iterative approach.
 import argparse
 import logging
 import sys
+import tempfile
 import warnings
 from pathlib import Path
 from typing import Callable, Tuple, Union
@@ -38,13 +39,13 @@ def get_waterbody(input_info: dict, threshold: float = 30.) -> np.array:
 
     data_dir = Path(__file__).parent / 'data'
     water_extent_vrt = data_dir / 'water_extent.vrt'  # All Perennial Flood Data
-    water_extent_file = data_dir / 'surface_water_map_clip.tif'
 
-    gdal.Warp(str(water_extent_file), str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
-              outputBounds=[west, south, east, north],
-              width=width, height=height, resampleAlg='nearest', format='GTiff')
+    with tempfile.NamedTemporaryFile() as water_extent_file:
+        gdal.Warp(water_extent_file.name, str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
+                  outputBounds=[west, south, east, north],
+                  width=width, height=height, resampleAlg='nearest', format='GTiff')
+        water_array = gdal.Open(water_extent_file.name, gdal.GA_ReadOnly).ReadAsArray()
 
-    water_array = gdal.Open(str(water_extent_file), gdal.GA_ReadOnly).ReadAsArray()
     return water_array > threshold
 
 
@@ -94,7 +95,8 @@ def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, f
     return np.exp(st)
 
 
-def estimate_flood_depth(label, hand, flood_labels, estimator='nmad', water_level_sigma=3., iterative_bounds=(0, 15)):
+def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water_level_sigma=3.,
+                         iterative_bounds=(0, 15)):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
 
@@ -120,7 +122,7 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='nmad', water_leve
 
 
 def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
-                   hand_raster: Union[str, Path], estimator: str = 'nmad',
+                   hand_raster: Union[str, Path], estimator: str = 'iterative',
                    water_level_sigma: float = 3.,
                    known_water_threshold: float = 30.,
                    iterative_bounds: Tuple[int, int] = (0, 15)):
@@ -217,14 +219,13 @@ def main():
                         help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
                              'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
 
-    parser.add_argument('--estimator', type=str, default='nmad', choices=['iterative', 'logstat', 'nmad', 'numpy'],
+    parser.add_argument('--estimator', type=str, default='iterative', choices=['iterative', 'logstat', 'nmad', 'numpy'],
                         help='Flood depth estimation approach.')
     parser.add_argument('--water-level-sigma', type=float, default=3.,
                         help='Estimate max water height for each object.')
     parser.add_argument('--known-water-threshold', type=float, default=30.,
                         help='Threshold for extracting known water area in percent')
-    parser.add_argument('--iterative-bounds', type=float, default=[0, 15],
-                        help='.')
+    parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15], help='.')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -234,6 +235,6 @@ def main():
     log.debug(' '.join(sys.argv))
 
     make_flood_map(args.out_raster, args.water_extent_map, args.hand_raster, args.estimator, args.water_level_sigma,
-                   args.known_water_threshold, args.iterative_bounds)
+                   args.known_water_threshold, tuple(args.iterative_bounds))
 
     log.info(f"Flood Map written to {args.out_raster}.")
