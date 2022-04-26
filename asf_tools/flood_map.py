@@ -128,6 +128,9 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
                    iterative_bounds: Tuple[int, int] = (0, 15)):
     """Create a flood depth map from a surface water extent map.
 
+    WARNING: This functionality is still under active development and the products
+    created using this function are likely to change in the future.
+
     Create a flood depth map from a single surface water extent map and
     a HAND image. The HAND image must be pixel-aligned to the surface water extent map.
     The the surface water extent map should be a byte GeoTIFF indicating water (true) and
