@@ -140,10 +140,10 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     and are included with surface-water detection maps when generating the flood depth product.
 
     Flood depth maps are estimated using one of the approaches:
-    *Iterative: Basin hopping optimization method matches flooded areas to flood depth
+    *Iterative: (Default) Basin hopping optimization method matches flooded areas to flood depth
     estimates given by the HAND layer. This is the most accurate method but also the
     most time-intensive.
-    *Normalized Median Absolute Deviation (nmad): (Default) Uses a median operator to estimate
+    *Normalized Median Absolute Deviation (nmad): Uses a median operator to estimate
     the variation to increase robustness in the presence of outliers.
     *Logstat: Calculates the mean and standard deviation of HAND heights in the logarithmic
     domain to improve robustness for very non-Gaussian data distributions.
