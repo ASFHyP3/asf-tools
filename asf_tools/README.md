@@ -129,6 +129,9 @@ For details on the algorithm see the `asf_tools.water_map.make_water_map` docstr
 
 ### Flood depth mapping
 
+**Warning:** The flood depth tool is still under active development and the products
+created using this tool are likely to change in the future.
+
 The `flood_map` tool allows you to create an estimated flood depth map from the surface
 water extent map created by the `water_map` tool. 
 
