@@ -221,16 +221,10 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
             basin_dem_data = basin_dem.read(1)
             hand = fill_nan_based_on_dem(hand, basin_dem_data)
 
-            tf_gdal = basin_dem.meta['transform'].to_gdal()
-            epsg_code = basin_dem.crs.to_epsg()
-        else:
-            tf_gdal = basin_affine_tf.to_gdal()
-            epsg_code = src.crs.to_epsg()
-
         # fill non basin_mask with nan
         hand[basin_mask] = np.nan
         # write the HAND
-        write_cog(str(out_raster), hand, transform=tf_gdal, epsg_code=epsg_code)
+        write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
 
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
