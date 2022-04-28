@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.4](https://github.com/ASFHyP3/asf-tools/compare/v0.3.3...v0.3.4)
+## [0.4.0]
 
 ### Added
 * `asf_tools.flood_map` and an associated `flood_map` entrypoint for making
