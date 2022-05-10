@@ -244,12 +244,9 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
 
     nodata_fill_value = np.finfo(float).eps
-    dem_nodata_value = None
     dem = rasterio.open(basin_dem_file, 'r')
-    dem_tf = dem.get_transform()
+    dem_nodata_value = src.nodatavals[0]
 
-    if dem_nodata_value is None:
-        dem_nodata_value = src.nodatavals[0]
     if dem_nodata_value is None:
         print('DEM does not have a defined no-data value.')
         print('Assuming all valid pixels. If not, expect long processing times.')
