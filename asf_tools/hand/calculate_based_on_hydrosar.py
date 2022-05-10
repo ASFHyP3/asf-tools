@@ -282,13 +282,6 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         clip_hand[not_mask] = h[not_mask]
 
     hand[dem_nodata_mask] = nodata_fill_value
-    hand[basin_mask] = np.nan
-
-    # output the hand without filling the NAN pixels along the edges of the geometries
-    dirn = os.path.dirname(out_raster)
-    prefix = os.path.basename(out_raster).split(".tif")[0]
-    out_by_write_cog = os.path.join(dirn, f"{prefix}_write_cog.tif")
-    write_cog(out_by_write_cog, hand, transform=dem_tf, epsg_code=dem.crs.to_epsg())
 
     # fill non basin_mask with nodata_fill_value
     hand[basin_mask] = nodata_fill_value
