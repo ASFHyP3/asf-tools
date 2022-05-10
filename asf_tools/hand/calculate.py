@@ -55,7 +55,9 @@ def fill_nan_based_on_dem(arr, dem):
             hond = astropy.convolution.interpolate_replace_nans(hond.astype(float),
                                                                 kernel, convolve=astropy.convolution.convolve)
     my_mask = np.isnan(arr)
-    arr[my_mask] = dem[my_mask]-hond[my_mask]
+
+    arr[my_mask] = dem[my_mask] - hond[my_mask]
+
     return arr.astype(arr_type)
 
 
@@ -78,7 +80,7 @@ def fiona_read_vectorfile(vectorfile, get_property=None):
             return shapes
 
 
-def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask,
+def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, mask,
                    acc_thresh: Optional[int] = 100):
     """Calculate the Height Above Nearest Drainage (HAND)
 
@@ -102,14 +104,14 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         dem_array: DEM to calculate HAND for
         dem_crs: DEM Coordinate Reference System (CRS)
         dem_affine: DEM Affine geotransform
-        basin_mask: Array of booleans indicating wither an element should be masked out (à la Numpy Masked Arrays:
+        mask: Array of booleans indicating wither an element should be masked out (à la Numpy Masked Arrays:
             https://numpy.org/doc/stable/reference/maskedarray.generic.html#what-is-a-masked-array)
         acc_thresh: Accumulation threshold for determining the drainage mask.
             If `None`, the mean accumulation value is used
     """
 
     grid = Pgrid()
-    grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_crs.to_dict(), mask=~basin_mask)
+    grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_crs.to_dict(), mask=mask)
 
     log.info('Filling depressions')
     grid.fill_depressions('dem', out_name='flooded_dem')
@@ -140,9 +142,20 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
     log.info(f'Calculating HAND using accumulation threshold of {acc_thresh}')
     hand = grid.compute_hand('dir', 'inflated_dem', grid.acc > acc_thresh, inplace=False)
+
     if np.isnan(hand).any():
-        log.debug('NaNs encountered in HAND; filling.')
-        hand = fill_nan(hand)
+        # get nans inside masked area and find mean height for pixels outside the nans (but inside basin mask)
+        valid_nanmask = np.logical_and(mask, np.isnan(hand))
+        valid_mask = np.logical_and(mask, ~np.isnan(hand))
+        mean_height = grid.inflated_dem[valid_mask].mean()
+
+        # calculate gradient and set mean gradient magnitude as threshold for flatness.
+        g0, g1 = np.gradient(grid.inflated_dem)
+        gMag = np.sqrt(g0 ** 2 + g1 ** 2)
+        gMagTh = np.min([1, np.mean(gMag * np.isnan(hand))])
+        valid_flats = np.logical_and(valid_nanmask, gMag < gMagTh)
+        valid_low_flats = np.logical_and(valid_flats, grid.inflated_dem < mean_height)
+        hand[valid_low_flats] = 0
 
     return hand
 
@@ -204,7 +217,7 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         )
         basin_array = src.read(1, window=basin_window)
 
-        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
+        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, ~basin_mask)
         # fill non basin_mask with nodata_fill_value
         nodata_fill_value = np.finfo(float).eps
         hand[basin_mask] = nodata_fill_value

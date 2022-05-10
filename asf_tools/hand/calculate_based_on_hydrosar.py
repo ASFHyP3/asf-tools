@@ -42,24 +42,6 @@ def fill_nan(array: np.ndarray) -> np.ndarray:
     return array
 
 
-def fill_nan_based_on_dem_orig(arr, dem):
-    """
-    filled_arr=fill_nan_based_on_DEM(arr, dem)
-    Fills Not-a-number values in arr using astropy.
-    """
-    hond = dem - arr
-    kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)
-    arr_type = hond.dtype
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        while np.any(np.isnan(hond)):
-            hond = astropy.convolution.interpolate_replace_nans(hond.astype(float),
-                                                                kernel, convolve=astropy.convolution.convolve)
-    my_mask = np.isnan(arr)
-    arr[my_mask] = dem[my_mask]-hond[my_mask]
-    return arr.astype(arr_type)
-
-
 def fill_nan_based_on_dem(arr, dem):
     """
     filled_arr=fill_nan_based_on_DEM(arr, dem)
@@ -73,15 +55,8 @@ def fill_nan_based_on_dem(arr, dem):
         while np.any(np.isnan(hond)):
             hond = astropy.convolution.interpolate_replace_nans(hond.astype(float),
                                                                 kernel, convolve=astropy.convolution.convolve)
-
     my_mask = np.isnan(arr)
-    ch = np.logical_and(my_mask, dem - hond < 0)
-    indices = np.where(ch)
-    if np.any(ch):
-        hond[indices] = dem[indices]
-
     arr[my_mask] = dem[my_mask]-hond[my_mask]
-
     return arr.astype(arr_type)
 
 
