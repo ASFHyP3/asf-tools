@@ -8,7 +8,7 @@ import warnings
 import zipfile
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Optional, Union
+from typing import Union
 
 import astropy.convolution
 import fiona
@@ -16,8 +16,9 @@ import numpy as np
 import rasterio.crs
 import rasterio.mask
 from pysheds.pgrid import Grid as Pgrid
-from shapely.geometry import GeometryCollection, shape
 from scipy import ndimage
+from shapely.geometry import GeometryCollection, shape
+
 
 from asf_tools.composite import write_cog
 from asf_tools.dem import prepare_dem_vrt
@@ -117,10 +118,7 @@ def calculate_hand(dem_array, dem_gt, dem_proj4, mask=None, verbose=False, acc_t
         grid.flooded_dem = fill_nan(grid.flooded_dem)
 
     log.info('Resolving flats')
-    try:
-        grid.resolve_flats('flooded_dem', out_name='inflated_dem')
-    except:
-        grid.inflated_dem = grid.flooded_dem
+    grid.resolve_flats('flooded_dem', out_name='inflated_dem')
 
     if np.isnan(grid.inflated_dem).any():
         log.debug('NaNs encountered in inflated DEM; replacing NaNs with original DEM values')
@@ -197,8 +195,8 @@ def fill_data_with_nan(hand, dem, mask_labels, num_labels, joint_mask):
     if np.any(np.isnan(hand)):
         object_slices = ndimage.find_objects(mask_labels)
         tq = range(1, num_labels)
-        for l in tq:  # Skip first, largest label.
-            slices = object_slices[l - 1]
+        for lb in tq:  # Skip first, largest label.
+            slices = object_slices[lb - 1]
             min0 = max(slices[0].start - 1, 0)
             max0 = min(slices[0].stop + 1, mask_labels.shape[0])
             min1 = max(slices[1].start - 1, 0)
@@ -207,7 +205,7 @@ def fill_data_with_nan(hand, dem, mask_labels, num_labels, joint_mask):
             h = hand[min0:max0, min1:max1]  # by reference
             d = demarray[min0:max0, min1:max1]
             m = joint_mask[min0:max0, min1:max1].copy()
-            m[mask_labels_clip != l] = 0  # Mask out other flooded areas (labels) for this area. Use only one label.
+            m[mask_labels_clip != lb] = 0  # Mask out other flooded areas (labels) for this area. Use only one label.
 
             hf = fill_nan_based_on_dem(h.copy(), d.copy())  # break reference
             h[m] = hf[m]  # copy nan-fill by reference
@@ -240,7 +238,7 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         basin_array = src.read(1, window=basin_window)
 
         # produce tmp_dem.tif based on basin_array and basin_affine_tf
-        basin_dem_file = f"/tmp/tmp_dem.tif"
+        basin_dem_file = "/tmp/tmp_dem.tif"
         get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
 
     nodata_fill_value = np.finfo(float).eps
