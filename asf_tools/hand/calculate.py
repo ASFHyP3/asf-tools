@@ -167,10 +167,12 @@ def get_hand_by_land_mask(hand, nodata_fill_value, dem):
     gshhg_url = 'https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-2.3.7.zip'
     gshhg_zipfile = os.path.join(gshhg_dir, "gshhg-shp-2.3.7.zip")
     gshhg_file = os.path.join(gshhg_dir, "GSHHS_shp/f/GSHHS_f_L1.shp")
-    if not os.path.exists(gshhg_zipfile) and not os.path.exists(gshhg_file):
-        os.system(f'mkdir -p {gshhg_dir}')
-        urllib.request.urlretrieve(gshhg_url, gshhg_zipfile)
+
     if not os.path.exists(gshhg_file):
+        if not os.path.exists(gshhg_zipfile):
+            os.system(f'mkdir -p {gshhg_dir}')
+            urllib.request.urlretrieve(gshhg_url, gshhg_zipfile)
+
         with zipfile.ZipFile(gshhg_zipfile, 'r') as zip_ref:
             zip_ref.extractall(path=gshhg_dir)
 
