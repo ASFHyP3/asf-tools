@@ -123,7 +123,6 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
 
 def get_hand_by_land_mask(hand, nodata_fill_value, dem):
-    nan_mask = np.isnan(hand)
     # Download GSHHG
     gshhg_dir = '/media/jzhu4/data/hand/external_data'
     # gshhg_url = 'http://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip'
