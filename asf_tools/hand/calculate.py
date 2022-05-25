@@ -105,16 +105,16 @@ def calculate_hand(out_raster, demfile, mask, acc_thresh: Optional[int] = 100):
     flooded_dem = None
 
     log.info('Obtaining flow direction')
-    dir = grid.flowdir(inflated_dem, apply_mask=True)
+    flow_dir = grid.flowdir(inflated_dem, apply_mask=True)
 
     log.info('Calculating flow accumulation')
-    acc = grid.accumulation(dir)
+    acc = grid.accumulation(flow_dir)
 
     if acc_thresh is None:
         acc_thresh = acc.mean()
 
     log.info(f'Calculating HAND using accumulation threshold of {acc_thresh}')
-    hand = grid.compute_hand(dir, inflated_dem, acc > acc_thresh, inplace=False)
+    hand = grid.compute_hand(flow_dir, inflated_dem, acc > acc_thresh, inplace=False)
 
     # fill rivers
     if np.isnan(hand).any():
@@ -135,7 +135,6 @@ def calculate_hand(out_raster, demfile, mask, acc_thresh: Optional[int] = 100):
 
 
 def get_hand_by_land_mask(hand, nodata_fill_value, dem):
-    nan_mask = np.isnan(hand)
     # Download GSHHG
     gshhg_dir = '/media/jzhu4/data/hand/external_data'
     # gshhg_url = 'http://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip'
@@ -196,7 +195,7 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         basin_array = src.read(1, window=basin_window)
 
         # produce tmp_dem.tif based on basin_array and basin_affine_tf
-        basin_dem_file = f"/tmp/tmp_dem.tif"
+        basin_dem_file = "/tmp/tmp_dem.tif"
         get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
 
         hand = calculate_hand(out_raster, basin_dem_file, ~basin_mask)
