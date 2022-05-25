@@ -15,13 +15,30 @@ import fiona
 import numpy as np
 import rasterio.crs
 import rasterio.mask
-from pysheds.pgrid import Grid as Pgrid
+from pysheds.sgrid import sGrid as Sgrid
 from shapely.geometry import GeometryCollection, shape
 
 from asf_tools.composite import write_cog
 from asf_tools.dem import prepare_dem_vrt
 
 log = logging.getLogger(__name__)
+
+
+def fill_nan(array: np.ndarray) -> np.ndarray:
+    """Replace NaNs with values interpolated from their neighbors
+
+    Replace NaNs with values interpolated from their neighbors using a 2D Gaussian
+    kernel, see: https://docs.astropy.org/en/stable/convolution/#using-astropy-s-convolution-to-replace-bad-data
+    """
+    kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)  # kernel x_size=8*stddev
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        array = astropy.convolution.interpolate_replace_nans(
+            array, kernel, convolve=astropy.convolution.convolve
+        )
+
+    return array
 
 
 def fill_nan_based_on_dem(arr, dem):
@@ -67,62 +84,58 @@ def fiona_read_vectorfile(vectorfile, get_property=None):
             return shapes
 
 
-def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, mask,
-                   acc_thresh: Optional[int] = 100):
-    grid = Pgrid()
-    grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_crs.to_dict(), mask=mask)
+def calculate_hand(out_raster, demfile, mask, acc_thresh: Optional[int] = 100):
 
-    log.info('Fill pits')
-    grid.fill_pits('dem', out_name='pit_filled_dem')
+    grid = Sgrid.from_raster(demfile)
+    dem = grid.read_raster(demfile)
+
+    log.info('Fill pits in DEM')
+    pit_filled_dem = grid.fill_pits(dem)
 
     log.info('Filling depressions')
-    grid.fill_depressions('pit_filled_dem', out_name='flooded_dem')
+    flooded_dem = grid.fill_depressions(pit_filled_dem)
 
     # free useless memory
-    grid.pit_filled_dem = None
+    pit_filled_dem = None
 
     log.info('Resolving flats')
-    grid.resolve_flats('flooded_dem', out_name='inflated_dem')
+    inflated_dem = grid.resolve_flats(flooded_dem)
 
     # free memory
-    grid.flooded_dem = None
+    flooded_dem = None
 
     log.info('Obtaining flow direction')
-    grid.flowdir(data='inflated_dem', out_name='dir', apply_mask=False)
+    dir = grid.flowdir(inflated_dem, apply_mask=True)
 
     log.info('Calculating flow accumulation')
-    grid.accumulation(data='dir', out_name='acc')
+    acc = grid.accumulation(dir)
 
-    log.info('apply river mask to the acc, river pixels equal to -1 or 0 in the grid.dir')
-    river_mask = grid.dir <= 0
-    grid.acc[river_mask] = 1
+    if acc_thresh is None:
+        acc_thresh = acc.mean()
 
     log.info(f'Calculating HAND using accumulation threshold of {acc_thresh}')
-    if acc_thresh is None:
-        acc_thresh = grid.acc.mean()
+    hand = grid.compute_hand(dir, inflated_dem, acc > acc_thresh, inplace=False)
 
-    hand = grid.compute_hand('dir', 'inflated_dem', grid.acc > acc_thresh, inplace=False)
-
-    # fill river pixels
+    # fill rivers
     if np.isnan(hand).any():
-
         # get nans inside masked area and find mean height for pixels outside the nans (but inside basin mask)
         valid_nanmask = np.logical_and(mask, np.isnan(hand))
         valid_mask = np.logical_and(mask, ~np.isnan(hand))
-        mean_height = grid.inflated_dem[valid_mask].mean()
+        mean_height = inflated_dem[valid_mask].mean()
 
         # calculate gradient and set mean gradient magnitude as threshold for flatness.
-        g0, g1 = np.gradient(grid.inflated_dem)
+        g0, g1 = np.gradient(inflated_dem)
         gMag = np.sqrt(g0 ** 2 + g1 ** 2)
         gMagTh = np.min([1, np.mean(gMag * np.isnan(hand))])
         valid_flats = np.logical_and(valid_nanmask, gMag < gMagTh)
-        valid_low_flats = np.logical_and(valid_flats, grid.inflated_dem < mean_height)
+        valid_low_flats = np.logical_and(valid_flats, inflated_dem < mean_height)
         hand[valid_low_flats] = 0
 
     return hand
 
 
 def get_hand_by_land_mask(hand, nodata_fill_value, dem):
+    nan_mask = np.isnan(hand)
     # Download GSHHG
     gshhg_dir = '/media/jzhu4/data/hand/external_data'
     # gshhg_url = 'http://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip'
@@ -149,8 +162,8 @@ def get_hand_by_land_mask(hand, nodata_fill_value, dem):
 
 
 def get_basin_dem_file(dem, basin_affine_tf, basin_array, basin_dem_file):
-    # optional, fill_nan
-    # produce tmp_dem.tif based on basin_array and basin_affine_tf
+    """write the basin_dem geotiff
+    """
     out_meta = dem.meta.copy()
     out_meta.update({
         'driver': 'GTiff',
@@ -181,15 +194,18 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         )
 
         basin_array = src.read(1, window=basin_window)
-        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, ~basin_mask)
+
+        # produce tmp_dem.tif based on basin_array and basin_affine_tf
+        basin_dem_file = f"/tmp/tmp_dem.tif"
+        get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
+
+        hand = calculate_hand(out_raster, basin_dem_file, ~basin_mask)
 
         # fill non basin_mask with nodata_fill_value
         nodata_fill_value = np.finfo(float).eps
         hand[basin_mask] = nodata_fill_value
 
         if np.isnan(hand).any():
-            basin_dem_file = "/tmp/tmp_dem.tif"
-            get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
             basin_dem = rasterio.open(basin_dem_file, 'r')
 
             # fill ocean pixels with the minimum value of data type of float32
@@ -201,7 +217,7 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         # fill basin_mask with nan
         hand[basin_mask] = np.nan
         # write the HAND
-        write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
+        write_cog(str(out_raster), hand, transform=basin_dem.get_transform(), epsg_code=basin_dem.crs.to_epsg())
 
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
