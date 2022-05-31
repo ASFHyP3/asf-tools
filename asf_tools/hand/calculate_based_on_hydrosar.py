@@ -154,7 +154,8 @@ def calculate_hand(dem_array, dem_gt, dem_proj4, mask=None, acc_thresh=100):
         # calculate gradient and set mean gradient magnitude as threshold for flatness.
         g0, g1 = np.gradient(grid.inflated_dem)
         gMag = np.sqrt(g0 ** 2 + g1 ** 2)
-        gMagTh = np.min([1, np.mean(gMag * np.isnan(hand))])
+        gMag[~np.isnan(hand)] = np.nan
+        gMagTh = np.min([1, np.nanmean(gMag)])
         valid_flats = np.logical_and(valid_nanmask, gMag < gMagTh)
         valid_low_flats = np.logical_and(valid_flats, grid.inflated_dem < mean_height)
         hand[valid_low_flats] = 0

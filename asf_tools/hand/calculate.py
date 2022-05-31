@@ -84,9 +84,16 @@ def fiona_read_vectorfile(vectorfile, get_property=None):
             return shapes
 
 
-def calculate_hand(out_raster, demfile, mask, acc_thresh: Optional[int] = 100):
+def calculate_hand(demfile, mask=None, nodata=None, acc_thresh: Optional[int] = 100):
 
     grid = Sgrid.from_raster(demfile)
+
+    if mask is not None:
+        grid.mask = mask
+
+    if nodata:
+        grid.nodata = nodata
+
     dem = grid.read_raster(demfile)
 
     log.info('Fill pits in DEM')
@@ -126,7 +133,8 @@ def calculate_hand(out_raster, demfile, mask, acc_thresh: Optional[int] = 100):
         # calculate gradient and set mean gradient magnitude as threshold for flatness.
         g0, g1 = np.gradient(inflated_dem)
         gMag = np.sqrt(g0 ** 2 + g1 ** 2)
-        gMagTh = np.min([1, np.mean(gMag * np.isnan(hand))])
+        gMag[~np.isnan(hand)] = np.nan
+        gMagTh = np.min([1, np.nanmean(gMag)])
         valid_flats = np.logical_and(valid_nanmask, gMag < gMagTh)
         valid_low_flats = np.logical_and(valid_flats, inflated_dem < mean_height)
         hand[valid_low_flats] = 0
@@ -198,7 +206,7 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         basin_dem_file = "/tmp/tmp_dem.tif"
         get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
 
-        hand = calculate_hand(out_raster, basin_dem_file, ~basin_mask)
+        hand = calculate_hand(basin_dem_file, ~basin_mask)
 
         # fill non basin_mask with nodata_fill_value
         nodata_fill_value = np.finfo(float).eps
