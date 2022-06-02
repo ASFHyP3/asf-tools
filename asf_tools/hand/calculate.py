@@ -126,7 +126,6 @@ def calculate_hand(dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
         g_mag[valid_mask] = np.nan
         g_mag_threshold = np.min([1, np.nanmean(g_mag)])
         valid_flats = np.logical_and(~valid_mask, g_mag < g_mag_threshold)
-
         valid_low_flats = np.logical_and(valid_flats, inflated_dem < mean_height)
         hand[valid_low_flats] = 0
 
@@ -155,11 +154,11 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
 
         with NamedTemporaryFile() as temp_file:
             write_cog(temp_file.name, basin_array,
-                      transform=basin_affine_tf.get_transform(), epsg_code=src.crs.to_epsg(),
+                      transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(),
                       # Prevents PySheds from assuming using zero as the nodata value
                       nodata_value=nodata_fill_value)
 
-            hand = calculate_hand(temp_file.name, ~basin_mask)
+            hand = calculate_hand(temp_file.name)
 
         # mask outside of basin with a not-NaN value to prevent NaN-filling outside of basin (optimization)
         hand[basin_mask] = nodata_fill_value
@@ -169,8 +168,11 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
 
         # TODO: also mask ocean pixels here?
 
+        # fill basin_mask with nan
+        hand[basin_mask] = np.nan
+
         write_cog(str(out_raster), hand,
-                  transform=basin_affine_tf.get_transform(), epsg_code=basin_affine_tf.crs.to_epsg(),
+                  transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(),
                   nodata_value=nodata_fill_value,
                   )
 
