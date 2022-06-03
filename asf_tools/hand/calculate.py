@@ -90,17 +90,11 @@ def calculate_hand(dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
 
     log.info('Filling depressions')
     flooded_dem = grid.fill_depressions(pit_filled_dem)
-
-    # FIXME: does del work?
-    # free useless memory
-    pit_filled_dem = None
+    del pit_filled_dem
 
     log.info('Resolving flats')
     inflated_dem = grid.resolve_flats(flooded_dem)
-
-    # FIXME: does del work?
-    # free memory
-    flooded_dem = None
+    del flooded_dem
 
     log.info('Obtaining flow direction')
     flow_dir = grid.flowdir(inflated_dem, apply_mask=True)
@@ -125,6 +119,7 @@ def calculate_hand(dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
 
         g_mag[valid_mask] = np.nan
         g_mag_threshold = np.min([1, np.nanmean(g_mag)])
+        # TODO: combine next two lines
         valid_flats = np.logical_and(~valid_mask, g_mag < g_mag_threshold)
         valid_low_flats = np.logical_and(valid_flats, inflated_dem < mean_height)
         hand[valid_low_flats] = 0
@@ -168,6 +163,7 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
 
         # TODO: also mask ocean pixels here?
 
+        # FIXME: what is the right nodata value here?
         # fill basin_mask with nan
         hand[basin_mask] = np.nan
 
