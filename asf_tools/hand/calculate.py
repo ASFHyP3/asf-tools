@@ -55,7 +55,8 @@ def fill_hand(hand: np.ndarray, dem: np.ndarray):
     return hand
 
 
-def calculate_hand(dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
+def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask,
+                   acc_thresh: Optional[int] = 100):
     """Calculate the Height Above Nearest Drainage (HAND)
 
      Calculate the Height Above Nearest Drainage (HAND) using pySHEDS library. Because HAND
@@ -77,13 +78,24 @@ def calculate_hand(dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
     In the HAND calculation, NaNs inside the basin filled using `fill_hand`
 
     Args:
-        dem_file: Path to DEM raster to calculate HAND for
+        dem_array: DEM to calculate HAND for
+        dem_crs: DEM Coordinate Reference System (CRS)
+        dem_affine: DEM Affine geotransform
+        basin_mask: Array of booleans indicating wither an element should be masked out (à la Numpy Masked Arrays:
+            https://numpy.org/doc/stable/reference/maskedarray.generic.html#what-is-a-masked-array)
         acc_thresh: Accumulation threshold for determining the drainage mask.
             If `None`, the mean accumulation value is used
     """
+    nodata_fill_value = np.finfo(float).eps
+    with NamedTemporaryFile() as temp_file:
+        write_cog(temp_file.name, dem_array,
+                  transform=dem_affine.to_gdal(), epsg_code=dem_crs.to_epsg(),
+                  # Prevents PySheds from assuming using zero as the nodata value
+                  nodata_value=nodata_fill_value)
+
     # From PySheds; see example usage: http://mattbartos.com/pysheds/
-    grid = sGrid.from_raster(str(dem_file))
-    dem = grid.read_raster(str(dem_file))
+    grid = sGrid.from_raster(str(temp_file.name))
+    dem = grid.read_raster(str(temp_file.name))
 
     log.info('Fill pits in DEM')
     pit_filled_dem = grid.fill_pits(dem)
@@ -122,6 +134,16 @@ def calculate_hand(dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
         valid_flats = ~valid_mask & (g_mag < g_mag_threshold) & (inflated_dem < mean_height)
         hand[valid_flats] = 0
 
+    if np.isnan(hand).any():
+        # mask outside of basin with a not-NaN value to prevent NaN-filling outside of basin (optimization)
+        hand[basin_mask] = nodata_fill_value
+        hand = fill_hand(hand, dem_array)
+
+    # set pixels outside of basin to nodata
+    hand[basin_mask] = np.nan
+
+    # TODO: also mask ocean pixels here?
+
     return hand
 
 
@@ -136,39 +158,17 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         geometries: watershed boundary (hydrobasin) polygons to calculate HAND over
         dem_file: DEM raster covering (containing) `geometries`
     """
-    nodata_fill_value = np.finfo(float).eps
-
     with rasterio.open(dem_file) as src:
         basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
             src, geometries, all_touched=True, crop=True, pad=True, pad_width=1
         )
-
         basin_array = src.read(1, window=basin_window)
 
-        with NamedTemporaryFile() as temp_file:
-            write_cog(temp_file.name, basin_array,
-                      transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(),
-                      # Prevents PySheds from assuming using zero as the nodata value
-                      nodata_value=nodata_fill_value)
+        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
 
-            hand = calculate_hand(temp_file.name)
-
-        # mask outside of basin with a not-NaN value to prevent NaN-filling outside of basin (optimization)
-        hand[basin_mask] = nodata_fill_value
-
-        if np.isnan(hand).any():
-            hand = fill_hand(hand, basin_array)
-
-        # TODO: also mask ocean pixels here?
-
-        # FIXME: what is the right nodata value here?
-        # fill basin_mask with nan
-        hand[basin_mask] = np.nan
-
-        write_cog(str(out_raster), hand,
-                  transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(),
-                  nodata_value=nodata_fill_value,
-                  )
+        write_cog(
+            out_raster, hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(), nodata_value=np.nan,
+        )
 
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
