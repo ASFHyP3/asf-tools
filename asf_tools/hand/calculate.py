@@ -135,6 +135,7 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         hand[valid_flats] = 0
 
     if np.isnan(hand).any():
+        log.info('Filling NaNs in the HAND')
         # mask outside of basin with a not-NaN value to prevent NaN-filling outside of basin (optimization)
         hand[basin_mask] = nodata_fill_value
         hand = fill_hand(hand, dem_array)
