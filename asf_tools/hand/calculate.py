@@ -119,10 +119,8 @@ def calculate_hand(dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
 
         g_mag[valid_mask] = np.nan
         g_mag_threshold = np.min([1, np.nanmean(g_mag)])
-        # TODO: combine next two lines
-        valid_flats = np.logical_and(~valid_mask, g_mag < g_mag_threshold)
-        valid_low_flats = np.logical_and(valid_flats, inflated_dem < mean_height)
-        hand[valid_low_flats] = 0
+        valid_flats = ~valid_mask & (g_mag < g_mag_threshold) & (inflated_dem < mean_height)
+        hand[valid_flats] = 0
 
     return hand
 
