@@ -93,9 +93,9 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
                   # Prevents PySheds from assuming using zero as the nodata value
                   nodata_value=nodata_fill_value)
 
-    # From PySheds; see example usage: http://mattbartos.com/pysheds/
-    grid = sGrid.from_raster(str(temp_file.name))
-    dem = grid.read_raster(str(temp_file.name))
+        # From PySheds; see example usage: http://mattbartos.com/pysheds/
+        grid = sGrid.from_raster(str(temp_file.name))
+        dem = grid.read_raster(str(temp_file.name))
 
     log.info('Fill pits in DEM')
     pit_filled_dem = grid.fill_pits(dem)
