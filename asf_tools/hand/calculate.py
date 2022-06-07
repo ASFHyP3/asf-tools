@@ -120,20 +120,6 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
     log.info(f'Calculating HAND using accumulation threshold of {acc_thresh}')
     hand = grid.compute_hand(flow_dir, inflated_dem, acc > acc_thresh, inplace=False)
 
-    log.info('Setting lowland flats (rivers) to zero')
-    if np.isnan(hand).any():
-        valid_mask = ~np.isnan(hand)
-        mean_height = inflated_dem[valid_mask].mean()
-
-        # calculate gradient and set mean gradient magnitude as threshold for flatness.
-        g0, g1 = np.gradient(inflated_dem)
-        g_mag = np.sqrt(g0 ** 2 + g1 ** 2)
-
-        g_mag[valid_mask] = np.nan
-        g_mag_threshold = np.min([1, np.nanmean(g_mag)])
-        valid_flats = ~valid_mask & (g_mag < g_mag_threshold) & (inflated_dem < mean_height)
-        hand[valid_flats] = 0
-
     if np.isnan(hand).any():
         log.info('Filling NaNs in the HAND')
         # mask outside of basin with a not-NaN value to prevent NaN-filling outside of basin (optimization)
