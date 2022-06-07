@@ -7,6 +7,11 @@ and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/)
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.4.2](https://github.com/ASFHyP3/asf-tools/compare/v0.4.1...v0.4.2)
+
+### Fixed
+* calculate the HAND with the sgrid in the pysheds.
+
 ## [0.4.1](https://github.com/ASFHyP3/asf-tools/compare/v0.4.0...v0.4.1)
 
 ### Fixed
