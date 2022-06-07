@@ -1,11 +1,8 @@
 """Calculate Height Above Nearest Drainage (HAND) from the Copernicus GLO-30 DEM"""
 import argparse
 import logging
-import os
 import sys
-import urllib
 import warnings
-import zipfile
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Optional, Union
@@ -15,7 +12,7 @@ import fiona
 import numpy as np
 import rasterio.crs
 import rasterio.mask
-from pysheds.sgrid import sGrid as Sgrid
+from pysheds.sgrid import sGrid
 from shapely.geometry import GeometryCollection, shape
 
 from asf_tools.composite import write_cog
@@ -41,75 +38,75 @@ def fill_nan(array: np.ndarray) -> np.ndarray:
     return array
 
 
-def fill_nan_based_on_dem(arr, dem):
+def fill_hand(hand: np.ndarray, dem: np.ndarray):
+    """Replace NaNs in a HAND array with values interpolated from their neighbor's HOND
+
+    Replace NaNs in a HAND array with values interpolated from their neighbor's HOND (height of nearest drainage)
+    using a 2D Gaussian kernel. Here, HOND is defined as the DEM value less the HAND value. For the kernel, see:
+    https://docs.astropy.org/en/stable/convolution/#using-astropy-s-convolution-to-replace-bad-data
     """
-    filled_arr=fill_nan_based_on_DEM(arr, dem)
-    Fills Not-a-number values in arr using astropy.
+    hond = dem - hand
+    hond = fill_nan(hond)
+
+    hand_mask = np.isnan(hand)
+    hand[hand_mask] = dem[hand_mask] - hond[hand_mask]
+    hand[hand < 0] = 0
+
+    return hand
+
+
+def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask,
+                   acc_thresh: Optional[int] = 100):
+    """Calculate the Height Above Nearest Drainage (HAND)
+
+     Calculate the Height Above Nearest Drainage (HAND) using pySHEDS library. Because HAND
+     is tied to watershed boundaries (hydrobasins), clipped/cut basins will produce weird edge
+     effects, and incomplete basins should be masked out. For watershed boundaries,
+     see: https://www.hydrosheds.org/page/hydrobasins
+
+     This involves:
+        * Filling pits (single-cells lower than their surrounding neighbors)
+            in the Digital Elevation Model (DEM)
+        * Filling depressions (regions of cells lower than their surrounding neighbors)
+            in the Digital Elevation Model (DEM)
+        * Resolving un-drainable flats
+        * Determine the flow direction using the ESRI D8 routing scheme
+        * Determine flow accumulation (number of upstream cells)
+        * Create a drainage mask using the accumulation threshold `acc_thresh`
+        * Calculating HAND
+
+    In the HAND calculation, NaNs inside the basin filled using `fill_hand`
+
+    Args:
+        dem_array: DEM to calculate HAND for
+        dem_crs: DEM Coordinate Reference System (CRS)
+        dem_affine: DEM Affine geotransform
+        basin_mask: Array of booleans indicating wither an element should be masked out (à la Numpy Masked Arrays:
+            https://numpy.org/doc/stable/reference/maskedarray.generic.html#what-is-a-masked-array)
+        acc_thresh: Accumulation threshold for determining the drainage mask.
+            If `None`, the mean accumulation value is used
     """
-    hond = dem - arr
-    kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)
-    arr_type = hond.dtype
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        while np.any(np.isnan(hond)):
-            hond = astropy.convolution.interpolate_replace_nans(hond.astype(float),
-                                                                kernel, convolve=astropy.convolution.convolve)
-    my_mask = np.isnan(arr)
-    ch = np.logical_and(my_mask, dem - hond < 0)
-    indices = np.where(ch)
-    if np.any(ch):
-        hond[indices] = dem[indices]
+    nodata_fill_value = np.finfo(float).eps
+    with NamedTemporaryFile() as temp_file:
+        write_cog(temp_file.name, dem_array,
+                  transform=dem_affine.to_gdal(), epsg_code=dem_crs.to_epsg(),
+                  # Prevents PySheds from assuming using zero as the nodata value
+                  nodata_value=nodata_fill_value)
 
-    arr[my_mask] = dem[my_mask]-hond[my_mask]
-
-    return arr.astype(arr_type)
-
-
-def fiona_read_vectorfile(vectorfile, get_property=None):
-    """shapes=fiona_read_vectorfile(vectorfile, get_property=None)
-       shapes, props=fiona_read_vectorfile(vectorfile, get_property='Property_Name')
-       Returns a list of shapes (and optionally properties) using fiona.
-
-       vectorfile: any fiona compatible vector file.
-       get_property: String for the property to be read.
-       shapes: List of vector "geometry"
-       props:  List of vector "properties"
-    """
-    with fiona.open(vectorfile, "r") as shpf:
-        shapes = [feature["geometry"] for feature in shpf]
-        if get_property is not None:
-            props = [feature["properties"][get_property] for feature in shpf]
-            return shapes, props
-        else:
-            return shapes
-
-
-def calculate_hand(demfile, mask=None, nodata=None, acc_thresh: Optional[int] = 100):
-
-    grid = Sgrid.from_raster(demfile)
-
-    if mask is not None:
-        grid.mask = mask
-
-    if nodata:
-        grid.nodata = nodata
-
-    dem = grid.read_raster(demfile)
+        # From PySheds; see example usage: http://mattbartos.com/pysheds/
+        grid = sGrid.from_raster(str(temp_file.name))
+        dem = grid.read_raster(str(temp_file.name))
 
     log.info('Fill pits in DEM')
     pit_filled_dem = grid.fill_pits(dem)
 
     log.info('Filling depressions')
     flooded_dem = grid.fill_depressions(pit_filled_dem)
-
-    # free useless memory
-    pit_filled_dem = None
+    del pit_filled_dem
 
     log.info('Resolving flats')
     inflated_dem = grid.resolve_flats(flooded_dem)
-
-    # free memory
-    flooded_dem = None
+    del flooded_dem
 
     log.info('Obtaining flow direction')
     flow_dir = grid.flowdir(inflated_dem, apply_mask=True)
@@ -123,65 +120,18 @@ def calculate_hand(demfile, mask=None, nodata=None, acc_thresh: Optional[int] = 
     log.info(f'Calculating HAND using accumulation threshold of {acc_thresh}')
     hand = grid.compute_hand(flow_dir, inflated_dem, acc > acc_thresh, inplace=False)
 
-    # fill rivers
     if np.isnan(hand).any():
-        # get nans inside masked area and find mean height for pixels outside the nans (but inside basin mask)
-        valid_nanmask = np.logical_and(mask, np.isnan(hand))
-        valid_mask = np.logical_and(mask, ~np.isnan(hand))
-        mean_height = inflated_dem[valid_mask].mean()
+        log.info('Filling NaNs in the HAND')
+        # mask outside of basin with a not-NaN value to prevent NaN-filling outside of basin (optimization)
+        hand[basin_mask] = nodata_fill_value
+        hand = fill_hand(hand, dem_array)
 
-        # calculate gradient and set mean gradient magnitude as threshold for flatness.
-        g0, g1 = np.gradient(inflated_dem)
-        gMag = np.sqrt(g0 ** 2 + g1 ** 2)
-        gMag[~np.isnan(hand)] = np.nan
-        gMagTh = np.min([1, np.nanmean(gMag)])
-        valid_flats = np.logical_and(valid_nanmask, gMag < gMagTh)
-        valid_low_flats = np.logical_and(valid_flats, inflated_dem < mean_height)
-        hand[valid_low_flats] = 0
+    # set pixels outside of basin to nodata
+    hand[basin_mask] = np.nan
+
+    # TODO: also mask ocean pixels here?
 
     return hand
-
-
-def get_hand_by_land_mask(hand, nodata_fill_value, dem):
-    # Download GSHHG
-    gshhg_dir = '/media/jzhu4/data/hand/external_data'
-    # gshhg_url = 'http://www.soest.hawaii.edu/pwessel/gshhg/gshhg-shp-2.3.7.zip'
-    gshhg_url = 'https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-2.3.7.zip'
-    gshhg_zipfile = os.path.join(gshhg_dir, "gshhg-shp-2.3.7.zip")
-    gshhg_file = os.path.join(gshhg_dir, "GSHHS_shp/f/GSHHS_f_L1.shp")
-
-    if not os.path.exists(gshhg_file):
-        if not os.path.exists(gshhg_zipfile):
-            os.system(f'mkdir -p {gshhg_dir}')
-            urllib.request.urlretrieve(gshhg_url, gshhg_zipfile)
-
-        with zipfile.ZipFile(gshhg_zipfile, 'r') as zip_ref:
-            zip_ref.extractall(path=gshhg_dir)
-
-    gshhg = fiona_read_vectorfile(gshhg_file)
-    # generate land_mask for the DEM. invert=If False (default), mask will be False inside shapes and True outside
-    land_mask, tf, win = rasterio.mask.raster_geometry_mask(dem, gshhg, crop=False,
-                                                            invert=True)
-    # set ocean/sea values in hand to epsilon, sea_mask=np.invert(land_mask)
-    hand[np.invert(land_mask)] = nodata_fill_value
-
-    return hand
-
-
-def get_basin_dem_file(dem, basin_affine_tf, basin_array, basin_dem_file):
-    """write the basin_dem geotiff
-    """
-    out_meta = dem.meta.copy()
-    out_meta.update({
-        'driver': 'GTiff',
-        'width': basin_array.shape[1],
-        'height': basin_array.shape[0],
-        'transform': basin_affine_tf
-    })
-    with rasterio.open(fp=basin_dem_file, mode='w', **out_meta) as dst:
-        dst.write(basin_array, 1)
-
-    return basin_dem_file
 
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
@@ -199,32 +149,13 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
             src, geometries, all_touched=True, crop=True, pad=True, pad_width=1
         )
-
         basin_array = src.read(1, window=basin_window)
 
-        # produce tmp_dem.tif based on basin_array and basin_affine_tf
-        basin_dem_file = "/tmp/tmp_dem.tif"
-        get_basin_dem_file(src, basin_affine_tf, basin_array, basin_dem_file)
+        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
 
-        hand = calculate_hand(basin_dem_file, ~basin_mask)
-
-        # fill non basin_mask with nodata_fill_value
-        nodata_fill_value = np.finfo(float).eps
-        hand[basin_mask] = nodata_fill_value
-
-        if np.isnan(hand).any():
-            basin_dem = rasterio.open(basin_dem_file, 'r')
-
-            # fill ocean pixels with the minimum value of data type of float32
-            hand = get_hand_by_land_mask(hand, nodata_fill_value, basin_dem)
-
-            # fill nan pixels
-            hand = fill_nan_based_on_dem(hand, basin_dem.read(1))
-
-        # fill basin_mask with nan
-        hand[basin_mask] = np.nan
-        # write the HAND
-        write_cog(str(out_raster), hand, transform=basin_dem.get_transform(), epsg_code=basin_dem.crs.to_epsg())
+        write_cog(
+            out_raster, hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(), nodata_value=np.nan,
+        )
 
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
