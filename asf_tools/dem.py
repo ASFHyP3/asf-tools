@@ -8,7 +8,7 @@ from shapely.geometry.base import BaseGeometry
 from asf_tools import vector
 from asf_tools.util import GDALConfigManager
 
-DEM_GEOJSON = '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/cop30-2021-us-west-2-mirror.geojson'
+DEM_GEOJSON = '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/cop30-2021.geojson'
 
 gdal.UseExceptions()
 ogr.UseExceptions()
