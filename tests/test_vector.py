@@ -40,7 +40,7 @@ def test_get_intersecting_feature_properties():
     }
     geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
     assert vector.intersecting_feature_properties(geometry, dem_tile_features, 'file_path') == [
-        '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/COP30/2021/'
+        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/2021/'
         'Copernicus_DSM_COG_10_S46_00_E169_00_DEM/Copernicus_DSM_COG_10_S46_00_E169_00_DEM.tif'
     ]
 
@@ -50,9 +50,9 @@ def test_get_intersecting_feature_properties():
     }
     geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
     assert vector.intersecting_feature_properties(geometry, dem_tile_features, 'file_path') == [
-        '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/COP30/2021/'
+        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/2021/'
         'Copernicus_DSM_COG_10_N73_00_W122_00_DEM/Copernicus_DSM_COG_10_N73_00_W122_00_DEM.tif',
-        '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/COP30/2021/'
+        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/2021/'
         'Copernicus_DSM_COG_10_S46_00_E169_00_DEM/Copernicus_DSM_COG_10_S46_00_E169_00_DEM.tif',
     ]
 
