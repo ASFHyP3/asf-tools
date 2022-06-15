@@ -30,10 +30,10 @@ def fill_nan(array: np.ndarray) -> np.ndarray:
     kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)  # kernel x_size=8*stddev
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-
-        array = astropy.convolution.interpolate_replace_nans(
-            array, kernel, convolve=astropy.convolution.convolve
-        )
+        while np.any(np.isnan(array)):
+            array = astropy.convolution.interpolate_replace_nans(
+                array, kernel, convolve=astropy.convolution.convolve
+            )
 
     return array
 
