@@ -76,7 +76,7 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
                 or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
             temp_wl[i] = opt_res.x[0]
         else:
-            temp_wl[i] = np.inf  # set as inf to maark unstable solution
+            temp_wl[i] = np.inf  # set as inf to mark unstable solution
     return np.nanmean(temp_wl)
 
 
