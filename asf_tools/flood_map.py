@@ -69,14 +69,15 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
             return tmax and tmin
 
     bounds = MyBounds()
-    x0 = [np.mean(water_levels)]
-    opt_res = optimize.basinhopping(_goal_ts, x0, niter=10000, niter_success=100, accept_test=bounds)
-    if opt_res.message[0] == 'success condition satisfied' \
-            or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
-        best_water_level = opt_res.x[0]
-    else:
-        best_water_level = np.inf  # unstable solution.
-    return best_water_level
+    temp_wl = np.zeros(max(water_levels))
+    for i in range(1, max(water_levels)):
+        opt_res = optimize.basinhopping(_goal_ts, i, niter=10000, niter_success=100, accept_test=bounds)
+        if opt_res.message[0] == 'success condition satisfied' \
+                or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
+            temp_wl[i] = opt_res.x[0]
+        else:
+            temp_wl[i] = np.inf  # set as inf to maark unstable solution
+    return np.nanmean(temp_wl)
 
 
 def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, float]:
