@@ -38,5 +38,6 @@ RUN mamba env create -f /asf-tools/environment.yml && \
     sed -i 's/conda activate base/conda activate asf-tools/g' /home/conda/.profile && \
     python -m pip install --no-cache-dir /asf-tools
 
-ENTRYPOINT ["/usr/bin/bash"]
+ENTRYPOINT ["/asf-tools/asf_tools/hand/produce_hand.sh"]
+
 CMD ["-l"]

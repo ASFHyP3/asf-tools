@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -9,6 +10,8 @@ from shapely.geometry import GeometryCollection, shape
 
 from asf_tools.hand.calculate import calculate_hand_for_basins
 from asf_tools.dem import prepare_dem_vrt
+from asf_tools.hand.upload_to_s3 import upload_file
+from asf_tools.hand.clip_raster import clip_raster_with_shape
 
 log = logging.getLogger(__name__)
 
@@ -21,13 +24,20 @@ def make_asf_hand(dem_tile: str) -> str:
 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as buffered_dem_vrt:
         prepare_dem_vrt(buffered_dem_vrt.name, dem_buffered)
+    
+    tmpfile = "/tmp/big.tif"
 
-    out_raster = Path(dem_tile).name.replace('DEM.tif', 'HAND.tif')
-    calculate_hand_for_basins(out_raster, dem_buffered, buffered_dem_vrt.name)
+    calculate_hand_for_basins(tmpfile, dem_buffered, buffered_dem_vrt.name)
 
     # TODO: Mask ocean pixels
 
     # TODO: crop buffered HAND back to original DEM tile size
+    
+    out_raster = Path(dem_tile).name.replace('DEM.tif', 'HAND.tif')
+
+    clip_raster_with_shape(tmpfile, [dem_geometry], out_raster)
+
+    os.system(f"/bin/rm {tmpfile}")
 
     return out_raster
 
@@ -55,6 +65,11 @@ def main():
 
     # TODO: upload to S3? I'd like the new HAND we calculate to be laid out exactly like the COP DEM bucket. So, if you
     #       know the COP DEM S3 path/url all you'd have to do is replace the bucket name and `_DEM` with `_HAND`
+
+    
+    # upload the  {hand_raster} to s3
+
+    upload_file(hand_raster, "jzhu4", "global_hand")
 
 
 if __name__ == '__main__':

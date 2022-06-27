@@ -29,6 +29,7 @@ dependencies:
   - scikit-image
   - scipy
   - shapely
+  - boto3
   - pip:
     # for testing
     - gdal-utils
