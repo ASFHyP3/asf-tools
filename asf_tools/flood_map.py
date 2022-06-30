@@ -16,9 +16,12 @@ import warnings
 from pathlib import Path
 from typing import Callable, Tuple, Union
 
+import dask
+import dask.bag as db
 import numpy as np
 from osgeo import gdal
 from scipy import ndimage, optimize, stats
+from tqdm import tqdm
 
 from asf_tools.composite import get_epsg_code, write_cog
 
@@ -68,15 +71,21 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
             tmin = bool(np.all(x >= self.xmin))
             return tmax and tmin
 
-    bounds = MyBounds()
-    x0 = [np.mean(water_levels)]
-    opt_res = optimize.basinhopping(_goal_ts, x0, niter=10000, niter_success=100, accept_test=bounds)
-    if opt_res.message[0] == 'success condition satisfied' \
-            or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
-        best_water_level = opt_res.x[0]
-    else:
-        best_water_level = np.inf  # unstable solution.
-    return best_water_level
+    def water_level_basinhoppping(guess):
+        bounds = MyBounds()
+        opt_res = optimize.basinhopping(_goal_ts, guess, niter=10000, niter_success=100, accept_test=bounds)
+        if opt_res.message[0] == 'success condition satisfied' \
+                or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
+            wl = opt_res.x[0]
+        else:
+            wl = np.nan  # set as nan to mark unstable solution
+        return wl
+
+    iterations = list(range(min(water_levels), max(water_levels)))
+    guesses = db.from_sequence(iterations, npartitions=len(iterations))
+    with dask.config.set(scheduler='threads'):
+        result = db.map(water_level_basinhoppping, guesses).compute()
+    return np.nanmean(result)
 
 
 def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, float]:
@@ -181,7 +190,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
 
     flood_depth = np.zeros(flood_mask.shape)
 
-    for ll in range(1, num_labels):  # Skip first, largest label.
+    for ll in tqdm(range(1, num_labels)):  # Skip first, largest label.
         slices = object_slices[ll - 1]
         min0, max0 = slices[0].start, slices[0].stop
         min1, max1 = slices[1].start, slices[1].stop
