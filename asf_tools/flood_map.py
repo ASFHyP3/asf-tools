@@ -14,14 +14,15 @@ import sys
 import tempfile
 import warnings
 from pathlib import Path
+from random import shuffle
 from typing import Callable, Tuple, Union
 
 import dask
 import dask.bag as db
+from dask.diagnostics import ProgressBar
 import numpy as np
 from osgeo import gdal
 from scipy import ndimage, optimize, stats
-from tqdm import tqdm
 
 from asf_tools.composite import get_epsg_code, write_cog
 
@@ -71,21 +72,17 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
             tmin = bool(np.all(x >= self.xmin))
             return tmax and tmin
 
-    def water_level_basinhoppping(guess):
-        bounds = MyBounds()
-        opt_res = optimize.basinhopping(_goal_ts, guess, niter=10000, niter_success=100, accept_test=bounds)
+
+    bounds = MyBounds()
+    temp_wl = np.zeros(max(water_levels))
+    for i in range(1, max(water_levels)):
+        opt_res = optimize.basinhopping(_goal_ts, i, niter=10000, niter_success=100, accept_test=bounds)
         if opt_res.message[0] == 'success condition satisfied' \
                 or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
-            wl = opt_res.x[0]
+            temp_wl[i] = opt_res.x[0]
         else:
-            wl = np.nan  # set as nan to mark unstable solution
-        return wl
-
-    iterations = list(range(min(water_levels), max(water_levels)))
-    guesses = db.from_sequence(iterations, npartitions=len(iterations))
-    with dask.config.set(scheduler='threads'):
-        result = db.map(water_level_basinhoppping, guesses).compute()
-    return np.nanmean(result)
+            temp_wl[i] = np.inf  # set as inf to mark unstable solution
+    return np.nanmean(temp_wl)
 
 
 def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, float]:
@@ -128,6 +125,13 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water
             raise ValueError(f'Unknown flood depth estimator {estimator}')
 
     return hand_mean + water_level_sigma * hand_std
+
+
+def estimate_flood_depth_in_window(ll, input_dict, estimator, water_level_sigma, iterative_bounds):
+    hand_window, flood_window, _, _, _, _ = input_dict[ll]
+    water_height = estimate_flood_depth(ll, hand_window, flood_window, estimator=estimator,
+                                        water_level_sigma=water_level_sigma, iterative_bounds=iterative_bounds)
+    return ll, water_height
 
 
 def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
@@ -188,21 +192,32 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     object_slices = ndimage.find_objects(labeled_flood_mask)
     log.info(f'Detected {num_labels} water bodies...')
 
-    flood_depth = np.zeros(flood_mask.shape)
+    arg_dict = {}
 
-    for ll in tqdm(range(1, num_labels)):  # Skip first, largest label.
+    for ll in range(1, num_labels):  # Skip first, largest label.
         slices = object_slices[ll - 1]
         min0, max0 = slices[0].start, slices[0].stop
         min1, max1 = slices[1].start, slices[1].stop
 
-        flood_window = labeled_flood_mask[min0:max0, min1:max1]
-        hand_window = hand_array[min0:max0, min1:max1]
+        flood_window = labeled_flood_mask[min0:max0, min1:max1].copy()
+        hand_window = hand_array[min0:max0, min1:max1].copy()
 
-        water_height = estimate_flood_depth(ll, hand_window, flood_window, estimator=estimator,
-                                            water_level_sigma=water_level_sigma, iterative_bounds=iterative_bounds)
+        arg_dict[ll] = [flood_window, hand_window, min0, max0, min1, max1]
 
-        flood_depth_window = flood_depth[min0:max0, min1:max1]
-        flood_depth_window[flood_window == ll] = water_height - hand_window[flood_window == ll]
+    arg_keys = list(arg_dict.keys())
+    shuffle(arg_keys)
+    arg_sequence = db.from_sequence(arg_keys, npartitions=100)
+    with dask.config.set(scheduler='threads'):
+        with ProgressBar():
+            water_results = db.map(estimate_flood_depth_in_window, arg_sequence, arg_dict, estimator,
+                                   water_level_sigma, iterative_bounds).compute()
+
+    flood_depth = np.zeros(flood_mask.shape)
+
+    for water_result in water_results:
+        ll, water_height = water_result
+        flood_window, hand_window, min0, max0, min1, max1 = arg_dict[ll]
+        flood_depth[min0:max0, min1:max1][flood_window == ll] = water_height - hand_window[flood_window == ll]
 
     flood_depth[flood_depth < 0] = 0
 
