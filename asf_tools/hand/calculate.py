@@ -182,10 +182,10 @@ def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, 
         calculate_hand_for_basins(out_raster, geometries, dem_vrt.name, acc_thresh=acc_thresh)
 
 
-def none_or_float(value: str):
+def none_or_int(value: str):
     if value.lower == 'none':
         return None
-    return float(value)
+    return int(value)
 
 
 def main():
@@ -198,7 +198,7 @@ def main():
     parser.add_argument('vector_file', help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND '
                                             'over. Vector file Must be openable by GDAL, see: '
                                             'https://gdal.org/drivers/vector/index.html')
-    parser.add_argument('-a', '--acc-threshold', type=none_or_float,
+    parser.add_argument('-a', '--acc-threshold', type=none_or_int, default=100,
                         help='Accumulation threshold for determining the drainage mask. '
                              'If `None`, the mean accumulation value is used')
 
