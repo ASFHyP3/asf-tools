@@ -8,6 +8,12 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.4.1](https://github.com/ASFHyP3/asf-tools/compare/v0.4.0...v0.4.1)
 
+### Added
+* The accumulation threshold can now be specified in all HAND calculation functions and entry points:
+  * like `calculate_hand`, `calculate_hand_for_basins` and `make_copernicus_hand` functions in 
+    `asf_tools.hand.calculate` now accept an `acc_thresh` keyword argument
+  * The `calculate_hand` console script entrypoint now accepts an `-a`/`--acc-threshold` argument 
+
 ### Changed
 * `asf_tools.dem` now uses the updated [2021 release of the Copernicus GLO-30 Public DEM](https://spacedata.copernicus.eu/blogs/-/blogs/copernicus-dem-2021-release-now-available)
 

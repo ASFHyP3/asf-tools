@@ -135,7 +135,7 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
-                              dem_file: Union[str, Path]):
+                              dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
     """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
 
     For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
@@ -144,6 +144,8 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         out_raster: HAND GeoTIFF to create
         geometries: watershed boundary (hydrobasin) polygons to calculate HAND over
         dem_file: DEM raster covering (containing) `geometries`
+        acc_thresh: Accumulation threshold for determining the drainage mask.
+            If `None`, the mean accumulation value is used
     """
     with rasterio.open(dem_file) as src:
         basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
@@ -151,14 +153,14 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
         )
         basin_array = src.read(1, window=basin_window)
 
-        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
+        hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask, acc_thresh=acc_thresh)
 
         write_cog(
             out_raster, hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(), nodata_value=np.nan,
         )
 
 
-def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
+def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path], acc_thresh: Optional[int] = 100):
     """Copernicus GLO-30 Height Above Nearest Drainage (HAND)
 
     Make a Height Above Nearest Drainage (HAND) GeoTIFF from the Copernicus GLO-30 DEM
@@ -169,13 +171,21 @@ def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, 
     Args:
         out_raster: HAND GeoTIFF to create
         vector_file: Vector file of watershed boundary (hydrobasin) polygons to calculate HAND over
+        acc_thresh: Accumulation threshold for determining the drainage mask.
+            If `None`, the mean accumulation value is used
     """
     with fiona.open(vector_file) as vds:
         geometries = GeometryCollection([shape(feature['geometry']) for feature in vds])
 
     with NamedTemporaryFile(suffix='.vrt', delete=False) as dem_vrt:
         prepare_dem_vrt(dem_vrt.name, geometries)
-        calculate_hand_for_basins(out_raster, geometries, dem_vrt.name)
+        calculate_hand_for_basins(out_raster, geometries, dem_vrt.name, acc_thresh=acc_thresh)
+
+
+def none_or_float(value: str):
+    if value.lower == 'none':
+        return None
+    return float(value)
 
 
 def main():
@@ -188,6 +198,9 @@ def main():
     parser.add_argument('vector_file', help='Vector file of watershed boundary (hydrobasin) polygons to calculate HAND '
                                             'over. Vector file Must be openable by GDAL, see: '
                                             'https://gdal.org/drivers/vector/index.html')
+    parser.add_argument('-a', '--acc-threshold', type=none_or_float,
+                        help='Accumulation threshold for determining the drainage mask. '
+                             'If `None`, the mean accumulation value is used')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -197,6 +210,6 @@ def main():
     log.debug(' '.join(sys.argv))
     log.info(f'Calculating HAND for {args.vector_file}')
 
-    make_copernicus_hand(args.out_raster, args.vector_file)
+    make_copernicus_hand(args.out_raster, args.vector_file, acc_thresh=args.acc_threshold)
 
     log.info(f'HAND GeoTIFF created successfully: {args.out_raster}')
