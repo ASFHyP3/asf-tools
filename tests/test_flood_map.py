@@ -37,7 +37,7 @@ def test_logstat():
     arr = [10, 100, 1000, 10000, 100000]
     logstd = flood_map.logstat(arr)
 
-    assert logstd == 25.95455351947008
+    assert np.isclose(logstd, 25.95455351947008)
 
 
 @pytest.mark.integration
