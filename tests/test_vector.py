@@ -40,7 +40,7 @@ def test_get_intersecting_feature_properties():
     }
     geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
     assert vector.intersecting_feature_properties(geometry, dem_tile_features, 'file_path') == [
-        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/'
+        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/2021/'
         'Copernicus_DSM_COG_10_S46_00_E169_00_DEM/Copernicus_DSM_COG_10_S46_00_E169_00_DEM.tif'
     ]
 
@@ -50,13 +50,13 @@ def test_get_intersecting_feature_properties():
     }
     geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
     assert vector.intersecting_feature_properties(geometry, dem_tile_features, 'file_path') == [
-        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/'
-        'Copernicus_DSM_COG_10_S46_00_E169_00_DEM/Copernicus_DSM_COG_10_S46_00_E169_00_DEM.tif',
-        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/'
+        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/2021/'
         'Copernicus_DSM_COG_10_N73_00_W122_00_DEM/Copernicus_DSM_COG_10_N73_00_W122_00_DEM.tif',
+        '/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/2021/'
+        'Copernicus_DSM_COG_10_S46_00_E169_00_DEM/Copernicus_DSM_COG_10_S46_00_E169_00_DEM.tif',
     ]
 
 
 def test_get_features():
-    for vector_file in (dem.DEM_GEOJSON, hand.prepare.HAND_GEOJSON):
-        assert len(vector.get_features(vector_file)) == 26445
+    assert len(vector.get_features(dem.DEM_GEOJSON)) == 26450
+    assert len(vector.get_features(hand.prepare.HAND_GEOJSON)) == 26445

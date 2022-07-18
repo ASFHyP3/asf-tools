@@ -12,7 +12,7 @@ import fiona
 import numpy as np
 import rasterio.crs
 import rasterio.mask
-from pysheds.pgrid import Grid as Pgrid
+from pysheds.sgrid import sGrid
 from shapely.geometry import GeometryCollection, shape
 
 from asf_tools.composite import write_cog
@@ -30,12 +30,29 @@ def fill_nan(array: np.ndarray) -> np.ndarray:
     kernel = astropy.convolution.Gaussian2DKernel(x_stddev=3)  # kernel x_size=8*stddev
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-
-        array = astropy.convolution.interpolate_replace_nans(
-            array, kernel, convolve=astropy.convolution.convolve
-        )
+        while np.any(np.isnan(array)):
+            array = astropy.convolution.interpolate_replace_nans(
+                array, kernel, convolve=astropy.convolution.convolve
+            )
 
     return array
+
+
+def fill_hand(hand: np.ndarray, dem: np.ndarray):
+    """Replace NaNs in a HAND array with values interpolated from their neighbor's HOND
+
+    Replace NaNs in a HAND array with values interpolated from their neighbor's HOND (height of nearest drainage)
+    using a 2D Gaussian kernel. Here, HOND is defined as the DEM value less the HAND value. For the kernel, see:
+    https://docs.astropy.org/en/stable/convolution/#using-astropy-s-convolution-to-replace-bad-data
+    """
+    hond = dem - hand
+    hond = fill_nan(hond)
+
+    hand_mask = np.isnan(hand)
+    hand[hand_mask] = dem[hand_mask] - hond[hand_mask]
+    hand[hand < 0] = 0
+
+    return hand
 
 
 def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask,
@@ -48,6 +65,8 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
      see: https://www.hydrosheds.org/page/hydrobasins
 
      This involves:
+        * Filling pits (single-cells lower than their surrounding neighbors)
+            in the Digital Elevation Model (DEM)
         * Filling depressions (regions of cells lower than their surrounding neighbors)
             in the Digital Elevation Model (DEM)
         * Resolving un-drainable flats
@@ -56,7 +75,7 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         * Create a drainage mask using the accumulation threshold `acc_thresh`
         * Calculating HAND
 
-    In the HAND calculation, NaNs inside the basin filled using `fill_nan`
+    In the HAND calculation, NaNs inside the basin filled using `fill_hand`
 
     Args:
         dem_array: DEM to calculate HAND for
@@ -67,45 +86,50 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         acc_thresh: Accumulation threshold for determining the drainage mask.
             If `None`, the mean accumulation value is used
     """
+    nodata_fill_value = np.finfo(float).eps
+    with NamedTemporaryFile() as temp_file:
+        write_cog(temp_file.name, dem_array,
+                  transform=dem_affine.to_gdal(), epsg_code=dem_crs.to_epsg(),
+                  # Prevents PySheds from assuming using zero as the nodata value
+                  nodata_value=nodata_fill_value)
 
-    grid = Pgrid()
-    grid.add_gridded_data(dem_array, data_name='dem', affine=dem_affine, crs=dem_crs.to_dict(), mask=~basin_mask)
+        # From PySheds; see example usage: http://mattbartos.com/pysheds/
+        grid = sGrid.from_raster(str(temp_file.name))
+        dem = grid.read_raster(str(temp_file.name))
+
+    log.info('Fill pits in DEM')
+    pit_filled_dem = grid.fill_pits(dem)
 
     log.info('Filling depressions')
-    grid.fill_depressions('dem', out_name='flooded_dem')
-    if np.isnan(grid.flooded_dem).any():
-        log.debug('NaNs encountered in flooded DEM; filling.')
-        grid.flooded_dem = fill_nan(grid.flooded_dem)
+    flooded_dem = grid.fill_depressions(pit_filled_dem)
+    del pit_filled_dem
 
     log.info('Resolving flats')
-    grid.resolve_flats('flooded_dem', out_name='inflated_dem')
-    if np.isnan(grid.inflated_dem).any():
-        log.debug('NaNs encountered in inflated DEM; replacing NaNs with original DEM values')
-        grid.inflated_dem[np.isnan(grid.inflated_dem)] = dem_array[np.isnan(grid.inflated_dem)]
+    inflated_dem = grid.resolve_flats(flooded_dem)
+    del flooded_dem
 
     log.info('Obtaining flow direction')
-    grid.flowdir(data='inflated_dem', out_name='dir', apply_mask=True)
-    if np.isnan(grid.dir).any():
-        log.debug('NaNs encountered in flow direction; filling.')
-        grid.dir = fill_nan(grid.dir)
+    flow_dir = grid.flowdir(inflated_dem, apply_mask=True)
 
     log.info('Calculating flow accumulation')
-    grid.accumulation(data='dir', out_name='acc')
-    if np.isnan(grid.acc).any():
-        log.debug('NaNs encountered in accumulation; filling.')
-        grid.acc = fill_nan(grid.acc)
+    acc = grid.accumulation(flow_dir)
 
     if acc_thresh is None:
-        acc_thresh = grid.acc.mean()
+        acc_thresh = acc.mean()
 
     log.info(f'Calculating HAND using accumulation threshold of {acc_thresh}')
-    hand = grid.compute_hand('dir', 'inflated_dem', grid.acc > acc_thresh, inplace=False)
-    if np.isnan(hand).any():
-        log.debug('NaNs encountered in HAND; filling.')
-        hand = fill_nan(hand)
+    hand = grid.compute_hand(flow_dir, inflated_dem, acc > acc_thresh, inplace=False)
 
-    # ensure non-basin is masked after fill_nan
+    if np.isnan(hand).any():
+        log.info('Filling NaNs in the HAND')
+        # mask outside of basin with a not-NaN value to prevent NaN-filling outside of basin (optimization)
+        hand[basin_mask] = nodata_fill_value
+        hand = fill_hand(hand, dem_array)
+
+    # set pixels outside of basin to nodata
     hand[basin_mask] = np.nan
+
+    # TODO: also mask ocean pixels here?
 
     return hand
 
@@ -129,7 +153,9 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
 
         hand = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask)
 
-        write_cog(str(out_raster), hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg())
+        write_cog(
+            out_raster, hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(), nodata_value=np.nan,
+        )
 
 
 def make_copernicus_hand(out_raster:  Union[str, Path], vector_file: Union[str, Path]):
