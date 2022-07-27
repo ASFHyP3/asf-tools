@@ -75,12 +75,11 @@ def test_estimate_flood_depths_numpy(flood_window, hand_window):
 @pytest.mark.integration
 def test_make_flood_map(tmp_path):
     water_raster = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/flood_map/watermap.tif'
-    vv_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/flood_map/' \
-                'S1A_IW_20210413T235641_DVP_RTC30_G_gpuned_75EE__VV.tif'
-    hand_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/flood_map/watermap_HAND.tif'
+    vv_raster = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/flood_map/RTC_VV.tif'
+    hand_raster = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/flood_map/watermap_HAND.tif'
 
     out_flood_map = tmp_path / 'flood_map.tif'
-    flood_map.make_flood_map(out_flood_map, vv_geotif, water_raster, hand_geotif)
+    flood_map.make_flood_map(out_flood_map, vv_raster, water_raster, hand_raster)
     out_flood_map = out_flood_map.parent / f'{out_flood_map.stem}_iterative_FloodDepth.tif'
 
     assert out_flood_map.exists()

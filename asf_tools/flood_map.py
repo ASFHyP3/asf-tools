@@ -173,7 +173,6 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
     epsg = get_epsg_code(info)
     geotransform = info['geoTransform']
 
-    vv_raster = read_as_masked_array(vv_raster)
     hand_array = gdal.Open(str(hand_raster), gdal.GA_ReadOnly).ReadAsArray()
 
     log.info('Fetching perennial flood data.')
@@ -184,6 +183,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
     water_map = gdal.Open(str(water_raster)).ReadAsArray()
     flood_mask = np.logical_or(water_map, known_water_mask)
 
+    vv_raster = read_as_masked_array(vv_raster)
     flood_mask[vv_raster.mask] = False
     del water_map, vv_raster
 

@@ -13,7 +13,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * The accumulation threshold can now be specified in all HAND calculation functions and entry points:
   * like `calculate_hand`, `calculate_hand_for_basins` and `make_copernicus_hand` functions in 
     `asf_tools.hand.calculate` now accept an `acc_thresh` keyword argument
-  * The `calculate_hand` console script entrypoint now accepts an `-a`/`--acc-threshold` argument 
+  * The `calculate_hand` console script entrypoint now accepts an `-a`/`--acc-threshold` argument
+* `asf_tools.flood_map` now creates a cloud-optimized GeoTIFF of the perennial water mask used
 
 ### Fixed
 * `asf_tools.flood_map` now correctly removes perennial water from the flood depth GeoTIFFs
