@@ -182,10 +182,11 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
 
     water_map = gdal.Open(str(water_raster)).ReadAsArray()
     flood_mask = np.logical_or(water_map, known_water_mask)
+    del water_map
 
-    vv_raster = read_as_masked_array(vv_raster)
-    flood_mask[vv_raster.mask] = False
-    del water_map, vv_raster
+    vv_array = read_as_masked_array(vv_raster)
+    flood_mask[vv_array.mask] = False
+    del vv_array
 
     labeled_flood_mask, num_labels = ndimage.label(flood_mask)
     object_slices = ndimage.find_objects(labeled_flood_mask)
