@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.4.2](https://github.com/ASFHyP3/asf-tools/compare/v0.4.1...v0.4.2)
+
+### Added
+* The accumulation threshold can now be specified in all HAND calculation functions and entry points:
+  * like `calculate_hand`, `calculate_hand_for_basins` and `make_copernicus_hand` functions in 
+    `asf_tools.hand.calculate` now accept an `acc_thresh` keyword argument
+  * The `calculate_hand` console script entrypoint now accepts an `-a`/`--acc-threshold` argument 
+
 ## [0.4.1](https://github.com/ASFHyP3/asf-tools/compare/v0.4.0...v0.4.1)
 
 ### Changed
@@ -16,7 +25,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * `asf_tools.hand.calculate` will fill NaNs within the hydrobasins in the calculated HAND array with values interpolated from their neighbor's HOND (height of nearest drainage)
 * `asf_tools.flood_map.iteartive` now produces more precise flood depth estimates by averaging water levels from a range of different initial guesses
 
-## [0.4.0]
+## [0.4.0](https://github.com/ASFHyP3/asf-tools/compare/v0.3.3...v0.4.0)
 
 ### Added
 * `asf_tools.flood_map` and an associated `flood_map` entrypoint for making
