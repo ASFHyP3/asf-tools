@@ -173,7 +173,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
     epsg = get_epsg_code(info)
     geotransform = info['geoTransform']
 
-    vv_raster = read_as_masked_array(str(vv_raster))
+    vv_raster = read_as_masked_array(vv_raster)
     hand_array = gdal.Open(str(hand_raster), gdal.GA_ReadOnly).ReadAsArray()
 
     log.info('Fetching perennial flood data.')
