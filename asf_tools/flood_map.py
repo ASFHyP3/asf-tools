@@ -138,7 +138,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
 
     Create a flood depth map from a single surface water extent map and
     a HAND image. The HAND image must be pixel-aligned to the surface water extent map.
-    The the surface water extent map should be a byte GeoTIFF indicating water (true) and
+    The surface water extent map should be a byte GeoTIFF indicating water (true) and
     not water (false)
 
     Known perennial Global Surface-water data are produced under the Copernicus Programme (Pekel et al., 2016),
