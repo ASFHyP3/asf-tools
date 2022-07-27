@@ -182,7 +182,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
               epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
     water_map = gdal.Open(str(water_raster)).ReadAsArray()
-    flood_mask = np.bitwise_or(water_map, known_water_mask)
+    flood_mask = np.logical_or(water_map, known_water_mask)
 
     flood_mask[vv_raster.mask] = False
     del water_map, vv_raster
@@ -214,8 +214,8 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
-    flood_mask[known_water_mask] = 0
-    flood_depth[np.bitwise_not(flood_mask)] = 0
+    flood_mask[known_water_mask] = False
+    flood_depth[np.logical_not(flood_mask)] = 0
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=False)
