@@ -135,7 +135,11 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: GeometryCollection,
+<<<<<<< HEAD
                               dem_file: Union[str, Path], acc_thresh: Optional[int] = 100):
+=======
+        dem_file: Union[str, Path], acc_thresh: int = 100):
+>>>>>>> 01d51bb8314cf14a0cb26d6c8de412bea7e166a9
     """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
 
     For watershed boundaries, see: https://www.hydrosheds.org/page/hydrobasins
