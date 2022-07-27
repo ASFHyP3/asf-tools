@@ -178,6 +178,8 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
 
     log.info('Fetching perennial flood data.')
     known_water_mask = get_waterbody(info, threshold=known_water_threshold)
+    write_cog(str(out_raster).replace('.tif', f'_{estimator}_PW.tif'), known_water_mask, transform=geotransform,
+              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=False)
 
     water_map = gdal.Open(water_raster).ReadAsArray()
     flood_mask = np.bitwise_or(water_map, known_water_mask)
