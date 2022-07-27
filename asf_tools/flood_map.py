@@ -19,6 +19,7 @@ from typing import Callable, Tuple, Union
 import numpy as np
 from osgeo import gdal
 from scipy import ndimage, optimize, stats
+from tqdm import tqdm
 
 from asf_tools.composite import get_epsg_code, write_cog
 from asf_tools.raster import read_as_masked_array
@@ -190,7 +191,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
 
     flood_depth = np.zeros(flood_mask.shape)
 
-    for ll in range(1, num_labels):  # Skip first, largest label.
+    for ll in tqdm(range(1, num_labels)):  # Skip first, largest label.
         slices = object_slices[ll - 1]
         min0, max0 = slices[0].start, slices[0].stop
         min1, max1 = slices[1].start, slices[1].stop
