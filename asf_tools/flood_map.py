@@ -181,7 +181,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_PW.tif'), known_water_mask, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
-    water_map = gdal.Open(water_raster).ReadAsArray()
+    water_map = gdal.Open(str(water_raster)).ReadAsArray()
     flood_mask = np.bitwise_or(water_map, known_water_mask)
 
     flood_mask[vv_raster.mask] = False
