@@ -75,8 +75,8 @@ def test_estimate_flood_depths_numpy(flood_window, hand_window):
 @pytest.mark.integration
 def test_make_flood_map(tmp_path):
     water_raster = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/flood_map/watermap.tif'
-    # FIXME: Need ot add a VV input tiff. Might be good to use the same stuff asf the water-map test...
-    vv_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/flood_map/?_VV.tif'
+    vv_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/flood_map/' \
+                'S1A_IW_20210413T235641_DVP_RTC30_G_gpuned_75EE__VV.tif'
     hand_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/flood_map/watermap_HAND.tif'
 
     out_flood_map = tmp_path / 'flood_map.tif'
