@@ -16,7 +16,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   * The `calculate_hand` console script entrypoint now accepts an `-a`/`--acc-threshold` argument 
 
 ### Fixed
-* Masking for water mask and perennial flood data for no data values outside of RTC VV raster bounds.
+* `asf_tools.flood_map` now correctly removes perennial water from the flood depth GeoTIFFs
+* `asf_tools.flood_map` no longer calculates water/flood depth outside of the  RTC VV acquisition footprint
 
 ## [0.4.1](https://github.com/ASFHyP3/asf-tools/compare/v0.4.0...v0.4.1)
 
