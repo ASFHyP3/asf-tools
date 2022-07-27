@@ -15,6 +15,9 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     `asf_tools.hand.calculate` now accept an `acc_thresh` keyword argument
   * The `calculate_hand` console script entrypoint now accepts an `-a`/`--acc-threshold` argument 
 
+### Fixed
+* Masking for water mask and perennial flood data for no data values outside of RTC VV raster bounds.
+
 ## [0.4.1](https://github.com/ASFHyP3/asf-tools/compare/v0.4.0...v0.4.1)
 
 ### Changed
