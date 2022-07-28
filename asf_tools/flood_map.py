@@ -19,8 +19,11 @@ from typing import Callable, Tuple, Union
 import numpy as np
 from osgeo import gdal
 from scipy import ndimage, optimize, stats
+from tqdm import tqdm
 
 from asf_tools.composite import get_epsg_code, write_cog
+from asf_tools.raster import read_as_masked_array
+
 
 log = logging.getLogger(__name__)
 
@@ -122,8 +125,9 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water
     return hand_mean + water_level_sigma * hand_std
 
 
-def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
-                   hand_raster: Union[str, Path], estimator: str = 'iterative',
+def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
+                   water_raster: Union[str, Path], hand_raster: Union[str, Path],
+                   estimator: str = 'iterative',
                    water_level_sigma: float = 3.,
                    known_water_threshold: float = 30.,
                    iterative_bounds: Tuple[int, int] = (0, 15)):
@@ -134,7 +138,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
 
     Create a flood depth map from a single surface water extent map and
     a HAND image. The HAND image must be pixel-aligned to the surface water extent map.
-    The the surface water extent map should be a byte GeoTIFF indicating water (true) and
+    The surface water extent map should be a byte GeoTIFF indicating water (true) and
     not water (false)
 
     Known perennial Global Surface-water data are produced under the Copernicus Programme (Pekel et al., 2016),
@@ -153,6 +157,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
 
     Args:
         out_raster: Flood depth GeoTIFF to create
+        vv_raster: Sentinel-1 RTC GeoTIFF, in power scale, with VV polarization
         water_raster: Surface water extent GeoTIFF
         hand_raster: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the surface water extent raster
         estimator: Estimation approach for determining flood depth
@@ -172,9 +177,16 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
 
     log.info('Fetching perennial flood data.')
     known_water_mask = get_waterbody(info, threshold=known_water_threshold)
+    write_cog(str(out_raster).replace('.tif', f'_{estimator}_PW.tif'), known_water_mask, transform=geotransform,
+              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
-    water_map = gdal.Open(water_raster).ReadAsArray()
-    flood_mask = np.bitwise_or(water_map, known_water_mask)
+    water_map = gdal.Open(str(water_raster)).ReadAsArray()
+    flood_mask = np.logical_or(water_map, known_water_mask)
+    del water_map
+
+    vv_array = read_as_masked_array(vv_raster)
+    flood_mask[vv_array.mask] = False
+    del vv_array
 
     labeled_flood_mask, num_labels = ndimage.label(flood_mask)
     object_slices = ndimage.find_objects(labeled_flood_mask)
@@ -182,7 +194,7 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
 
     flood_depth = np.zeros(flood_mask.shape)
 
-    for ll in range(1, num_labels):  # Skip first, largest label.
+    for ll in tqdm(range(1, num_labels)):  # Skip first, largest label.
         slices = object_slices[ll - 1]
         min0, max0 = slices[0].start, slices[0].stop
         min1, max1 = slices[1].start, slices[1].stop
@@ -203,8 +215,8 @@ def make_flood_map(out_raster: Union[str, Path], water_raster: Union[str, Path],
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
-    flood_mask[known_water_mask] = 0
-    flood_depth[np.bitwise_not(flood_mask)] = 0
+    flood_mask[known_water_mask] = False
+    flood_depth[np.logical_not(flood_mask)] = 0
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=False)
@@ -217,6 +229,8 @@ def main():
     )
     parser.add_argument('out_raster',
                         help='File flood depth map will be saved to.')
+    parser.add_argument('vv_raster',
+                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
     parser.add_argument('water_extent_map',
                         help='Hyp3-Generated water extent raster file.')
     parser.add_argument('hand_raster',
@@ -238,7 +252,7 @@ def main():
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
 
-    make_flood_map(args.out_raster, args.water_extent_map, args.hand_raster, args.estimator, args.water_level_sigma,
-                   args.known_water_threshold, tuple(args.iterative_bounds))
+    make_flood_map(args.out_raster, args.vv_raster, args.water_extent_map, args.hand_raster,
+                   args.estimator, args.water_level_sigma, args.known_water_threshold, tuple(args.iterative_bounds))
 
     log.info(f"Flood Map written to {args.out_raster}.")
