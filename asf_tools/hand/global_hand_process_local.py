@@ -17,10 +17,13 @@ import os
 
 import argparse
 
-import geopandas as gpd
+try:
+    import geopandas as gpd
+except:
+    pip install geopandas 
+    import geopandas as gpd
 
 #import scratch
-
 
 parser = argparse.ArgumentParser(description='Calcualte hand for every tile')
 parser.add_argument('tilelist', type=str, help='geojson file including dem tile files')
