@@ -36,11 +36,12 @@ setup(
         'gdal>=3.3',
         'numpy',
         'pysheds>=0.3',
+        'rasterio',
         'scikit-fuzzy',
         'scikit-image',
         'scipy',
         'shapely',
-        'rasterio',
+        'tqdm',
     ],
 
     extras_require={
