@@ -8,6 +8,7 @@ from typing import Literal
 #import boto3
 import numpy as np
 import rasterio
+from osgeo import gdal
 from shapely.geometry import GeometryCollection, box
 
 from asf_tools.composite import write_cog
@@ -41,7 +42,7 @@ def make_asf_hand(dem_tile: str, buffer: float = 0.5, acc_thresh: int = 100) -> 
     #with NamedTemporaryFile(suffix='.tif', delete=False) as hand_raster:
     hand_raster = Path(Path(dem_tile).name.replace('DEM.tif', f'HAND_{acc_thresh}.tif'))
 
-    acc_raster = Path(Path(dem_tile).name.replace('DEM.tif',f'acc_{acc_thresh}.tif'))
+    acc_raster = Path(Path(dem_tile).name.replace('DEM.tif',f'acc.tif'))
 
     calculate_hand_for_basins(hand_raster.name, acc_raster.name, dem_buffered, buffered_dem_vrt.name, acc_thresh=acc_thresh)
 
@@ -65,6 +66,7 @@ def make_asf_hand(dem_tile: str, buffer: float = 0.5, acc_thresh: int = 100) -> 
     write_cog(out_raster, out_pixels, transform=dem.transform.to_gdal(), epsg_code=dem.crs.to_epsg())
 
     # Cropping acc_raster
+    '''
     with rasterio.open(acc_raster.name) as sds:
         window = rasterio.windows.from_bounds(*dem_bounds, sds.transform)
         out_pixels = sds.read(
@@ -73,7 +75,7 @@ def make_asf_hand(dem_tile: str, buffer: float = 0.5, acc_thresh: int = 100) -> 
     )
 
     write_cog(acc_raster, out_pixels, transform=dem.transform.to_gdal(), epsg_code=dem.crs.to_epsg())
-
+   '''
     return out_raster, acc_raster
 
 
@@ -82,6 +84,10 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+
+    'dem_tile file name must be in VISCURL format. For example:' \
+    '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/COP30/2021' \
+    '/Copernicus_DSM_COG_10_N23_00_E087_00_DEM/Copernicus_DSM_COG_10_N23_00_E087_00_DEM.tif'
 
     parser.add_argument('dem_tile', help='VSICURL path to a Copernicus GLO-30 DEM GeoTIFF to calculate HAND from. '
                                          'Tile must be located in the AWS Open Data bucket `s3://copernicus-dem-30m/`. '

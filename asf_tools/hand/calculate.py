@@ -9,6 +9,7 @@ from typing import Optional, Union
 
 import astropy.convolution
 import fiona
+from osgeo import gdal
 import numpy as np
 import rasterio.crs
 import rasterio.mask
@@ -56,7 +57,7 @@ def fill_hand(hand: np.ndarray, dem: np.ndarray):
 
 
 def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs.CRS, basin_mask,
-                   acc_thresh: Optional[int] = 100):
+                   acc_thresh: Optional[int] = 100, acc_file = None):
     """Calculate the Height Above Nearest Drainage (HAND)
 
      Calculate the Height Above Nearest Drainage (HAND) using pySHEDS library. Because HAND
@@ -97,22 +98,31 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         grid = sGrid.from_raster(str(temp_file.name))
         dem = grid.read_raster(str(temp_file.name))
 
-    log.info('Fill pits in DEM')
-    pit_filled_dem = grid.fill_pits(dem)
+    # test purpose
+    if acc_file == None:
 
-    log.info('Filling depressions')
-    flooded_dem = grid.fill_depressions(pit_filled_dem)
-    del pit_filled_dem
+        log.info('Fill pits in DEM')
+        pit_filled_dem = grid.fill_pits(dem)
 
-    log.info('Resolving flats')
-    inflated_dem = grid.resolve_flats(flooded_dem)
-    del flooded_dem
+        log.info('Filling depressions')
+        flooded_dem = grid.fill_depressions(pit_filled_dem)
+        del pit_filled_dem
 
-    log.info('Obtaining flow direction')
-    flow_dir = grid.flowdir(inflated_dem, apply_mask=True)
+        log.info('Resolving flats')
+        inflated_dem = grid.resolve_flats(flooded_dem)
+        del flooded_dem
 
-    log.info('Calculating flow accumulation')
-    acc = grid.accumulation(flow_dir)
+        log.info('Obtaining flow direction')
+        flow_dir = grid.flowdir(inflated_dem, apply_mask=True)
+
+        log.info('Calculating flow accumulation')
+        acc = grid.accumulation(flow_dir)
+    else:
+        flow_dir_file = acc_file.replace("acc.tif","flow_dir.tif")
+        inflated_dem_file = acc_file.replace("acc.tif","inflated_dem.tif")
+        flow_dir = gdal.Open(flow_dir_file, gdal.GA_ReadOnly).ReadAsArray()
+        inflated_dem = gdal.Open(inflated_dem_file, gdal.GA_ReadOnly).ReadAsArray()
+        acc = gdal.Open(acc_file, gdal.GA_ReadOnly).ReadAsArray()
 
     if acc_thresh is None:
         acc_thresh = acc.mean()
@@ -131,7 +141,7 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
 
     # TODO: also mask ocean pixels here?
 
-    return hand, acc
+    return hand, flow_dir, inflated_dem, acc
 
 
 def calculate_hand_for_basins(out_raster:  Union[str, Path], acc_raster: Union[str, Path], geometries: GeometryCollection,
@@ -153,10 +163,29 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], acc_raster: Union[s
         )
         basin_array = src.read(1, window=basin_window)
 
-        hand, acc = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask, acc_thresh=acc_thresh)
+        if Path(acc_raster).is_file():
+            acc_file = acc_raster
+        else:
+            acc_file = None
+
+        hand, flow_dir, inflated_dem, acc = calculate_hand(basin_array, basin_affine_tf, src.crs, basin_mask, acc_thresh=acc_thresh, acc_file=acc_file)
 
         write_cog(
             out_raster, hand, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(), nodata_value=np.nan,
+        )
+
+        # write out the flow_dir
+
+        flow_dir_raster = Path(Path(acc_raster).name.replace('acc.tif',f'flow_dir.tif'))
+
+        write_cog(
+            flow_dir_raster, flow_dir, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(), nodata_value=np.nan,
+        )
+
+        # write out to inflated_dem
+        inflated_dem_raster = Path(Path(acc_raster).name.replace('acc.tif',f'inflated_dem.tif'))
+        write_cog(
+            inflated_dem_raster, inflated_dem, transform=basin_affine_tf.to_gdal(), epsg_code=src.crs.to_epsg(), nodata_value=np.nan,
         )
 
         # write out the acc
