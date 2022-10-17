@@ -40,7 +40,7 @@ def convert_scale(array: Union[np.ndarray, np.ma.MaskedArray], in_scale: Literal
     raise ValueError(f'Cannot convert raster of scale {in_scale} to {out_scale}')
 
 
-def read_as_masked_array(raster: Union[str, Path], band: int = 1) -> np.ma.MaskedArray:
+def read_as_masked_array_orig(raster: Union[str, Path], band: int = 1) -> np.ma.MaskedArray:
     """Reads data from a raster image into memory, masking invalid and NoData values
 
     Args:
@@ -57,4 +57,35 @@ def read_as_masked_array(raster: Union[str, Path], band: int = 1) -> np.ma.Maske
     nodata = band.GetNoDataValue()
     if nodata is not None:
         return np.ma.masked_values(data, nodata)
+    return data
+
+
+def read_as_masked_array(raster: Union[str, Path], band: int = 1) -> np.ma.MaskedArray:
+    """Reads data from a raster image into memory, masking invalid and NoData values
+
+    Args:
+        raster: The file path to a raster image
+        band: The raster band to read
+
+    Returns:
+        data: The raster pixel data as a numpy MaskedArray
+    """
+    log.debug(f'Reading raster values from {raster}')
+    ds = gdal.Open(str(raster))
+    band = ds.GetRasterBand(band)
+    data = np.ma.masked_invalid(band.ReadAsArray())
+    nodata = band.GetNoDataValue()
+
+    if nodata is not None:
+        mk_data = band.GetMaskBand().ReadAsArray()
+        ch = mk_data == nodata
+
+        if nodata == 0.0:
+            nodata = data.fill_value
+            data.data[ch] = nodata
+        mk_out = np.zeros(mk_data.shape, dtype=bool)
+        mk_out[ch] = True
+        data = np.ma.masked_array(data.data, mk_out)
+        return np.ma.masked_values(data, nodata)
+
     return data

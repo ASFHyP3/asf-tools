@@ -240,6 +240,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     for max_db_threshold, raster, pol in ((max_vh_threshold, vh_raster, 'VH'), (max_vv_threshold, vv_raster, 'VV')):
         log.info(f'Creating initial {pol} water extent map from {raster}')
         array = read_as_masked_array(raster)
+        padding_mask = array.mask
         tiles = tile_array(array, tile_shape=tile_shape, pad_value=0.)
         # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
         tiles = np.ma.masked_less_equal(tiles, 0.)
@@ -290,9 +291,15 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
 
     combined_segments = measure.label(combined_water_map, connectivity=2)
     combined_water_map = remove_small_segments(combined_segments)
+    # test purpose
+    combined_water_map_byte = combined_water_map.astype('byte')
+    nodata = 255
+    combined_water_map_byte[padding_mask] = nodata
 
-    write_cog(out_raster, combined_water_map, transform=out_transform,
-              epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+    combined_water_map_out = np.ma.masked_array(combined_water_map_byte, array.mask)
+    combined_water_map_out.fill_value = nodata
+    write_cog(out_raster, combined_water_map_out, transform=out_transform,
+              epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
 
 
 def main():
