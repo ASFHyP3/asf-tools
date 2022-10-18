@@ -296,9 +296,7 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     nodata = 255
     combined_water_map_byte[padding_mask] = nodata
 
-    combined_water_map_out = np.ma.masked_array(combined_water_map_byte, array.mask)
-    combined_water_map_out.fill_value = nodata
-    write_cog(out_raster, combined_water_map_out, transform=out_transform,
+    write_cog(out_raster, combined_water_map_byte, transform=out_transform,
               epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
 
 
