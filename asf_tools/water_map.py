@@ -292,8 +292,8 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     combined_segments = measure.label(combined_water_map, connectivity=2)
     combined_water_map = remove_small_segments(combined_segments)
 
-    combined_water_map_byte = combined_water_map.astype('byte')
-    nodata = 255
+    combined_water_map_byte = combined_water_map.astype(np.uint8)
+    nodata = np.iinfo(np.uint8).max
     combined_water_map_byte[padding_mask] = nodata
 
     write_cog(out_raster, combined_water_map_byte, transform=out_transform,
