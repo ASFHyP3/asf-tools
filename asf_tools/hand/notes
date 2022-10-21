@@ -1,0 +1,14 @@
+1. calculate_from_hydrosar_wk.py
+   This includes calcualte_hand_hydrosar and calcualte_hand_asf methods. Both methods are the original methods.
+
+2. calculate_asf_mask_acc_with_river_pixels.py
+   This include mask acc with river pixels before calculating the hand. The river pixels mask = grib.dir <= 0
+
+3.calculate_asf_testing.py
+  This is the experimental version, it constant change.
+
+4. calculate_hand.py (2022-05-14, commit)
+  This is the version we commit to the branch. Currently calculate_hand.py is equl to calculate_asf_mask_acc_with_river_pixels.py
+
+
+
