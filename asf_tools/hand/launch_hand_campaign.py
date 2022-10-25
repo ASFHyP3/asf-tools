@@ -5,7 +5,7 @@ batch = boto3.client('batch')
 
 # TODO: Update revision number for job definition
 JOB_QUEUE = 'BatchJobQueue-vSh6SePm97I5ELZr'
-JOB_DEFINITION = 'JobDefinition-09308218e67b0b7:4''BatchJobQueue-vSh6SePm97I5ELZr'
+JOB_DEFINITION = 'JobDefinition-09308218e67b0b7:4'
 
 HAND_GEOJSON = '/vsicurl/https://asf-hand-data.s3.amazonaws.com/cop30-hand.geojson'
 tile_features = get_features(HAND_GEOJSON)
