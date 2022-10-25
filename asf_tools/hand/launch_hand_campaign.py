@@ -1,16 +1,17 @@
 import boto3
+from asf_tools.vector import get_features
 
 batch = boto3.client('batch')
 
-# TODO fill in after batch environment is set up
-JOB_QUEUE = ''
-JOB_DEFINITION = ''
+# TODO: Update revision number for job queue 
+JOB_QUEUE = 'JobDefinition-09308218e67b0b7:4'
+JOB_DEFINITION = 'BatchJobQueue-vSh6SePm97I5ELZr'
 
-# TODO populate tile list from s3://...
-tile_list = []
+HAND_GEOJSON = '/vsicurl/https://asf-hand-data.s3.amazonaws.com/cop30-hand.geojson'
+tile_features = get_features(HAND_GEOJSON)
 
-for dem_tile_name in tile_list:
-    dem_tile_url = f'/vsicurl/https://copernicus-dem-30m.s3.amazonaws.com/2021/{dem_tile_name}/{dem_tile_name}.tif"'
+for feature in tile_features:
+    dem_tile_url = feature.GetFieldAsString(0)
 
     batch.submit_job(
         job_name=dem_tile_name,
