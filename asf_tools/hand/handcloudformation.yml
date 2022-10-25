@@ -4,11 +4,14 @@ Parameters:
 
   bucket:
     Type: String
+
   DockerImage:
     Type: String
     Default: ghcr.io/asfhyp3/asf-tools
+
   DockerTag:
     Type: String
+
   VpcId:
     Type: AWS::EC2::VPC::Id
 
@@ -35,6 +38,8 @@ Resources:
         - FARGATE
       Parameters:
         dem_tile_url: ""
+      RetryStrategy:
+        Attempts: 3
       ContainerProperties:
         Image: !Sub "${DockerImage}:${DockerTag}"
         JobRoleArn: !GetAtt TaskRole.Arn
