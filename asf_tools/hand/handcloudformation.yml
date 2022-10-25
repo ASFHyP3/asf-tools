@@ -47,6 +47,7 @@ Resources:
           - Type: MEMORY
             Value: "8192"
         Command:
+          - -l
           - /asf-tools/asf_tools/hand/produce_upload_hand.sh
           - --s3-bucket
           - !Ref bucket
