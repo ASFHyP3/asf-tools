@@ -1,25 +1,22 @@
 import argparse
 import logging
-import sys
 import os
+import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Literal
 
 import boto3
-from botocore.exceptions import ClientError
 import numpy as np
 import rasterio
+from botocore.exceptions import ClientError
 from shapely.geometry import GeometryCollection, box
 
 from asf_tools.composite import write_cog
 from asf_tools.dem import prepare_dem_vrt
 from asf_tools.hand.calculate import calculate_hand_for_basins
-# from asf_tools.hand.upload_to_s3 import upload_file
 
 log = logging.getLogger(__name__)
-
-#S3 = boto3.client('s3')
 
 
 def upload_file(file_name, bucket, obj_name):
@@ -125,9 +122,6 @@ def main():
         key = f'{args.s3_prefix}/{hand_raster_tile_name}/{hand_raster}' if args.s3_prefix else str(hand_raster)
         log.info(f'Uploading HAND tile to s3://{args.s3_bucket}/{key}')
         upload_file(hand_raster, args.s3_bucket, key)
-        #S3.upload_file(hand_raster, args.s3_bucket, key)
-        # NOTE: I'd like the new HAND we calculate to be laid out exactly like the COP DEM bucket. So, if you
-        #       know the COP DEM S3 path/url all you'd have to do is replace the bucket name and `_DEM` with `_HAND`
 
 
 if __name__ == '__main__':

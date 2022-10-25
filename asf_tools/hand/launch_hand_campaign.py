@@ -1,4 +1,5 @@
 import boto3
+
 from asf_tools.vector import get_features
 
 batch = boto3.client('batch', region_name='us-west-2')
@@ -12,7 +13,7 @@ tile_features = get_features(HAND_GEOJSON)
 
 for feature in tile_features:
     dem_tile_url = feature.GetFieldAsString(0)
-    
+
     batch.submit_job(
         jobName=dem_tile_url.split('/')[-2][:-4],
         jobQueue=JOB_QUEUE,
