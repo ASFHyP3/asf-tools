@@ -2,7 +2,7 @@
 
 set -e
 
-conda activate hyp3-autorift
+conda activate asf-tools
 
 exec python -um /asf-tools/asf_tools/hand/produce_upload_hand.py "$@"
 
