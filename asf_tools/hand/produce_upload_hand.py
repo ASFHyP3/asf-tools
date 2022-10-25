@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 #S3 = boto3.client('s3')
 
+
 def upload_file(file_name, bucket, obj_name):
     """Upload a file to an S3 bucket
 
