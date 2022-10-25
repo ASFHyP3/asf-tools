@@ -14,7 +14,7 @@ for feature in tile_features:
     dem_tile_url = feature.GetFieldAsString(0)
 
     batch.submit_job(
-        job_name=dem_tile_name,
+        job_name=dem_tile_url.split('/')[-2][:-4],
         job_queue=JOB_QUEUE,
         jobDefinition=JOB_DEFINITION,
         parameters={
