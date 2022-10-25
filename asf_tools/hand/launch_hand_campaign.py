@@ -7,7 +7,7 @@ batch = boto3.client('batch')
 JOB_QUEUE = 'BatchJobQueue-vSh6SePm97I5ELZr'
 JOB_DEFINITION = 'JobDefinition-09308218e67b0b7:4'
 
-HAND_GEOJSON = '/vsicurl/https://asf-hand-data.s3.amazonaws.com/cop30-hand.geojson'
+HAND_GEOJSON = 'https://asf-dem-west.s3.us-west-2.amazonaws.com/v2/cop30-2021.geojson'
 tile_features = get_features(HAND_GEOJSON)
 
 for feature in tile_features:
