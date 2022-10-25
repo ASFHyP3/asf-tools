@@ -6,7 +6,7 @@ batch = boto3.client('batch', region_name='us-west-2')
 
 # TODO: Update revision number for job definition
 JOB_QUEUE = 'BatchJobQueue-vSh6SePm97I5ELZr'
-JOB_DEFINITION = 'JobDefinition-09308218e67b0b7:4'
+JOB_DEFINITION = 'JobDefinition-09308218e67b0b7:7'
 
 HAND_GEOJSON = 'https://asf-dem-west.s3.us-west-2.amazonaws.com/v2/cop30-2021.geojson'
 tile_features = get_features(HAND_GEOJSON)
