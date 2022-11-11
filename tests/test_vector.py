@@ -59,4 +59,4 @@ def test_get_intersecting_feature_properties():
 
 def test_get_features():
     assert len(vector.get_features(dem.DEM_GEOJSON)) == 26450
-    assert len(vector.get_features(hand.prepare.HAND_GEOJSON)) == 26445
+    assert len(vector.get_features(hand.prepare.HAND_GEOJSON)) == 26450
