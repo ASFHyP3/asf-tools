@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4]
+
+### Changed
+* `asf-tools.water_map` now produces water extent rasters where pixels values are `1` where water is present and `0` where there is no water 
 
 ## [0.4.3]
 
