@@ -131,16 +131,6 @@ def remove_small_segments(segments: np.ndarray, min_area: int = 3) -> np.ndarray
     return valid_segments
 
 
-def format_raster_data(raster, padding_mask=None, nodata=np.iinfo(np.uint8).max):
-    if padding_mask is None:
-        array = read_as_masked_array(raster)
-        padding_mask = array.mask
-    raster = raster.astype(np.uint8)
-    raster[padding_mask] = nodata
-
-    return raster
-
-
 def fuzzy_refinement(initial_map: np.ndarray, gaussian_array: np.ndarray, hand_array: np.ndarray, pixel_size: float,
                      gaussian_thresholds: Tuple[float, float], membership_threshold: float = 0.45) -> np.ndarray:
     water_map = np.ones_like(initial_map)
@@ -246,7 +236,6 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     log.debug(f'Selected HAND tile candidates {hand_candidates}')
 
     selected_tiles = None
-    nodata = np.iinfo(np.uint8).max
     water_extent_maps = []
     for max_db_threshold, raster, pol in ((max_vh_threshold, vh_raster, 'VH'), (max_vv_threshold, vv_raster, 'VV')):
         log.info(f'Creating initial {pol} water extent map from {raster}')
@@ -300,10 +289,11 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     log.info('Combining Fuzzy VH and VV extent map')
     combined_water_map = np.logical_or(*water_extent_maps)
 
-    combined_segments = measure.label(combined_water_map, connectivity=2)
-    combined_water_map = remove_small_segments(combined_segments)
+    combined_water_map_byte = combined_water_map.astype(np.uint8)
+    nodata = np.iinfo(np.uint8).max
+    combined_water_map_byte[padding_mask] = nodata
 
-    write_cog(out_raster, format_raster_data(combined_water_map, padding_mask, nodata), transform=out_transform,
+    write_cog(out_raster, combined_water_map_byte, transform=out_transform,
               epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
 
 
