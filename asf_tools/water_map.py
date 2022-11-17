@@ -281,8 +281,8 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         )
         water_map &= ~array.mask
 
-        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'), water_map,
-                  transform=out_transform, epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'), water_map, transform=out_transform,
+                  epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         water_extent_maps.append(water_map)
 
