@@ -268,8 +268,8 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         water_map = np.ma.masked_less_equal(gaussian_array, gaussian_threshold).mask
         water_map &= ~array.mask
 
-        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'), water_map,
-                  transform=out_transform, epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'), water_map, transform=out_transform,
+                  epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
 
         log.info(f'Refining initial {pol} water extent map using Fuzzy Logic')
         array = np.ma.masked_where(~water_map, array)
