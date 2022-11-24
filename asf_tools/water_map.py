@@ -131,7 +131,10 @@ def remove_small_segments(segments: np.ndarray, min_area: int = 3) -> np.ndarray
     return valid_segments
 
 
-def format_raster_data(raster, padding_mask, nodata=np.iinfo(np.uint8).max):
+def format_raster_data(raster, padding_mask=None, nodata=np.iinfo(np.uint8).max):
+    if padding_mask is None:
+        array = read_as_masked_array(raster)
+        padding_mask = array.mask
     raster = raster.astype(np.uint8)
     raster[padding_mask] = nodata
 
