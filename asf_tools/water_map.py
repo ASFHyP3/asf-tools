@@ -131,6 +131,16 @@ def remove_small_segments(segments: np.ndarray, min_area: int = 3) -> np.ndarray
     return valid_segments
 
 
+def format_raster_data(raster, padding_mask=None, nodata=np.iinfo(np.uint8).max):
+    if padding_mask is None:
+        array = read_as_masked_array(raster)
+        padding_mask = array.mask
+    raster = raster.astype(np.uint8)
+    raster[padding_mask] = nodata
+
+    return raster
+
+
 def fuzzy_refinement(initial_map: np.ndarray, gaussian_array: np.ndarray, hand_array: np.ndarray, pixel_size: float,
                      gaussian_thresholds: Tuple[float, float], membership_threshold: float = 0.45) -> np.ndarray:
     water_map = np.ones_like(initial_map)
@@ -236,10 +246,12 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     log.debug(f'Selected HAND tile candidates {hand_candidates}')
 
     selected_tiles = None
+    nodata = np.iinfo(np.uint8).max
     water_extent_maps = []
     for max_db_threshold, raster, pol in ((max_vh_threshold, vh_raster, 'VH'), (max_vv_threshold, vv_raster, 'VV')):
         log.info(f'Creating initial {pol} water extent map from {raster}')
         array = read_as_masked_array(raster)
+        padding_mask = array.mask
         tiles = tile_array(array, tile_shape=tile_shape, pad_value=0.)
         # Masking less than zero only necessary for old HyP3/GAMMA products which sometimes returned negative powers
         tiles = np.ma.masked_less_equal(tiles, 0.)
@@ -267,8 +279,9 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         water_map = np.ma.masked_less_equal(gaussian_array, gaussian_threshold).mask
         water_map &= ~array.mask
 
-        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'), water_map, transform=out_transform,
-                  epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'),
+                  format_raster_data(water_map, padding_mask, nodata),
+                  transform=out_transform, epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
 
         log.info(f'Refining initial {pol} water extent map using Fuzzy Logic')
         array = np.ma.masked_where(~water_map, array)
@@ -280,8 +293,9 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         )
         water_map &= ~array.mask
 
-        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'), water_map, transform=out_transform,
-                  epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'),
+                  format_raster_data(water_map, padding_mask, nodata),
+                  transform=out_transform, epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
 
         water_extent_maps.append(water_map)
 
@@ -291,8 +305,8 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
     combined_segments = measure.label(combined_water_map, connectivity=2)
     combined_water_map = remove_small_segments(combined_segments)
 
-    write_cog(out_raster, combined_water_map, transform=out_transform,
-              epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+    write_cog(out_raster, format_raster_data(combined_water_map, padding_mask, nodata), transform=out_transform,
+              epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
 
 
 def main():
