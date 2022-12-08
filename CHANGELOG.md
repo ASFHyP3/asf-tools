@@ -10,7 +10,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 * `asf-tools.water_map` now produces water extent rasters with pixels values of `1` where water is present and `0` where water is not present
-* `asf_tools.water_map` now uses the  updated [ASF Global HAND dataset](https://copernicus-hand-30m.s3.amazonaws.com/) derived from the [2021 release of the Copernicus GLO-30 Public DEM](https://spacedata.copernicus.eu/blogs/-/blogs/copernicus-dem-2021-release-now-available)
+* `asf_tools.water_map` now uses the  updated [ASF Global HAND dataset](https://glo-30-hand.s3.amazonaws.com/readme.html) derived from the [2021 release of the Copernicus GLO-30 Public DEM](https://spacedata.copernicus.eu/blogs/-/blogs/copernicus-dem-2021-release-now-available)
 
 ## [0.4.3]
 
