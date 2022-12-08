@@ -9,7 +9,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.4.4]
 
 ### Changed
-* `asf-tools.water_map` now produces water extent rasters where pixels values are `1` where water is present and `0` where there is no water 
+* `asf-tools.water_map` now produces water extent rasters with pixels values of `1` where water is present and `0` where water is not present
 
 ## [0.4.3]
 
