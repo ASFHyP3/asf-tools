@@ -2,7 +2,7 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
-readme = Path(__file__).parent / 'asf_tools' / 'README.md'
+readme = Path(__file__).parent / 'src' / 'asf_tools' / 'README.md'
 
 setup(
     name='asf_tools',
@@ -57,7 +57,8 @@ setup(
         ]
     },
 
-    packages=find_packages(),
+    packages=find_packages(where='src'),
+    package_dir={"": "src"},
 
     entry_points={
         'console_scripts': [
