@@ -70,9 +70,9 @@ def calculate_hand(dem_array, dem_affine: rasterio.Affine, dem_crs: rasterio.crs
         * Filling depressions (regions of cells lower than their surrounding neighbors)
             in the Digital Elevation Model (DEM)
         * Resolving un-drainable flats
-        * Determine the flow direction using the ESRI D8 routing scheme
-        * Determine flow accumulation (number of upstream cells)
-        * Create a drainage mask using the accumulation threshold `acc_thresh`
+        * Determining the flow direction using the ESRI D8 routing scheme
+        * Determining flow accumulation (number of upstream cells)
+        * Creating a drainage mask using the accumulation threshold `acc_thresh`
         * Calculating HAND
 
     In the HAND calculation, NaNs inside the basin filled using `fill_hand`
