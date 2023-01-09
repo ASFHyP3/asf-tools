@@ -11,7 +11,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 * `asf-tools` now uses a `src` layout per this [recommendation](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/).
 * `asf-tools` now only uses `pyproject.toml` for package creation now that `setuptools` recommends [not using setup.py](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#setuppy-discouraged).
-* Pin `numpy` to `<1.2.4` to avoid depreciation issues.
+* Temporarily pin `numpy` to `<1.2.4`; See: [#160](https://github.com/ASFHyP3/asf-tools/pull/160)```
 
 
 ## [0.4.4]
