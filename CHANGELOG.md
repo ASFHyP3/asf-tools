@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.5]
+
+### Changed
+* `asf-tools` now uses a `src` layout per this [recommendation](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/).
+* `asf-tools` now only uses `pyproject.toml` for package creation now that `setuptools` recommends [not using setup.py](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#setuppy-discouraged).
+* Temporarily pin `numpy` to `<1.2.4`; See: [#160](https://github.com/ASFHyP3/asf-tools/pull/160)```
+
+
 ## [0.4.4]
 
 ### Changed
@@ -68,7 +76,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.3.1](https://github.com/ASFHyP3/asf-tools/compare/v0.3.0...v0.3.1)
 
 ### Added
-* We now provide an ASF Tools docker image: `ghcr.io/asfhyp3/asf-tools`. For usage, see the `asf_tools` [README](asf_tools/README.md).
+* We now provide an ASF Tools docker image: `ghcr.io/asfhyp3/asf-tools`. For usage, see the `asf_tools` [README](src/asf_tools/README.md).
 
 ### Changed
 * `asf_tools.water_map` will raise a `ValueError` error if the HAND data is all zero
@@ -95,7 +103,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 * The `asf_tools` python package for working with Synthetic Aperture Radar (SAR) data. 
-  See the [README](asf_tools/README.md)
+  See the [README](src/asf_tools/README.md)
 * `asf_tools.composite` and an associated `make_composite` entrypoint for making
   mosaics using local resolution weighting (à la [David Smalls, 2012](https://doi.org/10.1109/IGARSS.2012.6350465))
 
