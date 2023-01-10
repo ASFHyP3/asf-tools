@@ -1,6 +1,6 @@
 """Tools developed by ASF for working with SAR data"""
 
-from importlib.metadata import PackageNotFoundError, version
+from importlib.metadata import version
 
 __version__ = version(__name__)
 
