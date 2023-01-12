@@ -10,6 +10,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 * Updated the metadata for the RGB Decomposition tool in the ArcGIS Toolbox to more accurately reflect behavior
+* Minor formatting and content corrections in all ArcGIS Toolbox xml files
 
 ## [0.4.5]
 
