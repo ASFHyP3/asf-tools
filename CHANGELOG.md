@@ -9,6 +9,10 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.4.6]
 
 ### Changed
+* Temporary `numpy` version pin was removed; see [#160](https://github.com/ASFHyP3/asf-tools/pull/160)```
+## [0.4.6]
+
+### Changed
 * Updated the metadata for the RGB Decomposition tool in the ArcGIS Toolbox to more accurately reflect behavior
 * Minor formatting and content corrections in all ArcGIS Toolbox xml files
 
