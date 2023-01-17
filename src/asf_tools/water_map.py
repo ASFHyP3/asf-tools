@@ -389,15 +389,6 @@ def hyp3():
         membership_threshold=args.membership_threshold
     )
 
-    files_to_remove = [
-        water_map_raster.parent / water_map_raster.name.replace('_WM.tif', '_WM_VV_initial.tif'),
-        water_map_raster.parent / water_map_raster.name.replace('_WM.tif', '_WM_VH_initial.tif'),
-        water_map_raster.parent / water_map_raster.name.replace('_WM.tif', '_WM_VV_fuzzy.tif'),
-        water_map_raster.parent / water_map_raster.name.replace('_WM.tif', '_WM_VH_fuzzy.tif'),
-    ]
-    for file_to_remove in files_to_remove:
-        file_to_remove.unlink()
-
     output_zip = make_archive(base_name=water_map_raster.name, format='zip')
 
     if args.bucket:
