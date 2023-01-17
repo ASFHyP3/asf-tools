@@ -11,7 +11,7 @@ import logging
 import sys
 from pathlib import Path
 from shutil import make_archive
-from typing import Optional, Literal, Tuple, Union
+from typing import Literal, Optional, Tuple, Union
 
 import numpy as np
 import skfuzzy as fuzz
