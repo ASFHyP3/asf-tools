@@ -6,7 +6,7 @@ from importlib.metadata import entry_points
 def main():
     parser = argparse.ArgumentParser(prefix_chars='+', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        '++process', choices=['hyp3_water_map', 'hyp3_flood_map'], default='hyp3_water_map',
+        '++process', choices=['water_map', 'flood_map'], default='water_map',
         help='Select the HyP3 entrypoint to use'  # HyP3 entrypoints are specified in `pyproject.toml`
     )
 
