@@ -10,13 +10,15 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from shutil import make_archive
+from typing import Optional, Literal, Tuple, Union
 
 import numpy as np
 import skfuzzy as fuzz
 from osgeo import gdal
 from skimage import measure
 
+from asf_tools.aws import get_path_to_s3_file, upload_file_to_s3
 from asf_tools.composite import get_epsg_code, write_cog
 from asf_tools.hand.prepare import prepare_hand_for_raster
 from asf_tools.raster import read_as_masked_array
@@ -312,24 +314,33 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
               epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
 
 
-def main():
+def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument('out_raster', help='Water map GeoTIFF to create')
-    # FIXME: Decibel RTCs would be real nice.
-    parser.add_argument('vv_raster',
-                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
-    parser.add_argument('vh_raster',
-                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization')
+    if interface == 'hyp3':
+        parser.add_argument('--bucket')
+        parser.add_argument('--bucket-prefix', default='')
+        parser.add_argument('--vv-raster',
+                            help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization.')
+    elif interface == 'main':
+        parser.add_argument('out_raster', help='Water map GeoTIFF to create')
+        # FIXME: Decibel RTCs would be real nice.
+        parser.add_argument('vv_raster',
+                            help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
+        parser.add_argument('vh_raster',
+                            help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VH polarization')
 
-    parser.add_argument('--hand-raster',
-                        help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
-                             'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
-    parser.add_argument('--tile-shape', type=int, nargs=2, default=(100, 100),
-                        help='shape (height, width) in pixels to tile the image to')
+        parser.add_argument('--hand-raster',
+                            help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
+                                 'If not specified, HAND data will be extracted from the GLO-30 HAND.')
+        parser.add_argument('--tile-shape', type=int, nargs=2, default=(100, 100),
+                            help='shape (height, width) in pixels to tile the image to')
+    else:
+        raise NotImplementedError(f'Unknown interface: {interface}')
+
     parser.add_argument('--max-vv-threshold', type=float, default=-15.5,
                         help='Maximum threshold value to use for `vv_raster` in decibels (db)')
     parser.add_argument('--max-vh-threshold', type=float, default=-23.0,
@@ -342,6 +353,61 @@ def main():
                         help='The average membership to the fuzzy indicators required for a water pixel')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
+
+    return parser
+
+
+def hyp3():
+    parser = _get_cli(interface='hyp3')
+    args = parser.parse_args()
+
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
+    log.debug(' '.join(sys.argv))
+
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+
+    if args.vv_raster:
+        vv_raster = args.vv_raster
+    elif args.bucket:
+        vv_raster = get_path_to_s3_file(args.bucket, args.bucket_prefix, '_VV.tif')
+    else:
+        raise ValueError('Arguments --vv-raster or --bucket must be provided.')
+
+    vh_raster = vv_raster.replace('_VV.tif', '_VH.tif')
+    water_map_raster = Path.cwd() / Path(vv_raster).name.replace('_VV.tif', '_WM.tif')
+
+    make_water_map(water_map_raster, vv_raster, vh_raster, args.hand_raster, args.tile_shape,
+                   args.max_vv_threshold, args.max_vh_threshold, args.hand_threshold, args.hand_fraction,
+                   args.membership_threshold)
+
+    make_water_map(
+        out_raster=water_map_raster, vv_raster=vv_raster, vh_raster=vh_raster,
+        max_vv_threshold=args.max_vv_threshold, max_vh_threshold=args.max_vh_threshold,
+        hand_threshold=args.hand_threshold, hand_fraction=args.hand_fraction,
+        membership_threshold=args.membership_threshold
+    )
+
+    files_to_remove = [
+        water_map_raster.parent / water_map_raster.name.replace('_WM.tif', '_WM_VV_initial.tif'),
+        water_map_raster.parent / water_map_raster.name.replace('_WM.tif', '_WM_VH_initial.tif'),
+        water_map_raster.parent / water_map_raster.name.replace('_WM.tif', '_WM_VV_fuzzy.tif'),
+        water_map_raster.parent / water_map_raster.name.replace('_WM.tif', '_WM_VH_fuzzy.tif'),
+    ]
+    for file_to_remove in files_to_remove:
+        file_to_remove.unlink()
+
+    output_zip = make_archive(base_name=water_map_raster.name, format='zip')
+
+    if args.bucket:
+        upload_file_to_s3(Path(output_zip), args.bucket, args.bucket_prefix)
+        for product_file in water_map_raster.parent.iterdir():
+            upload_file_to_s3(product_file, args.bucket, args.bucket_prefix)
+
+
+def main():
+    parser = _get_cli(interface='main')
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO

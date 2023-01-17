@@ -14,13 +14,15 @@ import sys
 import tempfile
 import warnings
 from pathlib import Path
-from typing import Callable, Tuple, Union
+from shutil import make_archive
+from typing import Callable, Literal, Tuple, Union
 
 import numpy as np
 from osgeo import gdal
 from scipy import ndimage, optimize, stats
 from tqdm import tqdm
 
+from asf_tools.aws import get_path_to_s3_file, upload_file_to_s3
 from asf_tools.composite import get_epsg_code, write_cog
 from asf_tools.raster import read_as_masked_array
 
@@ -222,20 +224,29 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=False)
 
 
-def main():
+def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument('out_raster',
-                        help='File flood depth map will be saved to.')
-    parser.add_argument('vv_raster',
-                        help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
-    parser.add_argument('water_extent_map',
-                        help='Hyp3-Generated water extent raster file.')
-    parser.add_argument('hand_raster',
-                        help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
-                             'If not specified, HAND data will be extracted from a Copernicus GLO-30 DEM based HAND.')
+
+    if interface == 'hyp3':
+        parser.add_argument('--bucket')
+        parser.add_argument('--bucket-prefix', default='')
+        parser.add_argument('--wm-raster',
+                            help='Water map GeoTIFF raster, with suffix `_WM.tif`.')
+    elif interface == 'main':
+        parser.add_argument('out_raster',
+                            help='File flood depth map will be saved to.')
+        parser.add_argument('vv_raster',
+                            help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
+        parser.add_argument('water_extent_map',
+                            help='Hyp3-Generated water extent raster file.')
+        parser.add_argument('hand_raster',
+                            help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
+                                 'If not specified, HAND data will be extracted from the GLO-30 HAND.')
+    else:
+        raise NotImplementedError(f'Unknown interface: {interface}')
 
     parser.add_argument('--estimator', type=str, default='iterative', choices=['iterative', 'logstat', 'nmad', 'numpy'],
                         help='Flood depth estimation approach.')
@@ -243,9 +254,59 @@ def main():
                         help='Estimate max water height for each object.')
     parser.add_argument('--known-water-threshold', type=float, default=30.,
                         help='Threshold for extracting known water area in percent')
-    parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15], help='.')
+
+    if interface == 'hyp3':
+        parser.add_argument('--iterative-min', type=int, default=0)
+        parser.add_argument('--iterative-max', type=int, default=15)
+    elif interface == 'main':
+        # FIXME: why `help='.'`?
+        parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15], help='.')
+    else:
+        raise NotImplementedError(f'Unknown interface: {interface}')
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
+
+    return parser
+
+
+def hyp3():
+    parser = _get_cli(interface='hyp3')
+    args = parser.parse_args()
+
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
+    log.debug(' '.join(sys.argv))
+
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+
+    if args.wm_raster:
+        water_map_raster = args.wm_raster
+    elif args.bucket:
+        water_map_raster = get_path_to_s3_file(args.bucket, args.bucket_prefix, '_VV.tif')
+    else:
+        raise ValueError('Arguments --vv-raster or --bucket must be provided.')
+
+    flood_map_raster = Path.cwd() / Path(water_map_raster).name.replace('_WM.tif', '_FM.tif')
+    hand_raster = water_map_raster.replace('_WM.tif', '_WM_HAND.tif')
+    vv_raster = water_map_raster.replace('_WM.tif', '_VV.tif')
+
+    make_flood_map(
+        out_raster=flood_map_raster, vv_raster=vv_raster, water_raster=water_map_raster, hand_raster=hand_raster,
+        estimator=args.estimator, water_level_sigma=args.water_level_sigma,
+        known_water_threshold=args.known_water_threshold, iterative_bounds=(args.iterative_min, args.iterative_max),
+    )
+
+    output_zip = make_archive(base_name=flood_map_raster.name, format='zip')
+
+    if args.bucket:
+        upload_file_to_s3(Path(output_zip), args.bucket, args.bucket_prefix)
+        for product_file in flood_map_raster.parent.iterdir():
+            upload_file_to_s3(product_file, args.bucket, args.bucket_prefix)
+
+
+def main():
+    parser = _get_cli(interface='main')
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO
