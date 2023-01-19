@@ -230,11 +230,13 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
+    available_estimators = ['iterative', 'logstat', 'nmad', 'numpy']
     if interface == 'hyp3':
         parser.add_argument('--bucket')
         parser.add_argument('--bucket-prefix', default='')
         parser.add_argument('--wm-raster',
                             help='Water map GeoTIFF raster, with suffix `_WM.tif`.')
+        available_estimators += ['None']
     elif interface == 'main':
         parser.add_argument('out_raster',
                             help='File flood depth map will be saved to.')
@@ -248,7 +250,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')
 
-    parser.add_argument('--estimator', type=str, default='iterative', choices=['iterative', 'logstat', 'nmad', 'numpy'],
+    parser.add_argument('--estimator', type=str, default='iterative', choices=available_estimators,
                         help='Flood depth estimation approach.')
     parser.add_argument('--water-level-sigma', type=float, default=3.,
                         help='Estimate max water height for each object.')
@@ -279,6 +281,13 @@ def hyp3():
 
     logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+
+    if args.estimator == 'None':
+        # NOTE: HyP3's current step function implementation does not have a good way of conditionally
+        #       running processing steps. This allows HyP3 to always run this step but exit immediately
+        #       and do nothing if flood depth maps are not requested.
+        log.info(f'{args.estimator} estimator provided; nothing to do!')
+        sys.exit()
 
     if args.wm_raster:
         water_map_raster = args.wm_raster
