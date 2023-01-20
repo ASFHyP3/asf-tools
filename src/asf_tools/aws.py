@@ -5,6 +5,7 @@ from typing import Union
 import boto3
 
 S3_CLIENT = boto3.client('s3')
+log = logging.getLogger(__name__)
 
 
 def get_tag_set() -> dict:
@@ -27,7 +28,7 @@ def upload_file_to_s3(path_to_file: Union[str, Path], bucket: str, prefix: str =
     key = str(Path(prefix) / path_to_file)
     extra_args = {'ContentType': 'application/geo+json'}
 
-    logging.info(f'Uploading s3://{bucket}/{key}')
+    log.info(f'Uploading s3://{bucket}/{key}')
     S3_CLIENT.upload_file(str(path_to_file), bucket, key, extra_args)
 
     tag_set = get_tag_set()

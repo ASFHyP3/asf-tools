@@ -289,7 +289,8 @@ def hyp3():
     if args.wm_raster:
         water_map_raster = args.wm_raster
     elif args.bucket:
-        water_map_raster = get_path_to_s3_file(args.bucket, args.bucket_prefix, '_VV.tif')
+        water_map_raster = get_path_to_s3_file(args.bucket, args.bucket_prefix, '_WM.tif')
+        log.info(f'Found WM raster: {water_map_raster}')
     else:
         raise ValueError('Arguments --vv-raster or --bucket must be provided.')
 
