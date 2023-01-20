@@ -279,9 +279,6 @@ def hyp3():
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
 
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
-
     if args.estimator == 'None':
         # NOTE: HyP3's current step function implementation does not have a good way of conditionally
         #       running processing steps. This allows HyP3 to always run this step but exit immediately

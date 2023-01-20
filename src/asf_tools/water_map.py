@@ -365,22 +365,16 @@ def hyp3():
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
 
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
-
     if args.vv_raster:
         vv_raster = args.vv_raster
     elif args.bucket:
         vv_raster = get_path_to_s3_file(args.bucket, args.bucket_prefix, '_VV.tif')
+        log.info(f'Generating water map from {vv_raster}')
     else:
         raise ValueError('Arguments --vv-raster or --bucket must be provided.')
 
     vh_raster = vv_raster.replace('_VV.tif', '_VH.tif')
     water_map_raster = Path.cwd() / Path(vv_raster).name.replace('_VV.tif', '_WM.tif')
-
-    make_water_map(water_map_raster, vv_raster, vh_raster, args.hand_raster, args.tile_shape,
-                   args.max_vv_threshold, args.max_vh_threshold, args.hand_threshold, args.hand_fraction,
-                   args.membership_threshold)
 
     make_water_map(
         out_raster=water_map_raster, vv_raster=vv_raster, vh_raster=vh_raster,
