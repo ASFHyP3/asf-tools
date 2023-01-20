@@ -383,6 +383,8 @@ def hyp3():
         membership_threshold=args.membership_threshold
     )
 
+    log.info(f'Water map created successfully: {args.out_raster}')
+
     output_zip = make_archive(base_name=water_map_raster.name, format='zip')
 
     if args.bucket:
