@@ -304,7 +304,7 @@ def hyp3():
         known_water_threshold=args.known_water_threshold, iterative_bounds=(args.iterative_min, args.iterative_max),
     )
 
-    log.info(f"Flood depth map created successfully: {args.out_raster}")
+    log.info(f"Flood depth map created successfully: {flood_map_raster}")
 
     output_zip = make_archive(base_name=flood_map_raster.name, format='zip')
 
