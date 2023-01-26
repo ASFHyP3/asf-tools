@@ -374,7 +374,12 @@ def hyp3():
         raise ValueError('Arguments --vv-raster or --bucket must be provided.')
 
     vh_raster = vv_raster.replace('_VV.tif', '_VH.tif')
-    water_map_raster = Path.cwd() / Path(vv_raster).name.replace('_VV.tif', '_WM.tif')
+
+    product_name = Path(vv_raster).name.replace('_VV.tif', '_WM')
+    product_dir = Path.cwd() / product_name
+    product_dir.mkdir(exist_ok=True)
+
+    water_map_raster = product_dir / f'{product_name}.tif'
 
     make_water_map(
         out_raster=water_map_raster, vv_raster=vv_raster, vh_raster=vh_raster,
@@ -385,11 +390,10 @@ def hyp3():
 
     log.info(f'Water map created successfully: {water_map_raster}')
 
-    output_zip = make_archive(base_name=water_map_raster.name, format='zip')
-
     if args.bucket:
+        output_zip = make_archive(base_name=product_name, format='zip', base_dir=product_dir)
         upload_file_to_s3(Path(output_zip), args.bucket, args.bucket_prefix)
-        for product_file in water_map_raster.parent.iterdir():
+        for product_file in product_dir.iterdir():
             upload_file_to_s3(product_file, args.bucket, args.bucket_prefix)
 
 
