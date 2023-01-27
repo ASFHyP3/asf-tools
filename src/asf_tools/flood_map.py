@@ -261,8 +261,8 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
         parser.add_argument('--iterative-min', type=int, default=0)
         parser.add_argument('--iterative-max', type=int, default=15)
     elif interface == 'main':
-        # FIXME: why `help='.'`?
-        parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15], help='.')
+        # FIXME: add a help string
+        parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15])
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')
 
