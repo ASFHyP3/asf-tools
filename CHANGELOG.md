@@ -11,7 +11,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 * HyP3 plugin entrypoints `water_map` and `flood_depth`
 * `asf_tools.__main__` entrypoint that allows you to select which hyp3 plugin entrypoint you'd like to run 
-  (e.g., `python -m  asf_tools ++process water_map ...`)
+  (e.g., `python -m asf_tools ++process water_map ...`)
 
 ### Changed
 * `src/asf_tools/etc/entrypoint.sh` is now the docker container entrypoint, which is a simple wrapper script around 
