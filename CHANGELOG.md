@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0]
+
+### Added
+* HyP3 plugin entrypoints `water_map` and `flood_depth`
+* `asf_tools.__main__` entrypoint that allows you to select which hyp3 plugin entrypoint you'd like to run 
+  (e.g., `python -m asf_tools ++process water_map ...`)
+
+### Changed
+* `src/asf_tools/etc/entrypoint.sh` is now the docker container entrypoint, which is a simple wrapper script around 
+  `python -m asf_tools`
+
 ## [0.4.6]
 
 ### Changed
