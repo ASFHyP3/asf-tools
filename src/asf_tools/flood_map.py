@@ -236,14 +236,14 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
         parser.add_argument('--bucket-prefix', default='')
         parser.add_argument('--wm-raster',
                             help='Water map GeoTIFF raster, with suffix `_WM.tif`.')
-        available_estimators += ['None']
+        available_estimators.append('None')
     elif interface == 'main':
         parser.add_argument('out_raster',
-                            help='File flood depth map will be saved to.')
+                            help='File to which flood depth map will be saved.')
         parser.add_argument('vv_raster',
                             help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
         parser.add_argument('water_extent_map',
-                            help='Hyp3-Generated water extent raster file.')
+                            help='HyP3-generated water extent raster file.')
         parser.add_argument('hand_raster',
                             help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
                                  'If not specified, HAND data will be extracted from the GLO-30 HAND.')
@@ -292,7 +292,7 @@ def hyp3():
         water_map_raster = get_path_to_s3_file(args.bucket, args.bucket_prefix, '_WM.tif')
         log.info(f'Found WM raster: {water_map_raster}')
     else:
-        raise ValueError('Arguments --vv-raster or --bucket must be provided.')
+        raise ValueError('Arguments --wm-raster or --bucket must be provided.')
 
     vv_raster = water_map_raster.replace('_WM.tif', '_VV.tif')
     hand_raster = water_map_raster.replace('_WM.tif', '_WM_HAND.tif')
