@@ -337,7 +337,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
                             help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
                                  'If not specified, HAND data will be extracted from the GLO-30 HAND.')
         parser.add_argument('--tile-shape', type=int, nargs=2, default=(100, 100),
-                            help='shape (height, width) in pixels to tile the image to')
+                            help='image tiles will have this shape (height, width) in pixels')
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')
 
