@@ -312,7 +312,7 @@ def hyp3():
     log.info(f"Flood depth map created successfully: {flood_map_raster}")
 
     if args.bucket:
-        output_zip = make_archive(base_name=product_name, format='zip', base_dir=product_dir)
+        output_zip = make_archive(base_name=product_name, format='zip', base_dir=product_name)
         upload_file_to_s3(Path(output_zip), args.bucket, args.bucket_prefix)
         for product_file in product_dir.iterdir():
             upload_file_to_s3(product_file, args.bucket, args.bucket_prefix)
