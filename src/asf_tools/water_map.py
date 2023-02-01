@@ -284,6 +284,10 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
         water_map = np.ma.masked_less_equal(gaussian_array, gaussian_threshold).mask
         water_map &= ~array.mask
 
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_initial.tif'),
+                  format_raster_data(water_map, padding_mask, nodata),
+                  transform=out_transform, epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
+
         log.info(f'Refining initial {pol} water extent map using Fuzzy Logic')
         array = np.ma.masked_where(~water_map, array)
         gaussian_lower_limit = np.log10(np.ma.median(array)) + 30.
@@ -293,6 +297,11 @@ def make_water_map(out_raster: Union[str, Path], vv_raster: Union[str, Path], vh
             gaussian_thresholds=(gaussian_lower_limit, gaussian_threshold), membership_threshold=membership_threshold
         )
         water_map &= ~array.mask
+
+        write_cog(str(out_raster).replace('.tif', f'_{pol}_fuzzy.tif'),
+                  format_raster_data(water_map, padding_mask, nodata),
+                  transform=out_transform, epsg_code=out_epsg, dtype=gdal.GDT_Byte, nodata_value=nodata)
+
         water_extent_maps.append(water_map)
 
     log.info('Combining Fuzzy VH and VV extent map')
@@ -380,6 +389,15 @@ def hyp3():
     )
 
     log.info(f'Water map created successfully: {water_map_raster}')
+
+    files_to_remove = [
+        Path(product_name) / f'{product_name}_WM_VV_initial.tif',
+        Path(product_name) / f'{product_name}_WM_VH_initial.tif',
+        Path(product_name) / f'{product_name}_WM_VV_fuzzy.tif',
+        Path(product_name) / f'{product_name}_WM_VH_fuzzy.tif',
+    ]
+    for file_to_remove in files_to_remove:
+        file_to_remove.unlink()
 
     if args.bucket:
         output_zip = make_archive(base_name=product_name, format='zip', base_dir=product_name)
