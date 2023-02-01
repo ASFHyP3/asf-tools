@@ -391,10 +391,10 @@ def hyp3():
     log.info(f'Water map created successfully: {water_map_raster}')
 
     files_to_remove = [
-        Path(product_name) / f'{product_name}_VV_initial.tif',
-        Path(product_name) / f'{product_name}_VH_initial.tif',
-        Path(product_name) / f'{product_name}_VV_fuzzy.tif',
-        Path(product_name) / f'{product_name}_VH_fuzzy.tif',
+        product_dir / f'{product_name}_VV_initial.tif',
+        product_dir / f'{product_name}_VH_initial.tif',
+        product_dir / f'{product_name}_VV_fuzzy.tif',
+        product_dir / f'{product_name}_VH_fuzzy.tif',
     ]
     for file_to_remove in files_to_remove:
         file_to_remove.unlink()
