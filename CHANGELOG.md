@@ -6,11 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.1]
-
-### Changed
-* Fuzzy and intial VV and VH tifs are no longer included in `water_map` products. (Restores the changes from [hyp3-gamma 5.4.5](https://github.com/ASFHyP3/hyp3-gamma/blob/develop/CHANGELOG.md#545).)
-
 ## [0.5.0]
 
 ### Added
@@ -21,16 +16,15 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 * `src/asf_tools/etc/entrypoint.sh` is now the docker container entrypoint, which is a simple wrapper script around 
   `python -m asf_tools`
-
-## [0.4.6]
-
-### Changed
 * Temporary `numpy` version pin was removed; see [#160](https://github.com/ASFHyP3/asf-tools/pull/160)```
+
+
 ## [0.4.6]
 
 ### Changed
 * Updated the metadata for the RGB Decomposition tool in the ArcGIS Toolbox to more accurately reflect behavior
 * Minor formatting and content corrections in all ArcGIS Toolbox xml files
+
 
 ## [0.4.5]
 
