@@ -9,7 +9,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.5.1]
 
 ### Changed
-* Fuzzy and intial VV and VH tifs are no longer output in `water_map`
+* Fuzzy and intial VV and VH tifs are no longer included in `water_map` products. (Restores the changes from [hyp3-gamma 5.4.5](https://github.com/ASFHyP3/hyp3-gamma/blob/develop/CHANGELOG.md#545).)
 
 ## [0.5.0]
 
