@@ -46,4 +46,4 @@ def get_path_to_s3_file(bucket_name, bucket_prefix, file_type: str):
     for s3_object in result['Contents']:
         key = s3_object['Key']
         if key.endswith(file_type):
-            return f'/vsicurl/https://{bucket_name}.s3.amazonaws.com/{key}'
+            return f'/vsis3/{bucket_name}/{key}'
