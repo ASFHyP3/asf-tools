@@ -390,6 +390,15 @@ def hyp3():
 
     log.info(f'Water map created successfully: {water_map_raster}')
 
+    files_to_remove = [
+        product_dir / f'{product_name}_VV_initial.tif',
+        product_dir / f'{product_name}_VH_initial.tif',
+        product_dir / f'{product_name}_VV_fuzzy.tif',
+        product_dir / f'{product_name}_VH_fuzzy.tif',
+    ]
+    for file_to_remove in files_to_remove:
+        file_to_remove.unlink()
+
     if args.bucket:
         output_zip = make_archive(base_name=product_name, format='zip', base_dir=product_name)
         upload_file_to_s3(Path(output_zip), args.bucket, args.bucket_prefix)

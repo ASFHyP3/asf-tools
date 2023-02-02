@@ -16,11 +16,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 * `src/asf_tools/etc/entrypoint.sh` is now the docker container entrypoint, which is a simple wrapper script around 
   `python -m asf_tools`
-
-## [0.4.6]
-
-### Changed
 * Temporary `numpy` version pin was removed; see [#160](https://github.com/ASFHyP3/asf-tools/pull/160)```
+
 ## [0.4.6]
 
 ### Changed
@@ -34,13 +31,11 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * `asf-tools` now only uses `pyproject.toml` for package creation now that `setuptools` recommends [not using setup.py](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#setuppy-discouraged).
 * Temporarily pin `numpy` to `<1.2.4`; See: [#160](https://github.com/ASFHyP3/asf-tools/pull/160)```
 
-
 ## [0.4.4]
 
 ### Changed
 * `asf-tools.water_map` now produces water extent rasters with pixels values of `1` where water is present and `0` where water is not present
 * `asf_tools.water_map` now uses the  updated [ASF Global HAND dataset](https://glo-hand-30m.s3.amazonaws.com/readme.html) derived from the [2021 release of the Copernicus GLO-30 Public DEM](https://spacedata.copernicus.eu/blogs/-/blogs/copernicus-dem-2021-release-now-available)
-
 
 ## [0.4.3]
 
