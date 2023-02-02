@@ -17,7 +17,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 * `src/asf_tools/etc/entrypoint.sh` is now the docker container entrypoint, which is a simple wrapper script around 
   `python -m asf_tools`
-* Temporary `numpy` version pin was removed; see [#160](https://github.com/ASFHyP3/asf-tools/pull/160)```
+* Temporary `numpy` version pin was removed; see [#160](https://github.com/ASFHyP3/asf-tools/pull/160)
 
 ## [0.4.6]
 
