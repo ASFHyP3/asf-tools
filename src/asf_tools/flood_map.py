@@ -125,17 +125,6 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water
     return hand_mean + water_level_sigma * hand_std
 
 
-def get_padding_mask(raster: Union[str, Path], nodata_value: int = None):
-    ds = gdal.Open(str(raster))
-    band = ds.GetRasterBand(1)
-    if not nodata_value:
-        nodata_value = band.GetNoDataValue()
-    data = band.GetMaskBand().ReadAsArray()
-    valid_data = np.zeros(data.shape).asytpe(np.bool_)
-    valid_data[data == nodata_value] = True
-    return valid_data
-
-
 def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
                    water_raster: Union[str, Path], hand_raster: Union[str, Path],
                    estimator: str = 'iterative',
@@ -197,6 +186,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
 
     vv_array = read_as_masked_array(vv_raster)
     flood_mask[vv_array.mask] = False
+    padding_mask = vv_array.mask
     del vv_array
 
     labeled_flood_mask, num_labels = ndimage.label(flood_mask)
@@ -222,10 +212,8 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
     flood_depth[flood_depth < 0] = 0
 
     # mask waterdepth, flooddepth, floodmask with mask defined in the vv raster
-    nodata = -1  # or np.finfo(np.float64).min
-    padding_mask = get_padding_mask(vv_raster)
+    nodata = -1
     flood_depth[padding_mask] = nodata
-    flood_mask[padding_mask] = nodata
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
