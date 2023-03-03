@@ -188,6 +188,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
 
     vv_array = read_as_masked_array(vv_raster)
     flood_mask[vv_array.mask] = False
+    padding_mask = vv_array.mask
     del vv_array
 
     labeled_flood_mask, num_labels = ndimage.label(flood_mask)
@@ -212,16 +213,21 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
 
     flood_depth[flood_depth < 0] = 0
 
+    nodata = -1
+    floodmask_nodata = np.iinfo(np.uint8).max
+    flood_depth[padding_mask] = nodata
+    flood_mask[padding_mask] = floodmask_nodata
+
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=False)
+              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=floodmask_nodata)
 
     flood_mask[known_water_mask] = False
     flood_depth[np.logical_not(flood_mask)] = 0
-
+    flood_depth[padding_mask] = nodata
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=False)
+              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
 
 
 def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
