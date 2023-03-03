@@ -125,12 +125,6 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water
     return hand_mean + water_level_sigma * hand_std
 
 
-def read_mask(raster: Union[str, Path]):
-    ds = gdal.Open(str(raster))
-    band = ds.GetRasterBand(1)
-    mask = band.GetMaskBand().ReadAsArray().astype(np.bool_)
-    return mask
-
 def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
                    water_raster: Union[str, Path], hand_raster: Union[str, Path],
                    estimator: str = 'iterative',
