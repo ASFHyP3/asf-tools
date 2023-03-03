@@ -223,7 +223,7 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
     # Update the flood depth map to report zero for valid and nodata for data outside the scene boundary
     flood_mask[known_water_mask] = False
     flood_depth[np.logical_not(flood_mask)] = 0
-
+    flood_depth[padding_mask] = nodata
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
 
