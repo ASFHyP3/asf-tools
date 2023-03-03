@@ -125,7 +125,7 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water
     return hand_mean + water_level_sigma * hand_std
 
 
-def get_valid_data_mask(raster: Union[str, Path]):
+def get_padding_mask(raster: Union[str, Path]):
     ds = gdal.Open(str(raster))
     band = ds.GetRasterBand(1)
     nodata_value = band.GetNoDataValue()
@@ -221,10 +221,10 @@ def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
     flood_depth[flood_depth < 0] = 0
 
     # mask waterdepth, flooddepth, floodmask with mask defined in the vv raster
-    nodata = -1
-    valid_data_mask = get_valid_data_mask(vv_raster)
-    flood_depth[~valid_data_mask] = nodata
-    flood_mask[~valid_data_mask] = nodata
+    nodata = -1  # or np.finfo(np.float64).min
+    padding_mask = ~get_padding_mask(vv_raster)
+    flood_depth[padding_mask] = nodata
+    flood_mask[padding_mask] = nodata
 
     write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=geotransform,
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
