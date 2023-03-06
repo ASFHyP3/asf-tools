@@ -7,6 +7,11 @@ and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/)
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.5.2]
+
+### FIXED
+* Fix datatype bug in `asf-tools.flood_map` that caused `flood_mask` to be written incorrectly.
+
 ## [0.5.1]
 
 ### Changed
