@@ -9,8 +9,8 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.5.2]
 
-### FIXED
-* Fix datatype bug in `asf-tools.flood_map` that caused `flood_mask` to be written incorrectly.
+### Fixed
+* Fixed incorrect datatype being set for `flood_mask` GeoTIFFs leading to missing nodata.
 
 ## [0.5.1]
 
