@@ -9,25 +9,28 @@ from asf_tools.tile import tile_array
 
 
 def test_get_coordinates():
-    water_raster = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/flood_map/watermap.tif'
+    water_raster = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/' \
+                   'S1A_IW_20230228T120437_DVR_RTC30/flood_map/watermap.tif'
     info = gdal.Info(water_raster, format='json')
 
     west, south, east, north = flood_map.get_coordinates(info)
 
-    assert west == 75390.0
-    assert south == 3265560.0
-    assert east == 357030.0
-    assert north == 3473460.0
+    assert west == 101460.0
+    assert south == 2457570.0
+    assert east == 386160.0
+    assert north == 2681970.0
 
 
 @pytest.mark.integration
 def test_get_waterbody():
-    water_raster = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/flood_map/watermap.tif'
+    water_raster = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/' \
+                   'S1A_IW_20230228T120437_DVR_RTC30/flood_map/watermap.tif'
     info = gdal.Info(water_raster, format='json')
 
     known_water_mask = flood_map.get_waterbody(info, threshold=30)
 
-    test_mask = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/flood_map/known_water_mask.tif'
+    test_mask = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/S1A_IW_20230228T120437_DVR_RTC30/' \
+                'flood_map/known_water_mask.tif'
     test_mask_array = gdal.Open(test_mask, gdal.GA_ReadOnly).ReadAsArray()
 
     assert np.all(known_water_mask == test_mask_array)
@@ -82,14 +85,14 @@ def test_make_flood_map(tmp_path):
                   'flood_map/watermap_HAND.tif'
 
     out_flood_map = tmp_path / 'flood_map.tif'
-    flood_map.make_flood_map(out_flood_map, vv_raster, water_raster, hand_raster)
-    out_flood_map = out_flood_map.parent / f'{out_flood_map.stem}_iterative_FloodDepth.tif'
+    flood_map.make_flood_map(out_flood_map, vv_raster, water_raster, hand_raster, estimator='nmad')
+    out_flood_map = out_flood_map.parent / f'{out_flood_map.stem}_nmad_FloodDepth.tif'
 
     assert out_flood_map.exists()
 
     golden_flood_map = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/' \
                        'asf-tools/S1A_IW_20230228T120437_DVR_RTC30/' \
-                       'flood_map/flood_map_iterative.tif'
+                       'flood_map/flood_map_nmad.tif'
 
     diffs = find_diff(golden_flood_map, str(out_flood_map))
     assert diffs == 0
