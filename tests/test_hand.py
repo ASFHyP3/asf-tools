@@ -34,7 +34,7 @@ def test_make_copernicus_hand(tmp_path):
     assert out_hand.exists()
 
     diffs = find_diff(str(GOLDEN_HAND), str(out_hand))
-    if nodata_equal_nan(GOLDEN_HAND, out_hand):
+    if nodata_equal_nan(str(GOLDEN_HAND), str(out_hand)):
         assert diffs == 1
     else:
         assert diffs == 0
