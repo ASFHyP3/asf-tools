@@ -149,7 +149,7 @@ def calculate_hand_for_basins(out_raster:  Union[str, Path], geometries: Geometr
     """
     with rasterio.open(dem_file) as src:
         basin_mask, basin_affine_tf, basin_window = rasterio.mask.raster_geometry_mask(
-            src, geometries, all_touched=True, crop=True, pad=True, pad_width=1
+            src, geometries.geoms, all_touched=True, crop=True, pad=True, pad_width=1
         )
         basin_array = src.read(1, window=basin_window)
 

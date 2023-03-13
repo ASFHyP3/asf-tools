@@ -38,16 +38,19 @@ def test_select_backscatter_tiles(hand_candidates):
 
 @pytest.mark.integration
 def test_make_water_map(tmp_path):
-    vv_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VV.tif'
-    vh_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_VH.tif'
-    hand_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/20200603_HAND.tif'
+    vv_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/' \
+                'S1A_IW_20230228T120437_DVR_RTC30/water_map/RTC_VV.tif'
+    vh_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/' \
+                'S1A_IW_20230228T120437_DVR_RTC30/water_map/RTC_VH.tif'
+    hand_geotif = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/' \
+                  'S1A_IW_20230228T120437_DVR_RTC30/water_map/HAND.tif'
 
     out_water_map = tmp_path / 'water_map.tif'
     water_map.make_water_map(out_water_map, vv_geotif, vh_geotif, hand_geotif)
 
     assert out_water_map.exists()
 
-    golden_water_map = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/water-map/' \
-                       'fuzzy-water-map.tif'
+    golden_water_map = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/asf-tools/' \
+                       'S1A_IW_20230228T120437_DVR_RTC30/water_map/fuzzy_water_map.tif'
     diffs = find_diff(golden_water_map, str(out_water_map))
     assert diffs == 0

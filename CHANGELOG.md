@@ -9,7 +9,12 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.5.2]
 
+### Added
+* Updated tests to use a water_map/flood_map job that was created using a known input SLC
+
 ### Fixed
+* Patched issue with gdalcompare.py's handling of nan values by allowing one differences between two rasters
+  that contain nan values. This patch can be remove once the upstream fix is released within GDAL (likely v3.7.0)
 * Fixed incorrect datatype being set for `flood_mask` GeoTIFFs leading to missing nodata.
 
 ## [0.5.1]
