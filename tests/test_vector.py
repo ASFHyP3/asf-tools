@@ -6,7 +6,7 @@ from asf_tools import dem, hand, vector
 
 
 def test_intersects_feature():
-    for vector_file in (dem.DEM_GEOJSON, hand.prepare.HAND_GEOJSON):
+    for vector_file in (dem.DEM_GEOJSON, asf_tools.hydrosar.hand.prepare.HAND_GEOJSON):
         features = vector.get_features(vector_file)
 
         geojson = {
@@ -59,4 +59,4 @@ def test_get_intersecting_feature_properties():
 
 def test_get_features():
     assert len(vector.get_features(dem.DEM_GEOJSON)) == 26450
-    assert len(vector.get_features(hand.prepare.HAND_GEOJSON)) == 26450
+    assert len(vector.get_features(asf_tools.hydrosar.hand.prepare.HAND_GEOJSON)) == 26450

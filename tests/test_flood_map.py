@@ -3,9 +3,7 @@ import pytest
 from osgeo_utils.gdalcompare import find_diff
 
 from osgeo import gdal
-from asf_tools import flood_map
-from asf_tools.composite import read_as_array
-from asf_tools.tile import tile_array
+from asf_tools.hydrosar import flood_map
 
 
 def test_get_coordinates():
