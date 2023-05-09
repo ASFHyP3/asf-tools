@@ -26,7 +26,6 @@ from asf_tools.aws import get_path_to_s3_file, upload_file_to_s3
 from asf_tools.composite import get_epsg_code, write_cog
 from asf_tools.raster import read_as_masked_array
 
-
 log = logging.getLogger(__name__)
 
 
@@ -34,6 +33,15 @@ def get_coordinates(info: dict) -> Tuple[int, int, int, int]:
     west, south = info['cornerCoordinates']['lowerLeft']
     east, north = info['cornerCoordinates']['upperRight']
     return west, south, east, north
+
+
+def get_pw_threshold(water_array: np.array) -> float:
+    hist, bin_edges = np.histogram(water_array, density=True, bins=100)
+    reverse_cdf = np.cumsum(np.flipud(hist) * (bin_edges[1] - bin_edges[0]))
+    potential_thresholds = np.flipud(bin_edges)
+    ths_orig = potential_thresholds[np.searchsorted(np.array(reverse_cdf), 0.95)]
+
+    return round(ths_orig) + 1
 
 
 def get_waterbody(input_info: dict, threshold: float = 30.) -> np.array:
@@ -50,6 +58,9 @@ def get_waterbody(input_info: dict, threshold: float = 30.) -> np.array:
                   outputBounds=[west, south, east, north],
                   width=width, height=height, resampleAlg='nearest', format='GTiff')
         water_array = gdal.Open(water_extent_file.name, gdal.GA_ReadOnly).ReadAsArray()
+
+    if threshold is None:
+        threshold = get_pw_threshold(water_array)
 
     return water_array > threshold
 
@@ -76,7 +87,7 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
     bounds = MyBounds()
     temp_wl = np.zeros(max(water_levels))
     for i in range(1, max(water_levels)):
-        opt_res = optimize.basinhopping(_goal_ts, i, niter=10000, niter_success=100, accept_test=bounds)
+        opt_res = optimize.basinhopping(_goal_ts, i, niter=10000, niter_success=100, accept_test=bounds, stepsize=3)
         if opt_res.message[0] == 'success condition satisfied' \
                 or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
             temp_wl[i] = opt_res.x[0]
@@ -127,11 +138,11 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water
     return hand_mean + water_level_sigma * hand_std
 
 
-def make_flood_map(out_raster: Union[str, Path],  vv_raster: Union[str, Path],
+def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
                    water_raster: Union[str, Path], hand_raster: Union[str, Path],
                    estimator: str = 'iterative',
                    water_level_sigma: float = 3.,
-                   known_water_threshold: float = 30.,
+                   known_water_threshold: float = None,
                    iterative_bounds: Tuple[int, int] = (0, 15)):
     """Create a flood depth map from a surface water extent map.
 
@@ -262,7 +273,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
                         help='Flood depth estimation approach.')
     parser.add_argument('--water-level-sigma', type=float, default=3.,
                         help='Estimate max water height for each object.')
-    parser.add_argument('--known-water-threshold', type=float, default=30.,
+    parser.add_argument('--known-water-threshold', type=float, default=None,
                         help='Threshold for extracting known water area in percent')
 
     if interface == 'hyp3':
