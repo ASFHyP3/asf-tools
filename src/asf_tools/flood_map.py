@@ -44,7 +44,7 @@ def get_pw_threshold(water_array: np.array) -> float:
     return round(ths_orig) + 1
 
 
-def get_waterbody(input_info: dict, threshold: float = 30.) -> np.array:
+def get_waterbody(input_info: dict, threshold: float = None) -> np.array:
     epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
