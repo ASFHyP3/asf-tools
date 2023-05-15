@@ -63,7 +63,7 @@ def get_waterbody(input_info: dict, threshold: float = None) -> np.array:
     return water_array > threshold
 
 
-def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(15)):
+def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: np.array = range(15)):
     def _goal_ts(w):
         iterative_flood_extent = hand < w  # w=water level
         tp = np.nansum(np.logical_and(iterative_flood_extent == 1, extent == 1))  # true positive
@@ -84,13 +84,12 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = range(1
 
     bounds = MyBounds()
     temp_wl = np.zeros(max(water_levels))
-    for i in range(1, max(water_levels)):
-        opt_res = optimize.basinhopping(_goal_ts, i, niter=10000, niter_success=100, accept_test=bounds, stepsize=3)
-        if opt_res.message[0] == 'success condition satisfied' \
-                or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
-            temp_wl[i] = opt_res.x[0]
-        else:
-            temp_wl[i] = np.inf  # set as inf to mark unstable solution
+    opt_res = optimize.basinhopping(_goal_ts, x0, niter=10000, niter_success=100, accept_test=bounds, stepsize=3)
+    if opt_res.message[0] == 'success condition satisfied' \
+            or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
+        temp_wl[i] = opt_res.x[0]
+    else:
+        temp_wl[i] = np.inf  # set as inf to mark unstable solution
     return np.nanmean(temp_wl)
 
 
@@ -115,17 +114,19 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
 
-        if estimator.lower() == "iterative":
-            return iterative(hand, flood_labels == label, water_levels=iterative_bounds)
+        if estimator.lower() == "iterative" or estimator.lower() == "nmad":
+            hand_mean = np.nanmean(hand[flood_labels == label])
+            hand_std = stats.median_abs_deviation(hand[flood_labels == label], scale='normal',
+                                                  nan_policy='omit')
+            if estimator.lower == "iterative":
+                return iterative(hand, flood_labels == label, 
+                                 x0=hand_mean + water_level_sigma * hand_std, 
+                                 water_levels=iterative_bounds)
 
         if estimator.lower() == "numpy":
             hand_mean = np.nanmean(hand[flood_labels == label])
             hand_std = np.nanstd(hand[flood_labels == label])
 
-        elif estimator.lower() == "nmad":
-            hand_mean = np.nanmean(hand[flood_labels == label])
-            hand_std = stats.median_abs_deviation(hand[flood_labels == label], scale='normal',
-                                                  nan_policy='omit')
         elif estimator.lower() == "logstat":
             hand_mean = logstat(hand[flood_labels == label], func=np.nanmean)
             hand_std = logstat(hand[flood_labels == label])
