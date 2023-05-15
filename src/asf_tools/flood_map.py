@@ -83,14 +83,12 @@ def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: n
             return tmax and tmin
 
     bounds = MyBounds()
-    temp_wl = np.zeros(max(water_levels))
     opt_res = optimize.basinhopping(_goal_ts, x0, niter=10000, niter_success=100, accept_test=bounds, stepsize=3)
     if opt_res.message[0] == 'success condition satisfied' \
             or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
-        temp_wl[i] = opt_res.x[0]
+        return opt_res.x[0]
     else:
-        temp_wl[i] = np.inf  # set as inf to mark unstable solution
-    return np.nanmean(temp_wl)
+        return np.inf  # set as inf to mark unstable solution
 
 
 def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, float]:
@@ -119,10 +117,9 @@ def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water
             hand_std = stats.median_abs_deviation(hand[flood_labels == label], scale='normal',
                                                   nan_policy='omit')
             if estimator.lower == "iterative":
-                return iterative(hand, flood_labels == label, 
-                                 x0=hand_mean + water_level_sigma * hand_std, 
+                return iterative(hand, flood_labels == label,
+                                 x0=hand_mean + water_level_sigma * hand_std,
                                  water_levels=iterative_bounds)
-
         if estimator.lower() == "numpy":
             hand_mean = np.nanmean(hand[flood_labels == label])
             hand_std = np.nanstd(hand[flood_labels == label])
