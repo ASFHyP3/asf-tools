@@ -148,7 +148,7 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
                    water_raster: Union[str, Path], hand_raster: Union[str, Path],
                    estimator: str = 'iterative',
                    water_level_sigma: float = 3.,
-                   known_water_threshold: float = None,
+                   known_water_threshold: Optional[float] = None,
                    iterative_bounds: Tuple[int, int] = (0, 15),
                    min_metric: str = 'fmi'):
     """Create a flood depth map from a surface water extent map.
