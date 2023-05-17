@@ -9,7 +9,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.5.3]
 ### Changed
-* The iterative method in `flood map` now iterates once using the `nmad` method as an initial guess and runs with a maximum step size of 3. 
+* The `flood_map.iterative` method now generates an initial guess using the `nmad` method and then runs with a maximum step size of 3 instead of the default 0.5.
 
 ## Added
 * A `minimization_metric` parameter for `flood_map.iterative` with a default value of `fmi`.
