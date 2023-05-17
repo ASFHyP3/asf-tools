@@ -37,8 +37,8 @@ def get_coordinates(info: dict) -> Tuple[int, int, int, int]:
 
 def get_pw_threshold(water_array: np.array) -> float:
     hist, bin_edges = np.histogram(water_array, density=True, bins=100)
-    reverse_cdf = np.cumsum(np.flipud(hist)) * (bin_edges[1] - bin_edges[0])  
-    ths_orig = np.flipud(bin_edges)[np.searchsorted(np.array(reverse_cdf), 0.95)]  
+    reverse_cdf = np.cumsum(np.flipud(hist)) * (bin_edges[1] - bin_edges[0])
+    ths_orig = np.flipud(bin_edges)[np.searchsorted(np.array(reverse_cdf), 0.95)]
     return round(ths_orig) + 1
 
 
@@ -63,7 +63,8 @@ def get_waterbody(input_info: dict, threshold: float = None) -> np.array:
     return water_array > threshold
 
 
-def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: np.array = range(15), min_metric: str = 'fmi'):
+def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: np.array = range(15), 
+              min_metric: str = 'fmi'):
     def get_confusion_matrix(w):
         iterative_flood_extent = hand < w  # w=water level
         tp = np.nansum(np.logical_and(iterative_flood_extent == 1, extent == 1))  # true positive
@@ -89,7 +90,6 @@ def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: n
             tmax = bool(np.all(x <= self.xmax))
             tmin = bool(np.all(x >= self.xmin))
             return tmax and tmin
-
     bounds = MyBounds()
     dispatch_dict = {'fmi': _goal_fmi, 'ts': _goal_ts}
     opt_res = optimize.basinhopping(dispatch_dict[min_metric], x0, niter=10000, niter_success=100, accept_test=bounds,
@@ -284,7 +284,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
                         help='Estimate max water height for each object.')
     parser.add_argument('--known-water-threshold', type=float, default=None,
                         help='Threshold for extracting known water area in percent')
-    parser.add_argument('--min_metric', type=str, default='fmi', choices=available_metrics, 
+    parser.add_argument('--min_metric', type=str, default='fmi', choices=available_metrics,
                         help='Evaluation method to minimize in iterative estimation')
 
     if interface == 'hyp3':
@@ -358,7 +358,7 @@ def main():
     log.debug(' '.join(sys.argv))
 
     make_flood_map(args.out_raster, args.vv_raster, args.water_extent_map, args.hand_raster,
-                   args.estimator, args.water_level_sigma, args.known_water_threshold, tuple(args.iterative_bounds), 
+                   args.estimator, args.water_level_sigma, args.known_water_threshold, tuple(args.iterative_bounds),
                    args.min_metric)
 
     log.info(f"Flood depth map created successfully: {args.out_raster}")
