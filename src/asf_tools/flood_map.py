@@ -63,7 +63,7 @@ def get_waterbody(input_info: dict, threshold: float = None) -> np.array:
     return water_array > threshold
 
 
-def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: np.array = range(15), 
+def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: np.array = range(15),
               min_metric: str = 'fmi'):
     def get_confusion_matrix(w):
         iterative_flood_extent = hand < w  # w=water level
