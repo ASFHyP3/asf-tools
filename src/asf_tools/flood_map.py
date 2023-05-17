@@ -37,8 +37,8 @@ def get_coordinates(info: dict) -> Tuple[int, int, int, int]:
 
 def get_pw_threshold(water_array: np.array) -> float:
     hist, bin_edges = np.histogram(water_array, density=True, bins=100)
-    ths_orig = 100 - bin_edges[np.searchsorted(np.cumsum(hist), 0.95)]
-
+    reverse_cdf = np.cumsum(np.flipud(hist)) * (bin_edges[1] - bin_edges[0])  
+    ths_orig = np.flipud(bin_edges)[np.searchsorted(np.array(reverse_cdf), 0.95)]  
     return round(ths_orig) + 1
 
 
