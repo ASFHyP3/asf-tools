@@ -15,7 +15,7 @@ import tempfile
 import warnings
 from pathlib import Path
 from shutil import make_archive
-from typing import Callable, Literal, Optional, Tuple, Union
+from typing import Callable, Literal, Tuple, Union
 
 import numpy as np
 from osgeo import gdal
@@ -182,7 +182,8 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
         hand_raster: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the surface water extent raster
         estimator: Estimation approach for determining flood depth
         water_level_sigma: Max water height used in logstat, nmad, and numpy estimations
-        known_water_threshold: Threshold for extracting the known water area in percent. If NaN, threshold is calculated.
+        known_water_threshold: Threshold for extracting the known water area in percent.
+            If NaN, the threshold is calculated.
         iterative_bounds: Bounds on basin-hopping algorithm used in iterative estimation
         min_metric : Evaluation method to minimize in iterative estimation
 
