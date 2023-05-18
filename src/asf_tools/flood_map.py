@@ -42,7 +42,7 @@ def get_pw_threshold(water_array: np.array) -> float:
     return round(ths_orig) + 1
 
 
-def get_waterbody(input_info: dict, threshold: float = None) -> np.array:
+def get_waterbody(input_info: dict, threshold: float = np.nan) -> np.array:
     epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
@@ -57,7 +57,7 @@ def get_waterbody(input_info: dict, threshold: float = None) -> np.array:
                   width=width, height=height, resampleAlg='nearest', format='GTiff')
         water_array = gdal.Open(water_extent_file.name, gdal.GA_ReadOnly).ReadAsArray()
 
-    if threshold is None:
+    if np.isnan(threshold):
         threshold = get_pw_threshold(water_array)
 
     return water_array > threshold
@@ -148,7 +148,7 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
                    water_raster: Union[str, Path], hand_raster: Union[str, Path],
                    estimator: str = 'iterative',
                    water_level_sigma: float = 3.,
-                   known_water_threshold: Optional[float] = None,
+                   known_water_threshold: float = np.nan,
                    iterative_bounds: Tuple[int, int] = (0, 15),
                    minimization_metric: str = 'fmi'):
     """Create a flood depth map from a surface water extent map.
@@ -182,7 +182,7 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
         hand_raster: Height Above Nearest Drainage (HAND) GeoTIFF aligned to the surface water extent raster
         estimator: Estimation approach for determining flood depth
         water_level_sigma: Max water height used in logstat, nmad, and numpy estimations
-        known_water_threshold: Threshold for extracting the known water area in percent
+        known_water_threshold: Threshold for extracting the known water area in percent. If NaN, threshold is calculated.
         iterative_bounds: Bounds on basin-hopping algorithm used in iterative estimation
         min_metric : Evaluation method to minimize in iterative estimation
 
@@ -251,6 +251,12 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
 
 
+def null_float(value: str) -> float:
+    if value.lower() == 'null':
+        return np.nan
+    return float(value)
+
+
 def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -281,7 +287,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
                         help='Flood depth estimation approach.')
     parser.add_argument('--water-level-sigma', type=float, default=3.,
                         help='Estimate max water height for each object.')
-    parser.add_argument('--known-water-threshold', type=float, default=None,
+    parser.add_argument('--known-water-threshold', type=null_float, default=np.nan,
                         help='Threshold for extracting known water area in percent')
     parser.add_argument('--minimization-metric', type=str, default='fmi', choices=['fmi', 'ts'],
                         help='Evaluation method to minimize in iterative estimation')

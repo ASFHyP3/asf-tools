@@ -8,13 +8,16 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## [0.5.3]
-### Changed
-* The `flood_map.iterative` method now generates an initial guess using the `nmad` method and then runs with a maximum step size of 3 instead of the default 0.5.
 
 ## Added
 * You can choose whether an `fmi`  or `ts` minimization metric is used for the `flood_map.iterative` method:
   * the `flood_map` console script entrypoint now accepts a `--min-metric` argument
   * the  `floopd_map.make_flood_map` function now accepts a `min_metric` keyword argument
+
+### Changed
+* The `flood_map.iterative` method now generates an initial guess using the `nmad` method and then runs with a maximum step size of 3 instead of the default 0.5.
+* the known water threshold used to determine perennial water when creating flood maps will be calculated by default, or if `NaN`, using `flood_map.get_pw_threshold`
+
 
 ## [0.5.2]
 
