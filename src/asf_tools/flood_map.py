@@ -297,7 +297,8 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
     parser.add_argument('--water-level-sigma', type=float, default=3.,
                         help='Estimate max water height for each object.')
     parser.add_argument('--known-water-threshold', type=optional_float, default=None,
-                        help='Threshold for extracting known water area in percent. If `None`, threshold will be caluclated.')
+                        help='Threshold for extracting known water area in percent.'
+                             ' If `None`, threshold will be caluclated.')
     parser.add_argument('--minimization-metric', type=str, default='fmi', choices=['fmi', 'ts'],
                         help='Evaluation method to minimize in iterative estimation')
 
