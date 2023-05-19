@@ -15,7 +15,7 @@ import tempfile
 import warnings
 from pathlib import Path
 from shutil import make_archive
-from typing import Callable, Literal, Tuple, Union
+from typing import Callable, Literal, Optional, Tuple, Union
 
 import numpy as np
 from osgeo import gdal
@@ -42,7 +42,7 @@ def get_pw_threshold(water_array: np.array) -> float:
     return round(ths_orig) + 1
 
 
-def get_waterbody(input_info: dict, threshold: float = np.nan) -> np.array:
+def get_waterbody(input_info: dict, threshold: Optional[float] = None) -> np.array:
     epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
@@ -57,7 +57,7 @@ def get_waterbody(input_info: dict, threshold: float = np.nan) -> np.array:
                   width=width, height=height, resampleAlg='nearest', format='GTiff')
         water_array = gdal.Open(water_extent_file.name, gdal.GA_ReadOnly).ReadAsArray()
 
-    if np.isnan(threshold):
+    if threshold is None:
         threshold = get_pw_threshold(water_array)
 
     return water_array > threshold
@@ -148,7 +148,7 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
                    water_raster: Union[str, Path], hand_raster: Union[str, Path],
                    estimator: str = 'iterative',
                    water_level_sigma: float = 3.,
-                   known_water_threshold: float = np.nan,
+                   known_water_threshold: Optional[float] = None,
                    iterative_bounds: Tuple[int, int] = (0, 15),
                    minimization_metric: str = 'fmi'):
     """Create a flood depth map from a surface water extent map.
@@ -183,7 +183,7 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
         estimator: Estimation approach for determining flood depth
         water_level_sigma: Max water height used in logstat, nmad, and numpy estimations
         known_water_threshold: Threshold for extracting the known water area in percent.
-            If NaN, the threshold is calculated.
+            If `None`, the threshold is calculated.
         iterative_bounds: Bounds on basin-hopping algorithm used in iterative estimation
         min_metric : Evaluation method to minimize in iterative estimation
 
@@ -252,9 +252,15 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
 
 
-def null_float(value: str) -> float:
-    if value.lower() == 'null':
-        return np.nan
+def optional_str(value: str) -> str:
+    if value.lower() == 'none':
+        return None
+    return value
+
+
+def optional_float(value: str) -> float:
+    if value.lower() == 'none':
+        return None
     return float(value)
 
 
@@ -265,12 +271,14 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
     )
 
     available_estimators = ['iterative', 'logstat', 'nmad', 'numpy']
+    estimator_help = 'Flood depth estimation approach.'
     if interface == 'hyp3':
         parser.add_argument('--bucket')
         parser.add_argument('--bucket-prefix', default='')
         parser.add_argument('--wm-raster',
                             help='Water map GeoTIFF raster, with suffix `_WM.tif`.')
         available_estimators.append('None')
+        estimator_help += ' If `None`, flood depth will not be calculated.'
     elif interface == 'main':
         parser.add_argument('out_raster',
                             help='File to which flood depth map will be saved.')
@@ -284,12 +292,13 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')
 
-    parser.add_argument('--estimator', type=str, default='iterative', choices=available_estimators,
-                        help='Flood depth estimation approach.')
+    parser.add_argument('--estimator', type=optional_str, default='iterative', choices=available_estimators,
+                        help=estimator_help)
     parser.add_argument('--water-level-sigma', type=float, default=3.,
                         help='Estimate max water height for each object.')
-    parser.add_argument('--known-water-threshold', type=null_float, default=np.nan,
-                        help='Threshold for extracting known water area in percent')
+    parser.add_argument('--known-water-threshold', type=optional_float, default=None,
+                        help='Threshold for extracting known water area in percent.'
+                             ' If `None`, threshold will be caluclated.')
     parser.add_argument('--minimization-metric', type=str, default='fmi', choices=['fmi', 'ts'],
                         help='Evaluation method to minimize in iterative estimation')
 
@@ -315,7 +324,7 @@ def hyp3():
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
 
-    if args.estimator == 'None':
+    if args.estimator is None:
         # NOTE: HyP3's current step function implementation does not have a good way of conditionally
         #       running processing steps. This allows HyP3 to always run this step but exit immediately
         #       and do nothing if flood depth maps are not requested.
