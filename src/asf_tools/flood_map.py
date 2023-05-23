@@ -252,13 +252,13 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
 
 
-def optional_str(value: str) -> str:
+def optional_str(value: str) -> Optional[str]:
     if value.lower() == 'none':
         return None
     return value
 
 
-def optional_float(value: str) -> float:
+def optional_float(value: str) -> Optional[float]:
     if value.lower() == 'none':
         return None
     return float(value)
