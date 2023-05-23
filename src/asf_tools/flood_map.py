@@ -270,7 +270,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    available_estimators = ['iterative', 'logstat', 'nmad', 'numpy']
+    available_estimators = ['iterative', 'logstat', 'nmad', 'numpy', None]
     estimator_help = 'Flood depth estimation approach.'
     if interface == 'hyp3':
         parser.add_argument('--bucket')
