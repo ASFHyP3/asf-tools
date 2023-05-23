@@ -252,13 +252,13 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
               epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
 
 
-def optional_str(value: str) -> str:
+def optional_str(value: str) -> Optional[str]:
     if value.lower() == 'none':
         return None
     return value
 
 
-def optional_float(value: str) -> float:
+def optional_float(value: str) -> Optional[float]:
     if value.lower() == 'none':
         return None
     return float(value)
@@ -277,7 +277,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
         parser.add_argument('--bucket-prefix', default='')
         parser.add_argument('--wm-raster',
                             help='Water map GeoTIFF raster, with suffix `_WM.tif`.')
-        available_estimators.append('None')
+        available_estimators.append(None)
         estimator_help += ' If `None`, flood depth will not be calculated.'
     elif interface == 'main':
         parser.add_argument('out_raster',
