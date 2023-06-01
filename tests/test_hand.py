@@ -16,16 +16,6 @@ GOLDEN_HAND = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/' \
 gdal.UseExceptions()
 
 
-def nodata_equal_nan(GOLDEN_HAND, out_hand):
-    ds_golden = gdal.Open(str(GOLDEN_HAND))
-    ds_out = gdal.Open(str(out_hand))
-    nodata_golden = ds_golden.GetRasterBand(1).GetNoDataValue()
-    nodata_out = ds_out.GetRasterBand(1).GetNoDataValue()
-    if nodata_golden and nodata_out:
-        return np.isnan(nodata_golden) and np.isnan(nodata_out)
-    else:
-        return False
-
 @pytest.mark.integration
 def test_make_copernicus_hand(tmp_path):
 
@@ -35,10 +25,7 @@ def test_make_copernicus_hand(tmp_path):
     assert out_hand.exists()
 
     diffs = find_diff(str(GOLDEN_HAND), str(out_hand))
-    if nodata_equal_nan(str(GOLDEN_HAND), str(out_hand)):
-        assert diffs == 1
-    else:
-        assert diffs == 0
+    assert diffs == 0
 
 
 def test_prepare_hand_vrt_no_coverage():
