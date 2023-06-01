@@ -6,10 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.3]
-
-### Fixed
-* Reverted the special handling of nan values introduced in v0.5.2, now that GDAL v3.7.0 has been released.
 
 ## [0.5.3]
 
@@ -21,6 +17,9 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 * The `flood_map.iterative` method now generates an initial guess using the `nmad` method and then runs with a maximum step size of 3 instead of the default 0.5.
 * the known water threshold used to determine perennial water when creating flood maps will be calculated by default, or if `NaN`, using `flood_map.get_pw_threshold`
+
+### Fixed
+* Reverted the special handling of nan values introduced in v0.5.2, now that GDAL v3.7.0 has been released.
 
 ## [0.5.2]
 
