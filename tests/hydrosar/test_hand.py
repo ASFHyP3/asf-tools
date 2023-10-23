@@ -5,7 +5,9 @@ from osgeo import gdal, ogr
 from osgeo_utils.gdalcompare import find_diff
 import numpy as np
 
-from asf_tools import hand
+from asf_tools import vector
+from asf_tools.hydrosar import hand
+
 
 
 HAND_BASINS = '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/' \
@@ -85,3 +87,25 @@ def test_prepare_hand_vrt_antimeridian():
 
     with pytest.raises(ValueError):
         hand.prepare_hand_vrt('foo', geometry)
+
+
+def test_intersects_hand_feature():
+    features = vector.get_features(hand.prepare.HAND_GEOJSON)
+
+    geojson = {
+        'type': 'Point',
+        'coordinates': [169, -45],
+    }
+    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
+    assert vector.get_property_values_for_intersecting_features(geometry, features)
+
+    geojson = {
+        'type': 'Point',
+        'coordinates': [0, 0],
+    }
+    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
+    assert not vector.get_property_values_for_intersecting_features(geometry, features)
+
+
+def test_get_features():
+    assert len(vector.get_features(hand.prepare.HAND_GEOJSON)) == 26450

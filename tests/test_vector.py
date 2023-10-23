@@ -2,26 +2,25 @@ import json
 
 from osgeo import ogr
 
-from asf_tools import dem, hand, vector
+from asf_tools import dem, vector
 
 
 def test_intersects_feature():
-    for vector_file in (dem.DEM_GEOJSON, asf_tools.hydrosar.hand.prepare.HAND_GEOJSON):
-        features = vector.get_features(vector_file)
+    features = vector.get_features(dem.DEM_GEOJSON)
 
-        geojson = {
-            'type': 'Point',
-            'coordinates': [169, -45],
-        }
-        geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-        assert vector.get_property_values_for_intersecting_features(geometry, features)
+    geojson = {
+        'type': 'Point',
+        'coordinates': [169, -45],
+    }
+    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
+    assert vector.get_property_values_for_intersecting_features(geometry, features)
 
-        geojson = {
-            'type': 'Point',
-            'coordinates': [0, 0],
-        }
-        geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
-        assert not vector.get_property_values_for_intersecting_features(geometry, features)
+    geojson = {
+        'type': 'Point',
+        'coordinates': [0, 0],
+    }
+    geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
+    assert not vector.get_property_values_for_intersecting_features(geometry, features)
 
 
 def test_get_intersecting_feature_properties():
@@ -59,4 +58,3 @@ def test_get_intersecting_feature_properties():
 
 def test_get_features():
     assert len(vector.get_features(dem.DEM_GEOJSON)) == 26450
-    assert len(vector.get_features(asf_tools.hydrosar.hand.prepare.HAND_GEOJSON)) == 26450

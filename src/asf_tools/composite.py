@@ -15,44 +15,18 @@ import argparse
 import logging
 import os
 import sys
-from pathlib import Path
 from statistics import multimode
-from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import List, Union
+from tempfile import TemporaryDirectory
+from typing import List
 
 import numpy as np
-from osgeo import gdal, osr
+from osgeo import gdal
+
+from asf_tools.raster import read_as_array, write_cog
+from asf_tools.util import get_epsg_code
 
 gdal.UseExceptions()
 log = logging.getLogger(__name__)
-
-
-def get_epsg_code(info: dict) -> int:
-    """Get the EPSG code from a GDAL Info dictionary
-
-    Args:
-        info: The dictionary returned by a gdal.Info call
-
-    Returns:
-        epsg_code: The integer EPSG code
-    """
-    proj = osr.SpatialReference(info['coordinateSystem']['wkt'])
-    epsg_code = int(proj.GetAttrValue('AUTHORITY', 1))
-    return epsg_code
-
-
-def epsg_to_wkt(epsg_code: int) -> str:
-    """Get the WKT representation of a projection from its EPSG code
-
-    Args:
-        epsg_code: The integer EPSG code
-
-    Returns:
-        wkt: The WKT representation of the projection
-    """
-    srs = osr.SpatialReference()
-    srs.ImportFromEPSG(epsg_code)
-    return srs.ExportToWkt()
 
 
 def get_target_epsg_code(codes: List[int]) -> int:
@@ -167,57 +141,6 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
             target_raster_info[raster] = info
 
     return target_raster_info
-
-
-def read_as_array(raster: str, band: int = 1) -> np.array:
-    """Reads data from a raster image into memory
-
-    Args:
-        raster: The file path to a raster image
-        band: The raster band to read
-
-    Returns:
-        data: The raster pixel data as a numpy array
-    """
-    log.debug(f'Reading raster values from {raster}')
-    ds = gdal.Open(raster)
-    data = ds.GetRasterBand(band).ReadAsArray()
-    del ds  # How to close w/ gdal
-    return data
-
-
-def write_cog(file_name: Union[str, Path], data: np.ndarray, transform: List[float], epsg_code: int,
-              dtype=gdal.GDT_Float32, nodata_value=None):
-    """Creates a Cloud Optimized GeoTIFF
-
-    Args:
-        file_name: The output file name
-        data: The raster data
-        transform: The geotransform for the output GeoTIFF
-        epsg_code: The integer EPSG code for the output GeoTIFF projection
-        dtype: The pixel data type for the output GeoTIFF
-        nodata_value: The NODATA value for the output Geotiff
-
-    Returns:
-        file_name: The output file name
-    """
-    log.info(f'Creating {file_name}')
-
-    with NamedTemporaryFile() as temp_file:
-        driver = gdal.GetDriverByName('GTiff')
-        temp_geotiff = driver.Create(temp_file.name, data.shape[1], data.shape[0], 1, dtype)
-        temp_geotiff.GetRasterBand(1).WriteArray(data)
-        if nodata_value is not None:
-            temp_geotiff.GetRasterBand(1).SetNoDataValue(nodata_value)
-        temp_geotiff.SetGeoTransform(transform)
-        temp_geotiff.SetProjection(epsg_to_wkt(epsg_code))
-
-        driver = gdal.GetDriverByName('COG')
-        options = ['COMPRESS=LZW', 'OVERVIEW_RESAMPLING=AVERAGE', 'NUM_THREADS=ALL_CPUS', 'BIGTIFF=YES']
-        driver.CreateCopy(str(file_name), temp_geotiff, options=options)
-
-        del temp_geotiff  # How to close w/ gdal
-    return file_name
 
 
 def make_composite(out_name: str, rasters: List[str], resolution: float = None):
