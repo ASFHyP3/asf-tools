@@ -2,7 +2,7 @@ import logging
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Literal, Union, List
+from typing import List, Literal, Union
 
 import numpy as np
 from osgeo import gdal
