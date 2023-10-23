@@ -3,21 +3,9 @@ import pytest
 from osgeo_utils.gdalcompare import find_diff
 
 from osgeo import gdal
+
+import asf_tools.util
 from asf_tools.hydrosar import flood_map
-
-
-def test_get_coordinates():
-    water_raster = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/' \
-                   'S1A_IW_20230228T120437_DVR_RTC30/flood_map/watermap.tif'
-    info = gdal.Info(water_raster, format='json')
-
-    west, south, east, north = flood_map.get_coordinates(info)
-
-    assert west == 101460.0
-    assert south == 2457570.0
-    assert east == 386160.0
-    assert north == 2681970.0
-
 
 @pytest.mark.integration
 def test_get_waterbody():
