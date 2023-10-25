@@ -21,7 +21,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * The HydroSAR code (`flood_map`, `water_map`, and `hand`) in `asf_tools` has been isolated to a `asf_tools.hydrosar` sub-package 
 * The `asf_tools.hydrosar.flood_map.iterative` estimator now runs with a maximum step size of 3 instead of the default 0.5.
 * The `asf_tools.hydrosar.flood_map.iterative` estimator now uses the mean of the iterative bounds at the initial guess.
-* the known water threshold used to determine perennial water when creating flood maps will be calculated by default, or if `NaN`, using `asf_tools.hydrosar.flood_map.get_pw_threshold`
+* the known water threshold used to determine perennial water when creating flood maps will be calculated `asf_tools.hydrosar.flood_map.get_pw_threshold` if not provided
 * `get_epsg_code` and `epsg_to_wkt` have been moved from`asf_tools.composite` to `asf_tools.util`
 * `read_as_array` and `write_cog` have been moved from`asf_tools.composite` to `asf_tools.raster`
 * `get_coordinates` has been moved from`asf_tools.flood_map` to `asf_tools.util`
