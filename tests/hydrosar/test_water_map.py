@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 from osgeo_utils.gdalcompare import find_diff
 
-from asf_tools import water_map
-from asf_tools.composite import read_as_array
+from asf_tools.hydrosar import water_map
+from asf_tools.raster import read_as_array
 from asf_tools.tile import tile_array
 
 
