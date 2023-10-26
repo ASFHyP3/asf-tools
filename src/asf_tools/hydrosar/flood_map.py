@@ -57,21 +57,22 @@ def get_waterbody(input_info: dict, threshold: Optional[float] = None) -> np.arr
     return water_array > threshold
 
 
-def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: np.array = range(15),
-              minimization_metric: str = 'fmi'):
+def iterative(hand: np.array, extent: np.array, water_levels: np.array = np.arange(15),
+              minimization_metric: str = 'ts'):
     def get_confusion_matrix(w):
         iterative_flood_extent = hand < w  # w=water level
         tp = np.nansum(np.logical_and(iterative_flood_extent == 1, extent == 1))  # true positive
+        tn = np.nansum(np.logical_and(iterative_flood_extent == 0, extent == 0))  # true negative
         fp = np.nansum(np.logical_and(iterative_flood_extent == 1, extent == 0))  # False positive
         fn = np.nansum(np.logical_and(iterative_flood_extent == 0, extent == 1))  # False negative
-        return tp, fp, fn
+        return tp, tn, fp, fn
 
     def _goal_ts(w):
-        tp, fp, fn = get_confusion_matrix(w)
-        return 1 - tp / (tp + fp + fn)  # threat score #we will minimize goal func, hence 1-threat_score.
+        tp, _, fp, fn = get_confusion_matrix(w)
+        return 1 - tp / (tp + fp + fn)  # threat score -- we will minimize goal func, hence `1 - threat_score`.
 
     def _goal_fmi(w):
-        tp, fp, fn = get_confusion_matrix(w)
+        tp, _, fp, fn = get_confusion_matrix(w)
         return 1 - np.sqrt((tp/(tp+fp))*(tp/(tp+fn)))
 
     class MyBounds(object):
@@ -84,10 +85,14 @@ def iterative(hand: np.array, extent: np.array, x0: float = 7.5, water_levels: n
             tmax = bool(np.all(x <= self.xmax))
             tmin = bool(np.all(x >= self.xmin))
             return tmax and tmin
+
     bounds = MyBounds()
     MINIMIZATION_FUNCTION = {'fmi': _goal_fmi, 'ts': _goal_ts}
-    opt_res = optimize.basinhopping(MINIMIZATION_FUNCTION[minimization_metric], x0, niter=10000, niter_success=100,
-                                    accept_test=bounds, stepsize=3)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=RuntimeWarning)
+        opt_res = optimize.basinhopping(MINIMIZATION_FUNCTION[minimization_metric], np.mean(water_levels),
+                                        niter=10000, niter_success=100, accept_test=bounds, stepsize=3)
+
     if opt_res.message[0] == 'success condition satisfied' \
             or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
         return opt_res.x[0]
@@ -111,19 +116,24 @@ def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, f
     return np.exp(st)
 
 
-def estimate_flood_depth(label, hand, flood_labels, estimator='iterative', water_level_sigma=3.,
-                         iterative_bounds=(0, 15), minimization_metric: str = 'fmi'):
+def estimate_flood_depth(label: int, hand: np.ndarray, flood_labels: np.ndarray, estimator: str = 'iterative',
+                         water_level_sigma: float = 3., iterative_bounds: Tuple[int, int] = (0, 15),
+                         iterative_min_size: int = 0, minimization_metric: str = 'ts') -> float:
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
 
-        if estimator.lower() == "iterative" or estimator.lower() == "nmad":
+        if estimator.lower() == "iterative":
+            if (flood_labels == label).sum() < iterative_min_size:
+                return np.nan
+
+            water_levels = np.arange(*iterative_bounds)
+            return iterative(hand, flood_labels == label,
+                             water_levels=water_levels, minimization_metric=minimization_metric)
+
+        if estimator.lower() == "nmad":
             hand_mean = np.nanmean(hand[flood_labels == label])
-            hand_std = stats.median_abs_deviation(hand[flood_labels == label], scale='normal',
-                                                  nan_policy='omit')
-            if estimator.lower() == "iterative":
-                return iterative(hand, flood_labels == label,
-                                 x0=hand_mean + water_level_sigma * hand_std,
-                                 water_levels=iterative_bounds, minimization_metric=minimization_metric)
+            hand_std = stats.median_abs_deviation(hand[flood_labels == label], scale='normal', nan_policy='omit')
+
         if estimator.lower() == "numpy":
             hand_mean = np.nanmean(hand[flood_labels == label])
             hand_std = np.nanstd(hand[flood_labels == label])
@@ -144,7 +154,9 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
                    water_level_sigma: float = 3.,
                    known_water_threshold: Optional[float] = None,
                    iterative_bounds: Tuple[int, int] = (0, 15),
-                   minimization_metric: str = 'fmi'):
+                   iterative_min_size: int = 0,
+                   minimization_metric: str = 'ts',
+                   ):
     """Create a flood depth map from a surface water extent map.
 
     WARNING: This functionality is still under active development and the products
@@ -178,8 +190,12 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
         water_level_sigma: Max water height used in logstat, nmad, and numpy estimations
         known_water_threshold: Threshold for extracting the known water area in percent.
             If `None`, the threshold is calculated.
-        iterative_bounds: Bounds on basin-hopping algorithm used in iterative estimation
-        min_metric : Evaluation method to minimize in iterative estimation
+        iterative_bounds: Minimum and maximum bound on the flood depths calculated by the basin-hopping algorithm
+            used in the iterative estimator
+        iterative_min_size: Minimum size of a connected waterbody in pixels for calculating flood depths with the
+            iterative estimator. Waterbodies smaller than this wll be skipped.
+        minimization_metric: Evaluation method to minimize when using the iterative estimator.
+            Options include a Fowlkes-Mallows index (fmi) or a threat score (ts).
 
     References:
         Jean-Francios Pekel, Andrew Cottam, Noel Gorelik, Alan S. Belward. 2016. <https://doi:10.1038/nature20584>
@@ -206,7 +222,9 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
 
     labeled_flood_mask, num_labels = ndimage.label(flood_mask)
     object_slices = ndimage.find_objects(labeled_flood_mask)
-    log.info(f'Detected {num_labels} water bodies...')
+    log.info(f'Detected {num_labels} waterbodies...')
+    if estimator.lower() == 'iterative':
+        log.info(f'Skipping waterbodies less than {iterative_min_size} pixels.')
 
     flood_depth = np.zeros(flood_mask.shape)
 
@@ -218,9 +236,11 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
         flood_window = labeled_flood_mask[min0:max0, min1:max1]
         hand_window = hand_array[min0:max0, min1:max1]
 
-        water_height = estimate_flood_depth(ll, hand_window, flood_window, estimator=estimator,
-                                            water_level_sigma=water_level_sigma, iterative_bounds=iterative_bounds,
-                                            minimization_metric=minimization_metric)
+        water_height = estimate_flood_depth(
+            ll, hand_window, flood_window, estimator=estimator, water_level_sigma=water_level_sigma,
+            iterative_bounds=iterative_bounds, minimization_metric=minimization_metric,
+            iterative_min_size=iterative_min_size,
+        )
 
         flood_depth_window = flood_depth[min0:max0, min1:max1]
         flood_depth_window[flood_window == ll] = water_height - hand_window[flood_window == ll]
@@ -292,16 +312,23 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
                         help='Estimate max water height for each object.')
     parser.add_argument('--known-water-threshold', type=optional_float, default=None,
                         help='Threshold for extracting known water area in percent.'
-                             ' If `None`, threshold will be caluclated.')
-    parser.add_argument('--minimization-metric', type=str, default='fmi', choices=['fmi', 'ts'],
-                        help='Evaluation method to minimize in iterative estimation')
+                             ' If `None`, threshold will be calculated.')
+    parser.add_argument('--minimization-metric', type=str, default='ts', choices=['fmi', 'ts'],
+                        help='Evaluation method to minimize when using the iterative estimator. '
+                             'Options include a Fowlkes-Mallows index (fmi) or a threat score (ts).')
+    parser.add_argument('--iterative-min-size', type=int, default=0,
+                        help='Minimum size of a connected waterbody in pixels for calculating flood depths with the '
+                             'iterative estimator. Waterbodies smaller than this wll be skipped.')
 
     if interface == 'hyp3':
-        parser.add_argument('--iterative-min', type=int, default=0)
-        parser.add_argument('--iterative-max', type=int, default=15)
+        parser.add_argument('--iterative-min', type=int, default=0,
+                            help='Minimum bound on the flood depths calculated using the iterative estimator.')
+        parser.add_argument('--iterative-max', type=int, default=15,
+                            help='Maximum bound on the flood depths calculated using the iterative estimator.')
     elif interface == 'main':
-        # FIXME: add a help string
-        parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15])
+        parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15],
+                            help='Minimum and maximum bound on the flood depths calculated using the iterative '
+                                 'estimator.')
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')
 
@@ -346,10 +373,10 @@ def hyp3():
         out_raster=flood_map_raster, vv_raster=vv_raster, water_raster=water_map_raster, hand_raster=hand_raster,
         estimator=args.estimator, water_level_sigma=args.water_level_sigma,
         known_water_threshold=args.known_water_threshold, iterative_bounds=(args.iterative_min, args.iterative_max),
-        minimization_metric=args.minimization_metric
+        iterative_min_size=args.iterative_min_size, minimization_metric=args.minimization_metric,
     )
 
-    log.info(f"Flood depth map created successfully: {flood_map_raster}")
+    log.info(f'Flood depth map created successfully: {flood_map_raster}')
 
     if args.bucket:
         output_zip = make_archive(base_name=product_name, format='zip', base_dir=product_name)
@@ -366,8 +393,11 @@ def main():
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
     log.debug(' '.join(sys.argv))
 
-    make_flood_map(args.out_raster, args.vv_raster, args.water_extent_map, args.hand_raster,
-                   args.estimator, args.water_level_sigma, args.known_water_threshold, tuple(args.iterative_bounds),
-                   args.minimization_metric)
+    make_flood_map(
+        out_raster=args.out_raster, vv_raster=args.vv_raster, water_raster=args.water_extent_map,
+        hand_raster=args.hand_raster, estimator=args.estimator, water_level_sigma=args.water_level_sigma,
+        known_water_threshold=args.known_water_threshold, iterative_bounds=tuple(args.iterative_bounds),
+        iterative_min_size=args.iterative_min_size, minimization_metric=args.minimization_metric,
+    )
 
     log.info(f"Flood depth map created successfully: {args.out_raster}")
