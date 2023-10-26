@@ -18,13 +18,16 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   * the  `asf_tools.hydrosar.floopd_map.make_flood_map` function now accepts a `iterative_min_size` keyword argument
 
 ### Changed
-* The HydroSAR code (`flood_map`, `water_map`, and `hand`) in `asf_tools` has been isolated to a `asf_tools.hydrosar` sub-package 
+* The HydroSAR code (`flood_map`, `water_map`, and `hand`) in `asf_tools` has been isolated to an `asf_tools.hydrosar` sub-package
 * The `asf_tools.hydrosar.flood_map.iterative` estimator now runs with a maximum step size of 3 instead of the default 0.5.
 * The `asf_tools.hydrosar.flood_map.iterative` estimator now uses the mean of the iterative bounds at the initial guess.
 * the known water threshold used to determine perennial water when creating flood maps will be calculated `asf_tools.hydrosar.flood_map.get_pw_threshold` if not provided
 * `get_epsg_code` and `epsg_to_wkt` have been moved from`asf_tools.composite` to `asf_tools.util`
 * `read_as_array` and `write_cog` have been moved from`asf_tools.composite` to `asf_tools.raster`
 * `get_coordinates` has been moved from`asf_tools.flood_map` to `asf_tools.util`
+
+### Deprecated
+* The `asf_tools.hydrosar` sub-package is being moved to the [HydroSAR project repository](https://github.com/fjmeyer/hydrosar) and will be provided in a new pip/conda installable package `hydrosar`. The `asf_tools.hydrosar` subpackage will be removed in a future release.
 
 ### Fixed
 * Reverted the special handling of nan values introduced in v0.5.2, now that GDAL v3.7.0 has been released.
