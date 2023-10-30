@@ -7,6 +7,31 @@ and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/)
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.6.0]
+
+## Added
+* You can choose whether the `ts` (threat score; default) or `fmi` (Fowlkes-Mallows index) minimization metric is used for the flood mapping iterative estimator:
+  * the `flood_map` console script entrypoint now accepts a `--minimization-metric` argument
+  * the  `asf_tools.hydrosar.floopd_map.make_flood_map` function now accepts a `minimization_metric` keyword argument
+* The flood mapping iterative estimator will ignore waterbodies smaller than a minimum number of pixels (default = 0)
+  * the `flood_map` console script entrypoint now accepts a `--iterative-min-size` argument
+  * the  `asf_tools.hydrosar.floopd_map.make_flood_map` function now accepts a `iterative_min_size` keyword argument
+
+### Changed
+* The HydroSAR code (`flood_map`, `water_map`, and `hand`) in `asf_tools` has been isolated to an `asf_tools.hydrosar` sub-package
+* The `asf_tools.hydrosar.flood_map.iterative` estimator now runs with a maximum step size of 3 instead of the default 0.5.
+* The `asf_tools.hydrosar.flood_map.iterative` estimator now uses the mean of the iterative bounds at the initial guess.
+* the known water threshold used to determine perennial water when creating flood maps will be calculated `asf_tools.hydrosar.flood_map.get_pw_threshold` if not provided
+* `get_epsg_code` and `epsg_to_wkt` have been moved from`asf_tools.composite` to `asf_tools.util`
+* `read_as_array` and `write_cog` have been moved from`asf_tools.composite` to `asf_tools.raster`
+* `get_coordinates` has been moved from`asf_tools.flood_map` to `asf_tools.util`
+
+### Deprecated
+* The `asf_tools.hydrosar` sub-package is being moved to the [HydroSAR project repository](https://github.com/fjmeyer/hydrosar) and will be provided in a new pip/conda installable package `hydrosar`. The `asf_tools.hydrosar` subpackage will be removed in a future release.
+
+### Fixed
+* Reverted the special handling of nan values introduced in v0.5.2, now that GDAL v3.7.0 has been released.
+
 ## [0.5.2]
 
 ### Added
@@ -20,13 +45,13 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.5.1]
 
 ### Changed
-* `asf-tools.flood_map` now produces rasters with pixel values of a positive integer where water is present and `0` where water is not present. Everywhere else is set to nodata.
+* `asf_tools.flood_map` now produces rasters with pixel values of a positive integer where water is present and `0` where water is not present. Everywhere else is set to nodata.
 
 ## [0.5.0]
 
 ### Added
 * HyP3 plugin entrypoints `water_map` and `flood_depth`
-  * Added fuzzy and intial VV and VH geotiffs back to water map output package.
+  * Added fuzzy and initial VV and VH geotiffs back to water map output package.
 * `asf_tools.__main__` entrypoint that allows you to select which hyp3 plugin entrypoint you'd like to run 
   (e.g., `python -m asf_tools ++process water_map ...`)
   
@@ -51,7 +76,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.4.4]
 
 ### Changed
-* `asf-tools.water_map` now produces water extent rasters with pixels values of `1` where water is present and `0` where water is not present
+* `asf_tools.water_map` now produces water extent rasters with pixels values of `1` where water is present and `0` where water is not present
 * `asf_tools.water_map` now uses the  updated [ASF Global HAND dataset](https://glo-hand-30m.s3.amazonaws.com/readme.html) derived from the [2021 release of the Copernicus GLO-30 Public DEM](https://spacedata.copernicus.eu/blogs/-/blogs/copernicus-dem-2021-release-now-available)
 
 ## [0.4.3]
