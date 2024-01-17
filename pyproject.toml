@@ -23,6 +23,7 @@ classifiers=[
 ]
 dependencies = [
     "astropy",
+    "asf_search",
     "fiona",
     "gdal>=3.3",
     "numpy",
@@ -41,6 +42,7 @@ make_composite = "asf_tools.composite:main"
 water_map = "asf_tools.hydrosar.water_map:main"
 calculate_hand = "asf_tools.hydrosar.hand.calculate:main"
 flood_map = "asf_tools.hydrosar.flood_map:main"
+opera_rgb = "asf_tools.opera_rgb:main"
 
 [project.entry-points.hyp3]
 water_map = "asf_tools.hydrosar.water_map:hyp3"
