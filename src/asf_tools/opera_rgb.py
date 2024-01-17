@@ -1,6 +1,7 @@
 """Create a georefernced RGB decomposition RTC image from two input OPERA RTCs"""
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import asf_search
 import numpy as np
@@ -13,7 +14,15 @@ BROWSE_IMAGE_MIN_PERCENTILE = 3
 BROWSE_IMAGE_MAX_PERCENTILE = 97
 
 
-def normalize_browse_image_band(band_image):
+def normalize_browse_image_band(band_image: np.ndarray) -> np.ndarray:
+    """Normalize a single band of a browse image to remove outliers.
+
+    Args:
+        band_image: A single band numpy array to normalize.
+
+    Returns:
+        A normalized numpy array.
+    """
     vmin = np.nanpercentile(band_image, BROWSE_IMAGE_MIN_PERCENTILE)
     vmax = np.nanpercentile(band_image, BROWSE_IMAGE_MAX_PERCENTILE)
 
@@ -26,7 +35,17 @@ def normalize_browse_image_band(band_image):
     return band_image
 
 
-def create_browse_imagery(copol_path, crosspol_path, output_path, alpha_path=None):
+def create_decomposition_rgb(
+    copol_path: str, crosspol_path: str, output_path: str, alpha_path: Optional[str] = None
+) -> None:
+    """Create a georeferenced RGB decomposition RTC image from co-pol and cross-pol RTCs.
+
+    Args:
+        copol_path: Path to co-pol RTC.
+        crosspol_path: Path to cross-pol RTC.
+        output_path: Path to save resulting RGB image to.
+        alpha_path: Path to alpha band image. If not provided, the alpha band will be the valid data mask.
+    """
     band_list = [None, None, None]
 
     for filename, is_copol in ((copol_path, True), (crosspol_path, False)):
@@ -65,7 +84,15 @@ def create_browse_imagery(copol_path, crosspol_path, output_path, alpha_path=Non
         output_ds.GetRasterBand(i + 1).WriteArray(image[:, :, i])
 
 
-def prep_data(granule):
+def prep_data(granule: str):
+    """Download and prepare the data needed to create an RGB decomposition image.
+
+    Args:
+        granule: OPERA granule name.
+
+    Returns:
+        Tuple of co-pol, cross-pol, and mask filenames, None for each if not available.
+    """
     result = asf_search.granule_search([granule])[0]
     urls = [result.properties['url']]
     others = [x for x in result.properties['additionalUrls'] if 'tif' in x]
@@ -100,4 +127,4 @@ def main():
     args = parser.parse_args()
 
     copol, crosspol, mask = prep_data(args.granule[0])
-    create_browse_imagery(copol, crosspol, args.outpath, mask)
+    create_decomposition_rgb(copol, crosspol, args.outpath, mask)
