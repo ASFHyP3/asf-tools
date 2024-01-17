@@ -26,7 +26,7 @@ def normalize_browse_image_band(band_image):
     return band_image
 
 
-def create_browse_imagery(copol_path, crosspol_path, output_path, alpha_channel=None):
+def create_browse_imagery(copol_path, crosspol_path, output_path, alpha_path=None):
     band_list = [None, None, None]
 
     for filename, is_copol in ((copol_path, True), (crosspol_path, False)):
@@ -38,8 +38,12 @@ def create_browse_imagery(copol_path, crosspol_path, output_path, alpha_channel=
         if is_copol:
             # Using copol as template for output
             is_valid = np.isfinite(band_image)
-            if alpha_channel is None:
-                alpha_channel = np.asarray(is_valid, dtype=np.float32)
+            if alpha_path is None:
+                alpha_band = np.asarray(is_valid, dtype=np.float32)
+            else:
+                alpha_ds = gdal.Open(alpha_path, gdal.GA_ReadOnly)
+                alpha_band = np.asarray(alpha_ds.GetRasterBand(1).ReadAsArray(), dtype=np.float32)
+
             geotransform = gdal_ds.GetGeoTransform()
             projection = gdal_ds.GetProjection()
             shape = band_image.shape
@@ -51,7 +55,7 @@ def create_browse_imagery(copol_path, crosspol_path, output_path, alpha_channel=
         for index in band_list_index:
             band_list[index] = normalized_image
 
-    image = np.dstack((band_list[0], band_list[1], band_list[2], alpha_channel))
+    image = np.dstack((band_list[0], band_list[1], band_list[2], alpha_band))
 
     driver = gdal.GetDriverByName('GTiff')
     output_ds = driver.Create(output_path, shape[1], shape[0], 4, gdal.GDT_Float32)
@@ -66,16 +70,25 @@ def prep_data(granule):
     urls = [result.properties['url']]
     others = [x for x in result.properties['additionalUrls'] if 'tif' in x]
     urls += others
-    asf_search.download_urls(urls, path='.')
+
     names = [Path(x).name for x in urls]
+    copol, crosspol, mask = [None, None, None]
+
     for name in names:
         image_type = name.split('_')[-1].split('.')[0]
         if image_type in ['VV', 'HH']:
             copol = name
-        elif image_type in ['VH', 'HV']:
+
+        if image_type in ['VH', 'HV']:
             crosspol = name
-        elif image_type == 'mask':
+
+        if image_type == 'mask':
             mask = name
+
+    if copol is None or crosspol is None:
+        raise ValueError('Both co-pol AND cross-pol data must be available to create an RGB decomposition')
+
+    asf_search.download_urls(urls, path='.')
     return copol, crosspol, mask
 
 
@@ -86,5 +99,5 @@ def main():
     parser.add_argument('--outpath', default='rgb.tif', help='Path to save resulting RGB image to')
     args = parser.parse_args()
 
-    copol, crosspol, _ = prep_data(args.granule[0])
-    create_browse_imagery(Path(copol), Path(crosspol), Path(args.outpath))
+    copol, crosspol, mask = prep_data(args.granule[0])
+    create_browse_imagery(copol, crosspol, args.outpath, mask)
