@@ -10,9 +10,6 @@ from osgeo import gdal
 
 gdal.UseExceptions()
 
-BROWSE_IMAGE_MIN_PERCENTILE = 3
-BROWSE_IMAGE_MAX_PERCENTILE = 97
-
 
 def normalize_browse_image_band(band_image: np.ndarray) -> np.ndarray:
     """Normalize a single band of a browse image to remove outliers.
@@ -23,8 +20,8 @@ def normalize_browse_image_band(band_image: np.ndarray) -> np.ndarray:
     Returns:
         A normalized numpy array.
     """
-    vmin = np.nanpercentile(band_image, BROWSE_IMAGE_MIN_PERCENTILE)
-    vmax = np.nanpercentile(band_image, BROWSE_IMAGE_MAX_PERCENTILE)
+    vmin = np.nanpercentile(band_image, 3)
+    vmax = np.nanpercentile(band_image, 97)
 
     # gamma correction: 0.5
     is_not_negative = band_image - vmin >= 0
