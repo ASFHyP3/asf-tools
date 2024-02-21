@@ -23,6 +23,7 @@ dependencies:
   - boto3
   - fiona
   - gdal>=3.7
+  - geopandas
   - numpy
   - pysheds>=0.3
   - rasterio

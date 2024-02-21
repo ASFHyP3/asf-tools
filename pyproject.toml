@@ -25,14 +25,14 @@ dependencies = [
     "astropy",
     "fiona",
     "gdal>=3.3",
+    "geopandas",
     "numpy",
     "pysheds>=0.3",
     "rasterio",
     "scikit-fuzzy",
     "scikit-image",
     "scipy",
-    "shapely",
-    "tqdm",
+    "shapely"
 ]
 dynamic = ["version"]
 
