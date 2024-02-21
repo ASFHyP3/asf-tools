@@ -6,7 +6,7 @@ import geopandas as gpd
 import numpy as np
 from osgeo import gdal
 
-from hyp3_testing.watermasking.utils import lat_lon_to_tile_string
+from asf_tools.watermasking.utils import lat_lon_to_tile_string
 
 
 def process_pbf(planet_file: str, output_file: str):
@@ -30,6 +30,19 @@ def process_pbf(planet_file: str, output_file: str):
     os.system(waterways_command)
     os.system(reservoirs_command)
     os.system(merge_command)
+
+
+def remove_temp_files(temp_files: list):
+    """Remove each file in a list of files.
+    
+    Args:
+        temp_files: The list of temporary files to remove.
+    """
+    for file in temp_files:
+        try:
+            os.remove(file)
+        except:
+            print('Error removing temporary file. Skipping it...')
 
 
 def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_height_deg):
@@ -65,11 +78,8 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         creationOptions=['COMPRESS=LZW']
     )
 
-    clipped_dbf = tile + '.dbf'
-    clipped_shx = tile + '.shx'
-    clipped_prj = tile + '.prj'
-    clipped_cpg = tile + '.cpg'
-    os.system(f'rm {clipped_polygons_path} {clipped_dbf} {clipped_shx} {clipped_prj} {clipped_cpg} > /dev/null 2>&1')
+    temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx']
+    remove_temp_files(temp_files)
 
 
 def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg):
@@ -99,6 +109,7 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg):
         water_gdf = water_gdf.drop(water_gdf[water_gdf['place'] == 'island'].index)
         water_gdf = water_gdf.drop(water_gdf[water_gdf['place'] == 'islet'].index)
     except:
+        # When there are no islands to remove, an error will be occur, but we don't care about it.
         pass
     water_gdf.to_file(tile_shp, mode='w', engine='pyogrio')
     water_gdf = None
@@ -118,11 +129,8 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg):
         creationOptions=['COMPRESS=LZW']
     )
 
-    tile_dbf = tile + '.dbf'
-    tile_cpg = tile + '.cpg'
-    tile_prj = tile + '.prj'
-    tile_shx = tile + '.shx'
-    os.system(f'rm {tile_geojson} {tile_pbf} {tile_shp} {tile_dbf} {tile_prj} {tile_cpg} {tile_shx}')
+    temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx']
+    remove_temp_files(temp_files)
 
 
 def merge_tiles(internal_tile_dir, ocean_tile_dir, finished_tile_dir, translate_to_cog: bool = False):
@@ -161,6 +169,7 @@ def merge_tiles(internal_tile_dir, ocean_tile_dir, finished_tile_dir, translate_
 
 
 def setup_directories():
+    """Setup the directories necessary for running the script."""
     dirs = ['interior_tiles/', 'ocean_tiles/', 'merged_tiles/', 'finished_tiles/']
     for dir in dirs:
         try:
