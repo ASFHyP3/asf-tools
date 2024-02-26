@@ -94,7 +94,7 @@ def get_tiles(osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
     return tiles
 
 
-def lat_lon_to_filenames(osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
+def lat_lon_to_filenames(worldcover_tile_dir, osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
     """Get a list of the Worldcover tile filenames that are necessary to overlap an OSM tile.
 
     Args:
@@ -108,12 +108,16 @@ def lat_lon_to_filenames(osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
     filenames = []
     tiles = get_tiles(osm_tile_coord, wc_deg, osm_deg)
     for tile in tiles:
-        filenames.append(lat_lon_to_tile_string(tile[0], tile[1], is_worldcover=True))
+        filenames.append(worldcover_tile_dir + lat_lon_to_tile_string(tile[0], tile[1], is_worldcover=True))
     return filenames
 
 
 def crop_tile(tile):
-    """Crop the merged tiles"""
+    """Crop the merged tiles
+    
+    Args:
+        tile: The filename of the desired tile to crop.
+    """
     try:
         ref_image = TILE_DIR + tile
         pixel_size = gdal.Warp('tmp_px_size.tif', ref_image, dstSRS='EPSG:4326').GetGeoTransform()[1]
@@ -137,12 +141,20 @@ def crop_tile(tile):
     index += 1
 
 
-def build_dataset(lat_range, lon_range, worldcover_degrees, osm_degrees):
+def build_dataset(worldcover_tile_dir, lat_range, lon_range, out_degrees):
+    """ Main function for generating a dataset with worldcover tiles.
+
+    Args:
+        worldcover_tile_dir: The directory containing the unprocessed worldcover tiles.
+        lat_range: The range of latitudes the dataset should cover.
+        lon_range: The range of longitudes the dataset should cover.
+        out_degrees: The width of the outputed dataset tiles in degrees. 
+    """
     for lat in lat_range:
         for lon in lon_range:
             start_time = time.time()
             tile_filename = TILE_DIR + lat_lon_to_tile_string(lat, lon, is_worldcover=False)
-            worldcover_tiles = lat_lon_to_filenames(lat, lon, worldcover_degrees, osm_degrees)
+            worldcover_tiles = lat_lon_to_filenames(worldcover_tile_dir, lat, lon, WORLDCOVER_TILE_SIZE, out_degrees)
             print(f'Processing: {tile_filename} {worldcover_tiles}') 
             merge_tiles(worldcover_tiles, tile_filename)
             end_time = time.time()
@@ -151,10 +163,12 @@ def build_dataset(lat_range, lon_range, worldcover_degrees, osm_degrees):
 
 
 def main():
+
     parser = argparse.ArgumentParser(
         prog='generate_worldcover_tiles.py',
         description='Main script for creating a tiled watermask dataset from the ESA WorldCover dataset.'
     )
+
     parser.add_argument('--worldcover-tiles-dir', help='The path to the directory containing the worldcover tifs.')
     parser.add_argument('--lat-begin', help='The minimum latitude of the dataset.', default=-85, required=True)
     parser.add_argument('--lat-end', help='The maximum latitude of the dataset.', default=85)
@@ -176,7 +190,7 @@ def main():
     lat_range = range(args.lat_begin, args.lat_end, args.tile_width)
     lon_range = range(args.lon_begin, args.lon_end, args.tile_heigth)
 
-    build_dataset(lat_range, lon_range, worldcover_degrees=WORLDCOVER_TILE_SIZE, osm_degrees=args.tile_width)
+    build_dataset(args.worldcover_tile_dir, lat_range, lon_range, worldcover_degrees=WORLDCOVER_TILE_SIZE, osm_degrees=args.tile_width)
 
 
 if __name__ == '__main__':
