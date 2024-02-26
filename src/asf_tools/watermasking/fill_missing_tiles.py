@@ -40,6 +40,7 @@ def main():
 
             tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False, postfix='')
             tile_tif = 'tiles/' + tile + '.tif'
+            tile_cog = 'tiles/cogs/' + tile + '.tif'
 
             print(f'Processing: {tile}')
 
@@ -53,16 +54,18 @@ def main():
 
             driver = gdal.GetDriverByName('GTiff')
             dst_ds = driver.Create(tile_tif, xsize=data.shape[0], ysize=data.shape[1], bands=1, eType=gdal.GDT_Byte)
-            dst_ds.SetGeoTransform( [ xmin, pixel_size_x, 0, ymax, 0, pixel_size_y ] )
-            # wkt = f'POLYGON(({xmin} {ymin}, {xmax} {ymin}, {xmax} {ymax}, {xmin} {ymax}, {xmin} {ymin}))'
+            dst_ds.SetGeoTransform( [ xmin, pixel_size_x, 0, ymin, 0, pixel_size_y ] )
             srs = osr.SpatialReference()
             srs.ImportFromEPSG(4326)
-            dst_ds.SetProjection(srs)
+            dst_ds.SetProjection(srs.ExportToWkt())
             dst_band = dst_ds.GetRasterBand(1)
             dst_band.WriteArray(data)
             dst_ds = None
             del dst_ds
 
+            command = f'gdal_translate -of COG -co NUM_THREADS=all_cpus {tile_tif} {tile_cog}'
+            os.system(command)
+            os.remove(tile_tif)
 
 if __name__ == '__main__':
     main()
