@@ -41,12 +41,12 @@ make_composite = "asf_tools.composite:main"
 water_map = "asf_tools.hydrosar.water_map:main"
 calculate_hand = "asf_tools.hydrosar.hand.calculate:main"
 flood_map = "asf_tools.hydrosar.flood_map:main"
-water_masking = "asf_tools.watermasking.generate_osm_tiles:main"
+generate_osm_tiles = "asf_tools.watermasking.generate_osm_tiles:main"
+fill_missing_tiles = "asf_tools.watermasking.fill_missing_tiles:main"
 
 [project.entry-points.hyp3]
 water_map = "asf_tools.hydrosar.water_map:hyp3"
 flood_map = "asf_tools.hydrosar.flood_map:hyp3"
-water_masking = "asf_tools.watermasking.generate_osm_tiles:main"
 
 [project.optional-dependencies]
 develop = [
