@@ -8,6 +8,10 @@ from osgeo import gdal
 
 from asf_tools.watermasking.utils import lat_lon_to_tile_string
 
+INTERIOR_TILE_DIR = 'interior_tiles/'
+OCEAN_TILE_DIR = 'ocean_tiles/'
+FINISHED_TILE_DIR = 'tiles/'
+
 
 def process_pbf(planet_file: str, output_file: str):
     """Process the global PBF file so that it only contains water features.
@@ -170,7 +174,7 @@ def merge_tiles(internal_tile_dir, ocean_tile_dir, finished_tile_dir, translate_
 
 def setup_directories():
     """Setup the directories necessary for running the script."""
-    dirs = ['interior_tiles/', 'ocean_tiles/', 'merged_tiles/', 'finished_tiles/']
+    dirs = [INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR]
     for dir in dirs:
         try:
             os.mkdir(dir)
@@ -196,25 +200,17 @@ def main():
 
     args = parser.parse_args()
 
-    # Setup Directories
-    interior_tile_dir = 'interior_tiles/'
-    ocean_tile_dir = 'ocean_tiles/'
-    finished_tile_dir = 'tiles/'
+    setup_directories()
 
-    dirs = [interior_tile_dir, ocean_tile_dir, finished_tile_dir]
-    for dir in dirs:
-        try:
-            os.mkdir(dir)
-        except FileExistsError as e:
-            print(f'{dir} already exists. Skipping...')  
-
-    # Process the PBF into one that contains only water.
+    print('Extracting water from planet file...')
     processed_pbf_path = 'planet_processed.pbf'
     process_pbf(args.planet_file_path, processed_pbf_path)
 
-    # Extract tiles from the processed and ocean files.
+    print('Processing tiles...')
     lat_range = range(args.lat_begin, args.lat_end, args.tile_height)
     lon_range = range(args.lon_begin, args.lon_end, args.tile_width)
+    num_tiles = len(lat_range) * len(lon_range)
+    index = 0
     for lat in lat_range:
         for lon in lon_range:
             tile_name = lat_lon_to_tile_string(lat, lon, is_worldcover=False)
@@ -224,12 +220,13 @@ def main():
                 process_ocean_tiles(args.ocean_polygons_path, lat, lon, args.tile_width, args.tile_height)
                 end_time = time.time()
                 total_time = end_time - start_time  #seconds
-                print(f'Finished initial creation of {tile_name} in {total_time}(s).')
+                print(f'Finished initial creation of {tile_name} in {total_time}(s). {index} of {num_tiles}')
+                index += 1
             except Exception as e:
                 print(f'Caught error while processing {tile_name}. Continuing anyways...\n{e}')
 
-    # Merge the extracted processed/ocean tiles.
-    merge_tiles(interior_tile_dir, ocean_tile_dir)
+    print('Merging processed tiles...')                
+    merge_tiles(INTERIOR_TILE_DIR, OCEAN_TILE_DIR)
 
 
 if __name__ == '__main__':
