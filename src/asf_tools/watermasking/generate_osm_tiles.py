@@ -49,7 +49,7 @@ def remove_temp_files(temp_files: list):
             print('Error removing temporary file. Skipping it...')
 
 
-def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_height_deg):
+def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_height_deg, output_dir):
     """Process and crop OSM ocean polygons into a tif tile.
     
     Args:
@@ -61,7 +61,7 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
     """
 
     tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False, postfix='')
-    tile_tif = 'tiles/' + tile + '.tif'
+    tile_tif = output_dir + tile + '.tif'
 
     xmin, xmax, ymin, ymax = lon, lon+tile_width_deg, lat, lat+tile_height_deg
     pixel_size_x = 0.00009009009 # 10m * 2 at the equator.
@@ -78,15 +78,14 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         yRes=pixel_size_y, 
         burnValues=1,
         outputBounds=[xmin, ymin, xmax, ymax], 
-        outputType=gdal.GDT_Byte,
-        creationOptions=['COMPRESS=LZW']
+        outputType=gdal.GDT_Byte
     )
 
     temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx']
     remove_temp_files(temp_files)
 
 
-def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg):
+def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interior_tile_dir):
     """Rasterize a water tile from the processed global PBF file.
 
     Args:
@@ -99,7 +98,7 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg):
 
     tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False, postfix='')
     tile_pbf = tile+ '.osm.pbf'
-    tile_tif = tile + '.tif'
+    tile_tif = interior_tile_dir + tile + '.tif'
     tile_shp = tile + '.shp'
     tile_geojson = tile + '.geojson'
 
@@ -130,10 +129,9 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg):
         burnValues=1,
         outputBounds=[xmin, ymin, xmax, ymax], 
         outputType=gdal.GDT_Byte,
-        creationOptions=['COMPRESS=LZW']
     )
 
-    temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx']
+    temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx', tile_shp, tile_pbf, tile_geojson]
     remove_temp_files(temp_files)
 
 
@@ -155,11 +153,18 @@ def merge_tiles(internal_tile_dir, ocean_tile_dir, finished_tile_dir, translate_
                 internal_tile = internal_tile_dir + filename
                 external_tile = ocean_tile_dir + filename
                 output_tile = finished_tile_dir + filename
-                command = f'gdal_calc.py -A {internal_tile} -B {external_tile} --format GTiff -co NUM_THREADS=all_cpus -co COMPRESS=LZW -co TILED=YES -co PREDICTOR=YES --outfile {output_tile} --calc "logical_or(A, B)"'
+                command = f'gdal_calc.py -A {internal_tile} -B {external_tile} --format GTiff --outfile {output_tile} --calc "logical_or(A, B)"'
                 os.system(command)
 
                 if translate_to_cog:
-                    command = f'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus'
+                    cogs_dir = finished_tile_dir + 'cogs/'
+                    try:
+                        os.mkdir(cogs_dir)
+                    except FileExistsError as e:
+                        pass
+                    out_file = cogs_dir + filename
+                    command = f'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus {output_tile} {out_file}'
+                    os.system(command)
 
                 end_time = time.time()
                 total_time = end_time - start_time
@@ -200,6 +205,13 @@ def main():
 
     args = parser.parse_args()
 
+    lat_begin = int(args.lat_begin)
+    lat_end = int(args.lat_end)
+    lon_begin = int(args.lon_begin)
+    lon_end = int(args.lon_end)
+    tile_width = int(args.tile_width)
+    tile_height = int(args.tile_height)
+
     setup_directories()
 
     print('Extracting water from planet file...')
@@ -207,8 +219,8 @@ def main():
     process_pbf(args.planet_file_path, processed_pbf_path)
 
     print('Processing tiles...')
-    lat_range = range(args.lat_begin, args.lat_end, args.tile_height)
-    lon_range = range(args.lon_begin, args.lon_end, args.tile_width)
+    lat_range = range(lat_begin, lat_end, tile_height)
+    lon_range = range(lon_begin, lon_end, tile_width)
     num_tiles = len(lat_range) * len(lon_range)
     index = 0
     for lat in lat_range:
@@ -216,8 +228,8 @@ def main():
             tile_name = lat_lon_to_tile_string(lat, lon, is_worldcover=False)
             try:
                 start_time = time.time()
-                extract_water(processed_pbf_path, lat, lon, args.tile_width, args.tile_height)
-                process_ocean_tiles(args.ocean_polygons_path, lat, lon, args.tile_width, args.tile_height)
+                extract_water(processed_pbf_path, lat, lon, tile_width, tile_height, interior_tile_dir=INTERIOR_TILE_DIR)
+                process_ocean_tiles(args.ocean_polygons_path, lat, lon, tile_width, tile_height, output_dir=OCEAN_TILE_DIR)
                 end_time = time.time()
                 total_time = end_time - start_time  #seconds
                 print(f'Finished initial creation of {tile_name} in {total_time}(s). {index} of {num_tiles}')
@@ -226,7 +238,7 @@ def main():
                 print(f'Caught error while processing {tile_name}. Continuing anyways...\n{e}')
 
     print('Merging processed tiles...')                
-    merge_tiles(INTERIOR_TILE_DIR, OCEAN_TILE_DIR)
+    merge_tiles(INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR, translate_to_cog=True)
 
 
 if __name__ == '__main__':
