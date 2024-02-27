@@ -141,6 +141,42 @@ def crop_tile(tile):
     index += 1
 
 
+def create_missing_tiles(tile_dir, lat_range, lon_range):
+    """Check for, and build, tiles that may be missing from WorldCover, such as over the ocean.
+    
+    Args:
+        lat_range: The range of latitudes to check.
+        lon_range: The range of longitudes to check.
+    Returns:
+        current_existing_tiles: The list of tiles that exist after the function has completed.
+    """
+    current_existing_tiles = [f for f in os.listdir(tile_dir) if f.endswith(FILENAME_POSTFIX)]
+    for lon in lon_range:
+        for lat in lat_range:
+            tile = lat_lon_to_tile_string(lat, lon, is_worldcover=True)
+            print(f'Checking {tile}')
+            if tile not in current_existing_tiles:
+                print(f'Could not find {tile}')
+                x_size = 36000
+                y_size = 36000
+                x_res = 8.333333333333333055e-05
+                y_res = -8.333333333333333055e-05
+                ul_lon = lon
+                ul_lat = lat + WORLDCOVER_TILE_SIZE
+                geotransform = (ul_lon, x_res, 0, ul_lat, 0, y_res)
+                driver = gdal.GetDriverByName('GTiff')
+                ds = driver.Create(tile, xsize=x_size, ysize=y_size, bands=1, eType=gdal.GDT_Byte, options=['COMPRESS=LZW'])
+                ds.SetProjection('EPSG:4326')
+                ds.SetGeoTransform(geotransform)
+                band = ds.GetRasterBand(1)  # Write ones, as tiles should only be missing over water.
+                band.WriteArray(np.ones((x_size, y_size)))
+                del ds
+                del band
+                current_existing_tiles.append(tile)
+                print(f'Added {tile}')
+    return current_existing_tiles
+
+
 def build_dataset(worldcover_tile_dir, lat_range, lon_range, out_degrees):
     """ Main function for generating a dataset with worldcover tiles.
 
@@ -157,6 +193,7 @@ def build_dataset(worldcover_tile_dir, lat_range, lon_range, out_degrees):
             worldcover_tiles = lat_lon_to_filenames(worldcover_tile_dir, lat, lon, WORLDCOVER_TILE_SIZE, out_degrees)
             print(f'Processing: {tile_filename} {worldcover_tiles}') 
             merge_tiles(worldcover_tiles, tile_filename)
+            create_missing_tiles()
             end_time = time.time()
             total_time = end_time - start_time
             print(f'Time Elapsed: {total_time}s')
