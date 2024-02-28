@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 
-def lat_lon_to_tile_string(lat, lon, is_worldcover: bool = False, postfix: str ='.tif'):
+def lat_lon_to_tile_string(lat, lon, is_worldcover: bool = False, postfix: str = '.tif'):
     """Get the name of the tile with lower left corner (lat, lon).
 
     Args:
