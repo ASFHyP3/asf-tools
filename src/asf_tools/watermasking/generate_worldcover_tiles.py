@@ -183,7 +183,7 @@ def crop_tile(tile, lat, lon, tile_width, tile_height):
     pixel_size_x, pixel_size_y = 0.00009009009, -0.00009009009
 
     src_ds = gdal.Open(in_filename)
-    gdal.Translate( 
+    gdal.Translate(
         out_filename,
         src_ds,
         projWin=[lon, lat+tile_height, lon+tile_width, lat],
