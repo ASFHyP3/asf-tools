@@ -1,9 +1,6 @@
 import os
-import time
 
 import numpy as np
-
-from osgeo import gdal
 
 
 def lat_lon_to_tile_string(lat, lon, is_worldcover: bool = False, postfix: str ='.tif'):
