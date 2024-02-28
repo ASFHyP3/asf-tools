@@ -3,10 +3,9 @@ import os
 import time
 
 import numpy as np
-
 from osgeo import gdal
 
-from asf_tools.watermasking.utils import lat_lon_to_tile_string, remove_temp_files, merge_tiles, setup_directories
+from asf_tools.watermasking.utils import lat_lon_to_tile_string, merge_tiles, remove_temp_files, setup_directories
 
 PROCESSED_TILE_DIR = 'worldcover_tiles_preprocessed/'
 TILE_DIR  = 'worldcover_tiles_uncropped/'

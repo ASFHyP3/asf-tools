@@ -3,7 +3,6 @@ import os
 import time
 
 import geopandas as gpd
-import numpy as np
 from osgeo import gdal
 
 from asf_tools.watermasking.utils import lat_lon_to_tile_string, remove_temp_files, setup_directories
