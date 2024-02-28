@@ -55,5 +55,15 @@ def remove_temp_files(temp_files: list):
     for file in temp_files:
         try:
             os.remove(file)
-        except:
-            print('Error removing temporary file. Skipping it...')
+        except Exception as e:
+            print(f'Caught {e} while removing temporary file: {file}. Skipping it...')
+
+
+def setup_directories(dirs: list[str]):
+    """Setup the directories necessary for running the script."""
+    for dir in dirs:
+        try:
+            os.mkdir(dir)
+        except FileExistsError as e:
+            # Directories already exists.
+            pass
