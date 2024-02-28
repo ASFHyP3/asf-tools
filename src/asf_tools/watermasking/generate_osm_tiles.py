@@ -6,7 +6,7 @@ import geopandas as gpd
 import numpy as np
 from osgeo import gdal
 
-from asf_tools.watermasking.utils import lat_lon_to_tile_string
+from asf_tools.watermasking.utils import lat_lon_to_tile_string, remove_temp_files, setup_directories
 
 INTERIOR_TILE_DIR = 'interior_tiles/'
 OCEAN_TILE_DIR = 'ocean_tiles/'
@@ -34,19 +34,6 @@ def process_pbf(planet_file: str, output_file: str):
     os.system(waterways_command)
     os.system(reservoirs_command)
     os.system(merge_command)
-
-
-def remove_temp_files(temp_files: list):
-    """Remove each file in a list of files.
-    
-    Args:
-        temp_files: The list of temporary files to remove.
-    """
-    for file in temp_files:
-        try:
-            os.remove(file)
-        except:
-            print('Error removing temporary file. Skipping it...')
 
 
 def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_height_deg, output_dir):
@@ -78,7 +65,8 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         yRes=pixel_size_y, 
         burnValues=1,
         outputBounds=[xmin, ymin, xmax, ymax], 
-        outputType=gdal.GDT_Byte
+        outputType=gdal.GDT_Byte,
+        creationOptions=['COMPRESS=LZW']
     )
 
     temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx']
@@ -129,15 +117,16 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
         burnValues=1,
         outputBounds=[xmin, ymin, xmax, ymax], 
         outputType=gdal.GDT_Byte,
+        creationOptions=['COMPRESS=LZW']
     )
 
     temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx', tile_shp, tile_pbf, tile_geojson]
     remove_temp_files(temp_files)
 
 
-def merge_tiles(internal_tile_dir, ocean_tile_dir, finished_tile_dir, translate_to_cog: bool = False):
+def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_dir, translate_to_cog: bool = False):
     """Merge the interior water tiles and ocean water tiles.
-    
+
     Args:
         interior_tile_dir: The path to the directory containing the interior water tiles.
         ocean_tile_dir: The path to the directory containing the ocean water tiles.
@@ -165,6 +154,7 @@ def merge_tiles(internal_tile_dir, ocean_tile_dir, finished_tile_dir, translate_
                     out_file = cogs_dir + filename
                     command = f'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus {output_tile} {out_file}'
                     os.system(command)
+                    os.remove(output_tile)
 
                 end_time = time.time()
                 total_time = end_time - start_time
@@ -175,16 +165,6 @@ def merge_tiles(internal_tile_dir, ocean_tile_dir, finished_tile_dir, translate_
                 index += 1
             except Exception as e:
                 print(f'Caught error while processing {filename}. Continuing anyways...\n{e}')
-
-
-def setup_directories():
-    """Setup the directories necessary for running the script."""
-    dirs = [INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR]
-    for dir in dirs:
-        try:
-            os.mkdir(dir)
-        except FileExistsError as e:
-            print(f'{dir} already exists. Skipping...')
 
 
 def main():
@@ -212,7 +192,7 @@ def main():
     tile_width = int(args.tile_width)
     tile_height = int(args.tile_height)
 
-    setup_directories()
+    setup_directories([INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR])
 
     print('Extracting water from planet file...')
     processed_pbf_path = 'planet_processed.pbf'
@@ -237,8 +217,8 @@ def main():
             except Exception as e:
                 print(f'Caught error while processing {tile_name}. Continuing anyways...\n{e}')
 
-    print('Merging processed tiles...')                
-    merge_tiles(INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR, translate_to_cog=True)
+    print('Merging processed tiles...')
+    merge_interior_and_ocean(INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR, translate_to_cog=True)
 
 
 if __name__ == '__main__':
