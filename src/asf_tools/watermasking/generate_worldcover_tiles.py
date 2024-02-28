@@ -14,7 +14,7 @@ FILENAME_POSTFIX = '.tif'
 WORLDCOVER_TILE_SIZE = 3
 
 
-def tile_preprocessing(tile_dir, min_lat, max_lat):
+def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
     """The worldcover tiles have lots of unnecessary classes, these need to be removed first.
        Note: make a back-up copy of this directory.
 
@@ -26,7 +26,10 @@ def tile_preprocessing(tile_dir, min_lat, max_lat):
 
     def filename_filter(filename):
         latitude = int(filename.split('_')[5][1:3])
-        (latitude >= min_lat) and (latitude <= max_lat)
+        longitude = int(filename.split('_')[5][4:7])
+        in_lat_range = (latitude >= min_lat) and (latitude <= max_lat)
+        in_lon_range = (longitude >= min_lon) and (longitude <= max_lon)
+        return in_lat_range and in_lon_range
     filenames_filtered = [f for f in filenames if filename_filter(f)]
 
     index = 0
@@ -235,13 +238,19 @@ def main():
 
     args = parser.parse_args()
 
+    lat_begin = int(args.lat_begin)
+    lat_end = int(args.lat_end)
+    lon_begin = int(args.lon_begin)
+    lon_end = int(args.lon_end)
+    tile_width = int(args.tile_width)
+    tile_height = int(args.tile_height)
+    lat_range = range(lat_begin, lat_end, tile_width)
+    lon_range = range(lon_begin, lon_end, tile_height)
+
     setup_directories([PROCESSED_TILE_DIR, TILE_DIR, CROPPED_TILE_DIR])
 
     # Process the multi-class masks into water/not-water masks.
-    tile_preprocessing(args.worldcover_tiles_dir, args.lat_begin, args.lat_end)
-
-    lat_range = range(args.lat_begin, args.lat_end, args.tile_width)
-    lon_range = range(args.lon_begin, args.lon_end, args.tile_heigth)
+    tile_preprocessing(args.worldcover_tiles_dir, lat_begin, lat_end, lon_begin, lon_end)
 
     # Ocean only tiles are missing from WorldCover, so we need to create blank (water-only) ones.
     create_missing_tiles(PROCESSED_TILE_DIR, lat_range, lon_range)
@@ -251,7 +260,7 @@ def main():
         lat_range,
         lon_range,
         worldcover_degrees=WORLDCOVER_TILE_SIZE,
-        osm_degrees=args.tile_width
+        osm_degrees=tile_width
     )
 
 
