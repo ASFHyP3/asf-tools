@@ -8,7 +8,7 @@ from osgeo import gdal
 from asf_tools.watermasking.utils import lat_lon_to_tile_string, merge_tiles, remove_temp_files, setup_directories
 
 PROCESSED_TILE_DIR = 'worldcover_tiles_preprocessed/'
-TILE_DIR  = 'worldcover_tiles_uncropped/'
+TILE_DIR = 'worldcover_tiles_uncropped/'
 CROPPED_TILE_DIR = 'worldcover_tiles/'
 FILENAME_POSTFIX = '.tif'
 WORLDCOVER_TILE_SIZE = 3
@@ -23,8 +23,9 @@ def tile_preprocessing(tile_dir, min_lat, max_lat):
     """
 
     filenames = [f for f in os.listdir(tile_dir) if f.endswith('.tif')]
-    filter = lambda filename: (int(filename.split('_')[5][1:3]) >= min_lat) and (int(filename.split('_')[5][1:3]) <= max_lat)
-    filenames_filtered = [f for f in filenames if filter(f)] 
+    get_lat = lambda filename: int(filename.split('_')[5][1:3])
+    filter = lambda filename: (get_lat(filename) >= min_lat) and (get_lat(filename) <= max_lat)
+    filenames_filtered = [f for f in filenames if filter(f)]
 
     index = 0
     num_tiles = len(filenames_filtered)
@@ -47,7 +48,14 @@ def tile_preprocessing(tile_dir, min_lat, max_lat):
 
         driver = gdal.GetDriverByName('GTiff')
 
-        dst_ds = driver.Create(dst_filename, water_arr.shape[0], water_arr.shape[1], 1, gdal.GDT_Byte, options=['COMPRESS=LZW', 'TILED=YES'])
+        dst_ds = driver.Create(
+            dst_filename,
+            water_arr.shape[0],
+            water_arr.shape[1],
+            1,
+            gdal.GDT_Byte,
+            options=['COMPRESS=LZW', 'TILED=YES']
+        )
         dst_ds.SetGeoTransform(src_ds.GetGeoTransform())
         dst_ds.SetProjection(src_ds.GetProjection())
         dst_band = dst_ds.GetRasterBand(1)
@@ -89,7 +97,14 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
                 geotransform = (ul_lon, x_res, 0, ul_lat, 0, y_res)
 
                 driver = gdal.GetDriverByName('GTiff')
-                ds = driver.Create(tile, xsize=x_size, ysize=y_size, bands=1, eType=gdal.GDT_Byte, options=['COMPRESS=LZW'])
+                ds = driver.Create(
+                    tile,
+                    xsize=x_size,
+                    ysize=y_size,
+                    bands=1, 
+                    eType=gdal.GDT_Byte,
+                    options=['COMPRESS=LZW']
+                )
                 ds.SetProjection('EPSG:4326')
                 ds.SetGeoTransform(geotransform)
                 band = ds.GetRasterBand(1)  # Write ones, as tiles should only be missing over water.
@@ -105,12 +120,12 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
 
 def get_tiles(osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
     """Get a list of the worldcover tile locations necessary to fully cover an OSM tile.
-    
+
     Args:
         osm_tile_coord: The lower left corner coordinate (lat, lon) of the desired OSM tile.
         wc_deg: The width/height of the Worldcover tiles in degrees.
         osm_deg: The width/height of the OSM tiles in degrees.
-    
+
     Returns:
         tiles: A list of the lower left corner coordinates of the Worldcover tiles that overlap the OSM tile.
     """
@@ -141,7 +156,7 @@ def lat_lon_to_filenames(worldcover_tile_dir, osm_tile_coord: tuple, wc_deg: int
         osm_tile: The lower left corner (lat, lon) of the desired OSM tile.
         wc_deg: The width of the Worldcover tiles in degrees.
         osm_deg: The width of the OSM tiles in degrees.
-    
+
     Returns:
         filenames: The list of Worldcover filenames.
     """
@@ -180,7 +195,6 @@ def crop_tile(tile):
         remove_temp_files(['tmp_px_size.tif', 'tmp.shp'])
     except Exception as e:  # When a tile fails to process, we don't necessarily want the program to stop.
         print(f'Could not process {tile} due to {e}. Skipping...')
-    index += 1
 
 
 def build_dataset(worldcover_tile_dir, lat_range, lon_range, out_degrees):
@@ -190,14 +204,14 @@ def build_dataset(worldcover_tile_dir, lat_range, lon_range, out_degrees):
         worldcover_tile_dir: The directory containing the unprocessed worldcover tiles.
         lat_range: The range of latitudes the dataset should cover.
         lon_range: The range of longitudes the dataset should cover.
-        out_degrees: The width of the outputed dataset tiles in degrees. 
+        out_degrees: The width of the outputed dataset tiles in degrees.
     """
     for lat in lat_range:
         for lon in lon_range:
             start_time = time.time()
             tile_filename = TILE_DIR + lat_lon_to_tile_string(lat, lon, is_worldcover=False)
             worldcover_tiles = lat_lon_to_filenames(worldcover_tile_dir, lat, lon, WORLDCOVER_TILE_SIZE, out_degrees)
-            print(f'Processing: {tile_filename} {worldcover_tiles}') 
+            print(f'Processing: {tile_filename} {worldcover_tiles}')
             merge_tiles(worldcover_tiles, tile_filename)
             crop_tile(tile_filename)
             end_time = time.time()
@@ -227,13 +241,19 @@ def main():
     # Process the multi-class masks into water/not-water masks.
     tile_preprocessing(args.worldcover_tiles_dir, args.lat_begin, args.lat_end)
 
-    # Ocean only tiles are missing from WorldCover, so we need to create blank (water-only) ones.
-    create_missing_tiles(PROCESSED_TILE_DIR, lat_range, lon_range)
-
     lat_range = range(args.lat_begin, args.lat_end, args.tile_width)
     lon_range = range(args.lon_begin, args.lon_end, args.tile_heigth)
 
-    build_dataset(args.worldcover_tile_dir, lat_range, lon_range, worldcover_degrees=WORLDCOVER_TILE_SIZE, osm_degrees=args.tile_width)
+    # Ocean only tiles are missing from WorldCover, so we need to create blank (water-only) ones.
+    create_missing_tiles(PROCESSED_TILE_DIR, lat_range, lon_range)
+
+    build_dataset(
+        args.worldcover_tile_dir,
+        lat_range,
+        lon_range,
+        worldcover_degrees=WORLDCOVER_TILE_SIZE,
+        osm_degrees=args.tile_width
+    )
 
 
 if __name__ == '__main__':

@@ -99,7 +99,7 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
     try:
         water_gdf = water_gdf.drop(water_gdf[water_gdf['place'] == 'island'].index)
         water_gdf = water_gdf.drop(water_gdf[water_gdf['place'] == 'islet'].index)
-    except:
+    except Exception as e:
         # When there are no islands to remove, an error will be occur, but we don't care about it.
         pass
     water_gdf.to_file(tile_shp, mode='w', engine='pyogrio')
@@ -237,7 +237,7 @@ def main():
                     output_dir=OCEAN_TILE_DIR
                 )
                 end_time = time.time()
-                total_time = end_time - start_time  #seconds
+                total_time = end_time - start_time
                 print(f'Finished initial creation of {tile_name} in {total_time}(s). {index} of {num_tiles}')
                 index += 1
             except Exception as e:
