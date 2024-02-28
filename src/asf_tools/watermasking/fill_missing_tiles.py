@@ -32,7 +32,7 @@ def main():
     tile_width = int(args.tile_width)
     tile_height = int(args.tile_height)
 
-    lat_range = range(lat_begin, lat_end, tile_width)
+    lat_range = range(lat_begin, lat_end, tile_height)
     lon_range = range(lon_begin, lon_end, tile_width)
 
     for lat in lat_range:
@@ -44,8 +44,8 @@ def main():
 
             print(f'Processing: {tile}')
 
-            xmin, xmax, ymin, ymax = lon, lon+tile_width, lat, lat+tile_height
-            pixel_size_x = 0.00009009009 # 10m * 2 at the equator.
+            xmin, ymin = lon, lat
+            pixel_size_x = 0.00009009009
             pixel_size_y = 0.00009009009
 
             # All images in the dataset should be this size.
@@ -54,7 +54,7 @@ def main():
 
             driver = gdal.GetDriverByName('GTiff')
             dst_ds = driver.Create(tile_tif, xsize=data.shape[0], ysize=data.shape[1], bands=1, eType=gdal.GDT_Byte)
-            dst_ds.SetGeoTransform( [ xmin, pixel_size_x, 0, ymin, 0, pixel_size_y ] )
+            dst_ds.SetGeoTransform([xmin, pixel_size_x, 0, ymin, 0, pixel_size_y])
             srs = osr.SpatialReference()
             srs.ImportFromEPSG(4326)
             dst_ds.SetProjection(srs.ExportToWkt())
@@ -66,6 +66,7 @@ def main():
             command = f'gdal_translate -of COG -co NUM_THREADS=all_cpus {tile_tif} {tile_cog}'
             os.system(command)
             os.remove(tile_tif)
+
 
 if __name__ == '__main__':
     main()

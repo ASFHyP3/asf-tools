@@ -17,7 +17,7 @@ def process_pbf(planet_file: str, output_file: str):
 
     Args:
         planet_file: The path to the OSM Planet PBF file.
-        output_file: The desired path of the processed PBF file. 
+        output_file: The desired path of the processed PBF file.
     """
 
     natural_file = 'planet_natural.pbf'
@@ -37,7 +37,7 @@ def process_pbf(planet_file: str, output_file: str):
 
 def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_height_deg, output_dir):
     """Process and crop OSM ocean polygons into a tif tile.
-    
+
     Args:
         ocean_polygons_path: The path to the global ocean polygons file from OSM.
         lat: The minimum latitude of the tile.
@@ -50,7 +50,7 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
     tile_tif = output_dir + tile + '.tif'
 
     xmin, xmax, ymin, ymax = lon, lon+tile_width_deg, lat, lat+tile_height_deg
-    pixel_size_x = 0.00009009009 # 10m * 2 at the equator.
+    pixel_size_x = 0.00009009009
     pixel_size_y = 0.00009009009
 
     clipped_polygons_path = tile + '.shp'
@@ -61,9 +61,9 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         tile_tif,
         clipped_polygons_path,
         xRes=pixel_size_x,
-        yRes=pixel_size_y, 
+        yRes=pixel_size_y,
         burnValues=1,
-        outputBounds=[xmin, ymin, xmax, ymax], 
+        outputBounds=[xmin, ymin, xmax, ymax],
         outputType=gdal.GDT_Byte,
         creationOptions=['COMPRESS=LZW']
     )
@@ -84,13 +84,14 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
     """
 
     tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False, postfix='')
-    tile_pbf = tile+ '.osm.pbf'
+    tile_pbf = tile + '.osm.pbf'
     tile_tif = interior_tile_dir + tile + '.tif'
     tile_shp = tile + '.shp'
     tile_geojson = tile + '.geojson'
 
     # Extract tile from the main pbf, then convert it to a tif.
-    os.system(f'osmium extract -s smart -S tags=natural=water --bbox {lon},{lat},{lon+tile_width_deg},{lat+tile_height_deg} {water_file} -o {tile_pbf}')
+    bbox = f'--bbox {lon},{lat},{lon+tile_width_deg},{lat+tile_height_deg}'
+    os.system(f'osmium extract -s smart -S tags=natural=water {bbox} {water_file} -o {tile_pbf}')
     os.system(f'osmium export --geometry-types="polygon" {tile_pbf} -o {tile_geojson}')
 
     # Islands and Islets can be members of the water features, so they must be removed.
@@ -105,16 +106,16 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
     water_gdf = None
 
     xmin, xmax, ymin, ymax = lon, lon+tile_width_deg, lat, lat+tile_height_deg
-    pixel_size_x = 0.00009009009 # 10m at the equator.
+    pixel_size_x = 0.00009009009
     pixel_size_y = 0.00009009009
 
     gdal.Rasterize(
         tile_tif,
         tile_shp,
-        xRes=pixel_size_x, 
-        yRes=pixel_size_y, 
+        xRes=pixel_size_x,
+        yRes=pixel_size_y,
         burnValues=1,
-        outputBounds=[xmin, ymin, xmax, ymax], 
+        outputBounds=[xmin, ymin, xmax, ymax],
         outputType=gdal.GDT_Byte,
         creationOptions=['COMPRESS=LZW']
     )
@@ -141,14 +142,26 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
                 internal_tile = internal_tile_dir + filename
                 external_tile = ocean_tile_dir + filename
                 output_tile = finished_tile_dir + filename
-                command = f'gdal_calc.py -A {internal_tile} -B {external_tile} --format GTiff --outfile {output_tile} --calc "logical_or(A, B)"'
+                command = ' '.join([
+                    'gdal_calc.py',
+                    '-A',
+                    internal_tile,
+                    '-B',
+                    external_tile,
+                    '--format',
+                    'GTiff',
+                    '--outfile',
+                    output_tile,
+                    '--calc',
+                    '"logical_or(A, B)"'
+                ])
                 os.system(command)
 
                 if translate_to_cog:
                     cogs_dir = finished_tile_dir + 'cogs/'
                     try:
                         os.mkdir(cogs_dir)
-                    except FileExistsError as e:
+                    except FileExistsError:
                         pass
                     out_file = cogs_dir + filename
                     command = f'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus {output_tile} {out_file}'
@@ -173,8 +186,8 @@ def main():
         description='Main script for creating a tiled watermask dataset from OSM data.'
     )
 
-    parser.add_argument('--planet-file-path', help='The path to the global planet.pbf file.', default='planet.pbf')
-    parser.add_argument('--ocean-polygons-path', help='The path to the global OSM ocean polygons.', default='water_polygons.shp')
+    parser.add_argument('--planet-file-path', help='The path to the global planet.pbf file.')
+    parser.add_argument('--ocean-polygons-path', help='The path to the global OSM ocean polygons.')
     parser.add_argument('--lat-begin', help='The minimum latitude of the dataset.', default=-85)
     parser.add_argument('--lat-end', help='The maximum latitude of the dataset.', default=85)
     parser.add_argument('--lon-begin', help='The minimum longitude of the dataset.', default=-180)
@@ -207,8 +220,22 @@ def main():
             tile_name = lat_lon_to_tile_string(lat, lon, is_worldcover=False)
             try:
                 start_time = time.time()
-                extract_water(processed_pbf_path, lat, lon, tile_width, tile_height, interior_tile_dir=INTERIOR_TILE_DIR)
-                process_ocean_tiles(args.ocean_polygons_path, lat, lon, tile_width, tile_height, output_dir=OCEAN_TILE_DIR)
+                extract_water(
+                    processed_pbf_path,
+                    lat,
+                    lon,
+                    tile_width,
+                    tile_height,
+                    interior_tile_dir=INTERIOR_TILE_DIR
+                )
+                process_ocean_tiles(
+                    args.ocean_polygons_path,
+                    lat,
+                    lon,
+                    tile_width,
+                    tile_height,
+                    output_dir=OCEAN_TILE_DIR
+                )
                 end_time = time.time()
                 total_time = end_time - start_time  #seconds
                 print(f'Finished initial creation of {tile_name} in {total_time}(s). {index} of {num_tiles}')
