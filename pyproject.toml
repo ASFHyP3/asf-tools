@@ -27,6 +27,7 @@ dependencies = [
     "gdal>=3.3",
     "geopandas",
     "numpy",
+    "pyogrio",
     "pysheds>=0.3",
     "rasterio",
     "scikit-fuzzy",

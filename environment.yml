@@ -25,6 +25,8 @@ dependencies:
   - gdal>=3.7
   - geopandas
   - numpy
+  - osmium-tool
+  - pyogrio
   - pysheds>=0.3
   - rasterio
   - scikit-fuzzy
