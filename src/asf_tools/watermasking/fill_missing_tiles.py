@@ -60,7 +60,6 @@ def main():
             dst_ds.SetProjection(srs.ExportToWkt())
             dst_band = dst_ds.GetRasterBand(1)
             dst_band.WriteArray(data)
-            dst_ds = None
             del dst_ds
 
             command = f'gdal_translate -of COG -co NUM_THREADS=all_cpus {tile_tif} {tile_cog}'
