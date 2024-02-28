@@ -27,7 +27,7 @@ def lat_lon_to_tile_string(lat, lon, is_worldcover: bool = False, postfix: str =
     return lat_part + lon_part + postfix
 
 
-def merge_tiles(tiles, out_format, out_filename):
+def merge_tiles(tiles, out_filename, out_format, compress=False):
     """Merge tiles via buildvrt and translate.
 
     Args:
@@ -37,10 +37,20 @@ def merge_tiles(tiles, out_format, out_filename):
     """
     vrt = 'merged.vrt'
     build_vrt_command = ' '.join(['gdalbuildvrt', vrt] + tiles)
-    translate_command = ' '.join(['gdal_translate', '-of', out_format, vrt, out_filename])
+    if not compress:
+        translate_command = ' '.join(['gdal_translate', '-of', out_format, vrt, out_filename])
+    else:
+        translate_command = ' '.join([
+            'gdal_translate',
+            '-of', out_format,
+            '-co', 'COMPRESS=LZW',
+            '-co', 'NUM_THREADS=all_cpus',
+            vrt,
+            out_filename
+        ])
     os.system(build_vrt_command)
     os.system(translate_command)
-    os.remove(vrt)
+    remove_temp_files([vrt])
 
 
 def remove_temp_files(temp_files: list):

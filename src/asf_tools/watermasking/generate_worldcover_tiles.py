@@ -39,7 +39,7 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
         start_time = time.time()
 
         filename = tile_dir + filename
-        dst_filename = PROCESSED_TILE_DIR + filename.split('_')[5] + '.tif'
+        dst_filename = PROCESSED_TILE_DIR + filename.split('_')[6] + '.tif'
 
         print(f'Processing: {filename}  ---  {dst_filename}  -- {index} of {num_tiles}')
 
@@ -123,13 +123,13 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
     return current_existing_tiles
 
 
-def get_tiles(osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
+def get_tiles(osm_tile_coord: tuple, wc_tile_width: int, tile_width: int):
     """Get a list of the worldcover tile locations necessary to fully cover an OSM tile.
 
     Args:
         osm_tile_coord: The lower left corner coordinate (lat, lon) of the desired OSM tile.
-        wc_deg: The width/height of the Worldcover tiles in degrees.
-        osm_deg: The width/height of the OSM tiles in degrees.
+        wc_tile_width: The width/height of the Worldcover tiles in degrees.
+        tile_width: The width/height of the OSM tiles in degrees.
 
     Returns:
         tiles: A list of the lower left corner coordinates of the Worldcover tiles that overlap the OSM tile.
@@ -138,13 +138,13 @@ def get_tiles(osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
     osm_lat = osm_tile_coord[0]
     osm_lon = osm_tile_coord[1]
 
-    min_lat = osm_lat - (osm_lat % wc_deg)
-    max_lat = osm_lat + osm_deg
-    min_lon = osm_lon - (osm_lon % wc_deg)
-    max_lon = osm_lon + osm_deg
+    min_lat = osm_lat - (osm_lat % wc_tile_width)
+    max_lat = osm_lat + tile_width
+    min_lon = osm_lon - (osm_lon % wc_tile_width)
+    max_lon = osm_lon + tile_width
 
-    lats = range(min_lat, max_lat, wc_deg)
-    lons = range(min_lon, max_lon, wc_deg)
+    lats = range(min_lat, max_lat, wc_tile_width)
+    lons = range(min_lon, max_lon, wc_tile_width)
 
     tiles = []
     for lat in lats:
@@ -154,52 +154,49 @@ def get_tiles(osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
     return tiles
 
 
-def lat_lon_to_filenames(worldcover_tile_dir, osm_tile_coord: tuple, wc_deg: int, osm_deg: int):
+def lat_lon_to_filenames(worldcover_tile_dir, osm_tile_coord: tuple, wc_tile_width: int, tile_width: int):
     """Get a list of the Worldcover tile filenames that are necessary to overlap an OSM tile.
 
     Args:
         osm_tile: The lower left corner (lat, lon) of the desired OSM tile.
-        wc_deg: The width of the Worldcover tiles in degrees.
-        osm_deg: The width of the OSM tiles in degrees.
+        wc_tile_width: The width of the Worldcover tiles in degrees.
+        tile_width: The width of the OSM tiles in degrees.
 
     Returns:
         filenames: The list of Worldcover filenames.
     """
     filenames = []
-    tiles = get_tiles(osm_tile_coord, wc_deg, osm_deg)
+    tiles = get_tiles(osm_tile_coord, wc_tile_width, tile_width)
     for tile in tiles:
         filenames.append(worldcover_tile_dir + lat_lon_to_tile_string(tile[0], tile[1], is_worldcover=True))
     return filenames
 
 
-def crop_tile(tile):
+def crop_tile(tile, lat, lon, tile_width, tile_height):
     """Crop the merged tiles
 
     Args:
         tile: The filename of the desired tile to crop.
     """
-    ref_image = TILE_DIR + tile
+    in_filename = TILE_DIR + tile
     out_filename = CROPPED_TILE_DIR + tile
-    pixel_size = gdal.Warp('tmp_px_size.tif', ref_image, dstSRS='EPSG:4326').GetGeoTransform()[1]
+    pixel_size_x, pixel_size_y = 0.00009009009, -0.00009009009
 
-    shapefile_command = ' '.join(['gdaltindex', 'tmp.shp', ref_image])
-    os.system(shapefile_command)
-
-    gdal.Warp(
+    src_ds = gdal.Open(in_filename)
+    gdal.Translate( 
         out_filename,
-        tile,
-        cutlineDSName='tmp.shp',
-        cropToCutline=True,
-        xRes=pixel_size,
-        yRes=pixel_size,
-        targetAlignedPixels=True,
-        dstSRS='EPSG:4326',
-        format='COG'
+        src_ds,
+        projWin=[lon, lat+tile_height, lon+tile_width, lat],
+        xRes=pixel_size_x,
+        yRes=pixel_size_y,
+        outputSRS='EPSG:4326',
+        format='COG',
+        creationOptions=['NUM_THREADS=all_cpus']
     )
     remove_temp_files(['tmp_px_size.tif', 'tmp.shp'])
 
 
-def build_dataset(worldcover_tile_dir, lat_range, lon_range, out_degrees):
+def build_dataset(worldcover_tile_dir, lat_range, lon_range, tile_width, tile_height):
     """ Main function for generating a dataset with worldcover tiles.
 
     Args:
@@ -211,11 +208,12 @@ def build_dataset(worldcover_tile_dir, lat_range, lon_range, out_degrees):
     for lat in lat_range:
         for lon in lon_range:
             start_time = time.time()
-            tile_filename = TILE_DIR + lat_lon_to_tile_string(lat, lon, is_worldcover=False)
-            worldcover_tiles = lat_lon_to_filenames(worldcover_tile_dir, lat, lon, WORLDCOVER_TILE_SIZE, out_degrees)
+            tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False)
+            tile_filename = TILE_DIR + tile
+            worldcover_tiles = lat_lon_to_filenames(worldcover_tile_dir, (lat, lon), WORLDCOVER_TILE_SIZE, tile_width)
             print(f'Processing: {tile_filename} {worldcover_tiles}')
-            merge_tiles(worldcover_tiles, tile_filename)
-            crop_tile(tile_filename)
+            merge_tiles(worldcover_tiles, tile_filename, 'GTiff', compress=True)
+            crop_tile(tile, lat, lon, tile_width, tile_height)
             end_time = time.time()
             total_time = end_time - start_time
             print(f'Time Elapsed: {total_time}s')
@@ -252,15 +250,17 @@ def main():
     # Process the multi-class masks into water/not-water masks.
     tile_preprocessing(args.worldcover_tiles_dir, lat_begin, lat_end, lon_begin, lon_end)
 
+    wc_lat_range = range(lat_begin, lat_end, WORLDCOVER_TILE_SIZE)
+    wc_lon_range = range(lon_begin, lon_end, WORLDCOVER_TILE_SIZE)
     # Ocean only tiles are missing from WorldCover, so we need to create blank (water-only) ones.
-    create_missing_tiles(PROCESSED_TILE_DIR, lat_range, lon_range)
+    create_missing_tiles(PROCESSED_TILE_DIR, wc_lat_range, wc_lon_range)
 
     build_dataset(
-        args.worldcover_tile_dir,
+        PROCESSED_TILE_DIR,
         lat_range,
         lon_range,
-        worldcover_degrees=WORLDCOVER_TILE_SIZE,
-        osm_degrees=tile_width
+        tile_width=tile_width,
+        tile_height=tile_height
     )
 
 
