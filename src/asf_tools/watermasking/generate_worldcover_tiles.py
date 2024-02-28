@@ -23,9 +23,10 @@ def tile_preprocessing(tile_dir, min_lat, max_lat):
     """
 
     filenames = [f for f in os.listdir(tile_dir) if f.endswith('.tif')]
-    def get_lat(filename): int(filename.split('_')[5][1:3])
-    def filter(filename): (get_lat(filename) >= min_lat) and (get_lat(filename) <= max_lat)
-    filenames_filtered = [f for f in filenames if filter(f)]
+    def filename_filter(filename):
+        latitude = int(filename.split('_')[5][1:3])
+        (latitude >= min_lat) and (latitude <= max_lat)
+    filenames_filtered = [f for f in filenames if filename_filter(f)]
 
     index = 0
     num_tiles = len(filenames_filtered)
