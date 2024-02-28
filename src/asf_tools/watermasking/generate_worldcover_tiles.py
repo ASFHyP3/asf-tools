@@ -23,8 +23,8 @@ def tile_preprocessing(tile_dir, min_lat, max_lat):
     """
 
     filenames = [f for f in os.listdir(tile_dir) if f.endswith('.tif')]
-    get_lat = lambda filename: int(filename.split('_')[5][1:3])
-    filter = lambda filename: (get_lat(filename) >= min_lat) and (get_lat(filename) <= max_lat)
+    def get_lat(filename): int(filename.split('_')[5][1:3])
+    def filter(filename): (get_lat(filename) >= min_lat) and (get_lat(filename) <= max_lat)
     filenames_filtered = [f for f in filenames if filter(f)]
 
     index = 0
@@ -101,7 +101,7 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
                     tile,
                     xsize=x_size,
                     ysize=y_size,
-                    bands=1, 
+                    bands=1,
                     eType=gdal.GDT_Byte,
                     options=['COMPRESS=LZW']
                 )
