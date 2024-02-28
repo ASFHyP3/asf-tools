@@ -11,7 +11,7 @@ def lat_lon_to_tile_string(lat, lon, is_worldcover: bool = False, postfix: str =
         lon: The minimum longitude of the tile.
         is_worldcover: Wheter the tile is Worldcover or OSM.
         postfix: A postfix to append to the tile name to make it a filename.
-    
+
     Returns:
         The name of the tile.
     """
@@ -45,22 +45,22 @@ def merge_tiles(tiles, out_format, out_filename):
 
 def remove_temp_files(temp_files: list):
     """Remove each file in a list of files.
-    
+
     Args:
         temp_files: The list of temporary files to remove.
     """
     for file in temp_files:
         try:
             os.remove(file)
-        except Exception as e:
-            print(f'Caught {e} while removing temporary file: {file}. Skipping it...')
+        except FileNotFoundError:
+            print(f'Temp file {file} was not found, skipping removal...')
 
 
 def setup_directories(dirs: list[str]):
     """Setup the directories necessary for running the script."""
-    for dir in dirs:
+    for directory in dirs:
         try:
-            os.mkdir(dir)
-        except FileExistsError as e:
+            os.mkdir(directory)
+        except FileExistsError:
             # Directories already exists.
             pass

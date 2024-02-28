@@ -174,28 +174,25 @@ def crop_tile(tile):
     Args:
         tile: The filename of the desired tile to crop.
     """
-    try:
-        ref_image = TILE_DIR + tile
-        out_filename = CROPPED_TILE_DIR + tile
-        pixel_size = gdal.Warp('tmp_px_size.tif', ref_image, dstSRS='EPSG:4326').GetGeoTransform()[1]
+    ref_image = TILE_DIR + tile
+    out_filename = CROPPED_TILE_DIR + tile
+    pixel_size = gdal.Warp('tmp_px_size.tif', ref_image, dstSRS='EPSG:4326').GetGeoTransform()[1]
 
-        shapefile_command = ' '.join(['gdaltindex', 'tmp.shp', ref_image])
-        os.system(shapefile_command)
+    shapefile_command = ' '.join(['gdaltindex', 'tmp.shp', ref_image])
+    os.system(shapefile_command)
 
-        gdal.Warp(
-            out_filename,
-            tile,
-            cutlineDSName='tmp.shp',
-            cropToCutline=True,
-            xRes=pixel_size,
-            yRes=pixel_size,
-            targetAlignedPixels=True,
-            dstSRS='EPSG:4326',
-            format='COG'
-        )
-        remove_temp_files(['tmp_px_size.tif', 'tmp.shp'])
-    except Exception as e:  # When a tile fails to process, we don't necessarily want the program to stop.
-        print(f'Could not process {tile} due to {e}. Skipping...')
+    gdal.Warp(
+        out_filename,
+        tile,
+        cutlineDSName='tmp.shp',
+        cropToCutline=True,
+        xRes=pixel_size,
+        yRes=pixel_size,
+        targetAlignedPixels=True,
+        dstSRS='EPSG:4326',
+        format='COG'
+    )
+    remove_temp_files(['tmp_px_size.tif', 'tmp.shp'])
 
 
 def build_dataset(worldcover_tile_dir, lat_range, lon_range, out_degrees):

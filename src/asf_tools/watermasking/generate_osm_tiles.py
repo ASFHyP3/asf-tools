@@ -99,8 +99,8 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
     try:
         water_gdf = water_gdf.drop(water_gdf[water_gdf['place'] == 'island'].index)
         water_gdf = water_gdf.drop(water_gdf[water_gdf['place'] == 'islet'].index)
-    except Exception as e:
-        # When there are no islands to remove, an error will be occur, but we don't care about it.
+    except AttributeError:
+        # When there are no islands to remove, an AttributeError should throw, but we don't care about it.
         pass
     water_gdf.to_file(tile_shp, mode='w', engine='pyogrio')
     water_gdf = None
@@ -136,47 +136,44 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
     num_tiles = len([f for f in os.listdir(internal_tile_dir) if f.endswith('tif')])
     for filename in os.listdir(internal_tile_dir):
         if filename.endswith('.tif'):
-            try:
-                start_time = time.time()
+            start_time = time.time()
 
-                internal_tile = internal_tile_dir + filename
-                external_tile = ocean_tile_dir + filename
-                output_tile = finished_tile_dir + filename
-                command = ' '.join([
-                    'gdal_calc.py',
-                    '-A',
-                    internal_tile,
-                    '-B',
-                    external_tile,
-                    '--format',
-                    'GTiff',
-                    '--outfile',
-                    output_tile,
-                    '--calc',
-                    '"logical_or(A, B)"'
-                ])
+            internal_tile = internal_tile_dir + filename
+            external_tile = ocean_tile_dir + filename
+            output_tile = finished_tile_dir + filename
+            command = ' '.join([
+                'gdal_calc.py',
+                '-A',
+                internal_tile,
+                '-B',
+                external_tile,
+                '--format',
+                'GTiff',
+                '--outfile',
+                output_tile,
+                '--calc',
+                '"logical_or(A, B)"'
+            ])
+            os.system(command)
+
+            if translate_to_cog:
+                cogs_dir = finished_tile_dir + 'cogs/'
+                try:
+                    os.mkdir(cogs_dir)
+                except FileExistsError:
+                    pass
+                out_file = cogs_dir + filename
+                command = f'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus {output_tile} {out_file}'
                 os.system(command)
+                os.remove(output_tile)
 
-                if translate_to_cog:
-                    cogs_dir = finished_tile_dir + 'cogs/'
-                    try:
-                        os.mkdir(cogs_dir)
-                    except FileExistsError:
-                        pass
-                    out_file = cogs_dir + filename
-                    command = f'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus {output_tile} {out_file}'
-                    os.system(command)
-                    os.remove(output_tile)
+            end_time = time.time()
+            total_time = end_time - start_time
 
-                end_time = time.time()
-                total_time = end_time - start_time
+            print(f'Elapsed Time: {total_time}(s)')
+            print(f'Completed {index} of {num_tiles}')
 
-                print(f'Elapsed Time: {total_time}(s)')
-                print(f'Completed {index} of {num_tiles}')
-
-                index += 1
-            except Exception as e:
-                print(f'Caught error while processing {filename}. Continuing anyways...\n{e}')
+            index += 1
 
 
 def main():
@@ -218,30 +215,27 @@ def main():
     for lat in lat_range:
         for lon in lon_range:
             tile_name = lat_lon_to_tile_string(lat, lon, is_worldcover=False)
-            try:
-                start_time = time.time()
-                extract_water(
-                    processed_pbf_path,
-                    lat,
-                    lon,
-                    tile_width,
-                    tile_height,
-                    interior_tile_dir=INTERIOR_TILE_DIR
-                )
-                process_ocean_tiles(
-                    args.ocean_polygons_path,
-                    lat,
-                    lon,
-                    tile_width,
-                    tile_height,
-                    output_dir=OCEAN_TILE_DIR
-                )
-                end_time = time.time()
-                total_time = end_time - start_time
-                print(f'Finished initial creation of {tile_name} in {total_time}(s). {index} of {num_tiles}')
-                index += 1
-            except Exception as e:
-                print(f'Caught error while processing {tile_name}. Continuing anyways...\n{e}')
+            start_time = time.time()
+            extract_water(
+                processed_pbf_path,
+                lat,
+                lon,
+                tile_width,
+                tile_height,
+                interior_tile_dir=INTERIOR_TILE_DIR
+            )
+            process_ocean_tiles(
+                args.ocean_polygons_path,
+                lat,
+                lon,
+                tile_width,
+                tile_height,
+                output_dir=OCEAN_TILE_DIR
+            )
+            end_time = time.time()
+            total_time = end_time - start_time
+            print(f'Finished initial creation of {tile_name} in {total_time}(s). {index} of {num_tiles}')
+            index += 1
 
     print('Merging processed tiles...')
     merge_interior_and_ocean(INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR, translate_to_cog=True)
