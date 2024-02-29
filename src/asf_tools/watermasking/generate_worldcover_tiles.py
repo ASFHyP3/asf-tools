@@ -30,6 +30,7 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
     def filename_filter(filename):
         latitude = int(filename.split('_')[5][1:3])
         longitude = int(filename.split('_')[5][4:7])
+        if filename.split('_')[5][3] == 'W': longitude = -longitude
         mnlat = min_lat - (min_lat % WORLDCOVER_TILE_SIZE)
         mnlon = min_lon - (min_lon % WORLDCOVER_TILE_SIZE)
         mxlat = max_lat + (max_lat % WORLDCOVER_TILE_SIZE)
