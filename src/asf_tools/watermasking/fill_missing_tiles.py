@@ -19,10 +19,10 @@ def main():
     )
 
     parser.add_argument('--fill-value', help='The value to fill the data array with.', default=0)
-    parser.add_argument('--lat-begin', help='The minimum latitude of the dataset.', default=-85)
-    parser.add_argument('--lat-end', help='The maximum latitude of the dataset.', default=85)
-    parser.add_argument('--lon-begin', help='The minimum longitude of the dataset.', default=-180)
-    parser.add_argument('--lon-end', help='The maximum longitude of the dataset.', default=180)
+    parser.add_argument('--lat-begin', help='The minimum latitude of the dataset in EPSG:4326.', default=-85)
+    parser.add_argument('--lat-end', help='The maximum latitude of the dataset in EPSG:4326.', default=85)
+    parser.add_argument('--lon-begin', help='The minimum longitude of the dataset in EPSG:4326.', default=-180)
+    parser.add_argument('--lon-end', help='The maximum longitude of the dataset in EPSG:4326.', default=180)
     parser.add_argument('--tile-width', help='The desired width of the tile in degrees.', default=5)
     parser.add_argument('--tile-height', help='The desired height of the tile in degrees.', default=5)
 

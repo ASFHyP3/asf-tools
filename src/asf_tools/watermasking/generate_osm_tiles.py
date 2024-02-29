@@ -14,7 +14,7 @@ gdal.UseExceptions()
 INTERIOR_TILE_DIR = 'interior_tiles/'
 OCEAN_TILE_DIR = 'ocean_tiles/'
 FINISHED_TILE_DIR = 'tiles/'
-GDAL_OPTIONS = ['COMPRESS=LZW', 'TILED=YES', 'NUM_THREADS=all_cpus']
+GDAL_OPTIONS = ['COMPRESS=LZW', 'NUM_THREADS=all_cpus']
 
 
 def process_pbf(planet_file: str, output_file: str):
@@ -64,7 +64,7 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
 
     gdal.Rasterize(
         tile_tif,
-        clipped_polygons_path,
+        ocean_polygons_path,
         xRes=pixel_size_x,
         yRes=pixel_size_y,
         burnValues=1,
@@ -193,10 +193,10 @@ def main():
 
     parser.add_argument('--planet-file-path', help='The path to the global planet.pbf file.')
     parser.add_argument('--ocean-polygons-path', help='The path to the global OSM ocean polygons.')
-    parser.add_argument('--lat-begin', help='The minimum latitude of the dataset.', default=-85)
-    parser.add_argument('--lat-end', help='The maximum latitude of the dataset.', default=85)
-    parser.add_argument('--lon-begin', help='The minimum longitude of the dataset.', default=-180)
-    parser.add_argument('--lon-end', help='The maximum longitude of the dataset.', default=180)
+    parser.add_argument('--lat-begin', help='The minimum latitude of the dataset in EPSG:4326.', default=-85)
+    parser.add_argument('--lat-end', help='The maximum latitude of the dataset in EPSG:4326.', default=85)
+    parser.add_argument('--lon-begin', help='The minimum longitude of the dataset in EPSG:4326.', default=-180)
+    parser.add_argument('--lon-end', help='The maximum longitude of the dataset in EPSG:4326.', default=180)
     parser.add_argument('--tile-width', help='The desired width of the tile in degrees.', default=5)
     parser.add_argument('--tile-height', help='The desired height of the tile in degrees.', default=5)
 
