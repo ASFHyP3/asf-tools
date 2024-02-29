@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import numpy as np
 
@@ -36,20 +37,20 @@ def merge_tiles(tiles, out_filename, out_format, compress=False):
         out_filename: The name of the output COG.
     """
     vrt = 'merged.vrt'
-    build_vrt_command = ' '.join(['gdalbuildvrt', vrt] + tiles)
+    build_vrt_command = ['gdalbuildvrt', vrt] + tiles
     if not compress:
-        translate_command = ' '.join(['gdal_translate', '-of', out_format, vrt, out_filename])
+        translate_command = ['gdal_translate', '-of', out_format, vrt, out_filename]
     else:
-        translate_command = ' '.join([
+        translate_command = [
             'gdal_translate',
             '-of', out_format,
             '-co', 'COMPRESS=LZW',
             '-co', 'NUM_THREADS=all_cpus',
             vrt,
             out_filename
-        ])
-    os.system(build_vrt_command)
-    os.system(translate_command)
+        ]
+    subprocess.run(build_vrt_command)
+    subprocess.run(translate_command)
     remove_temp_files([vrt])
 
 
