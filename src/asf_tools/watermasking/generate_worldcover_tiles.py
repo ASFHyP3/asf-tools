@@ -27,8 +27,7 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
     """
 
     filenames = [f for f in os.listdir(tile_dir) if f.endswith('.tif')]
-
-    def filename_filter(filename):  # We only want to preprocess the files that are necessary for the roi.
+    def filename_filter(filename):
         latitude = int(filename.split('_')[5][1:3])
         longitude = int(filename.split('_')[5][4:7])
         mnlat = min_lat - (min_lat % WORLDCOVER_TILE_SIZE)
@@ -263,8 +262,16 @@ def main():
     # Process the multi-class masks into water/not-water masks.
     tile_preprocessing(args.worldcover_tiles_dir, lat_begin, lat_end, lon_begin, lon_end)
 
-    wc_lat_range = range(lat_begin, lat_end, WORLDCOVER_TILE_SIZE)
-    wc_lon_range = range(lon_begin, lon_end, WORLDCOVER_TILE_SIZE)
+    wc_lat_range = range(
+        lat_begin - (lat_begin % WORLDCOVER_TILE_SIZE),
+        lat_end + (lat_end % WORLDCOVER_TILE_SIZE),
+        WORLDCOVER_TILE_SIZE
+    )
+    wc_lon_range = range(
+        lon_begin - (lon_begin % WORLDCOVER_TILE_SIZE), 
+        lon_end + (lon_end % WORLDCOVER_TILE_SIZE), 
+        WORLDCOVER_TILE_SIZE
+    )
 
     # Ocean only tiles are missing from WorldCover, so we need to create blank (water-only) ones.
     create_missing_tiles(PREPROCESSED_TILE_DIR, wc_lat_range, wc_lon_range)
