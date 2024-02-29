@@ -28,11 +28,15 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
 
     filenames = [f for f in os.listdir(tile_dir) if f.endswith('.tif')]
 
-    def filename_filter(filename):
+    def filename_filter(filename):  # We only want to preprocess the files that are necessary for the roi.
         latitude = int(filename.split('_')[5][1:3])
         longitude = int(filename.split('_')[5][4:7])
-        in_lat_range = (latitude >= min_lat - WORLDCOVER_TILE_SIZE) and (latitude <= max_lat + WORLDCOVER_TILE_SIZE)
-        in_lon_range = (longitude >= min_lon - WORLDCOVER_TILE_SIZE) and (longitude <= max_lon + WORLDCOVER_TILE_SIZE)
+        mnlat = min_lat - (min_lat % WORLDCOVER_TILE_SIZE)
+        mnlon = min_lon - (min_lon % WORLDCOVER_TILE_SIZE)
+        mxlat = max_lat + (max_lat % WORLDCOVER_TILE_SIZE)
+        mxlon = max_lon + (max_lon % WORLDCOVER_TILE_SIZE)
+        in_lat_range = (latitude >= mnlat) and (latitude <= mxlat)
+        in_lon_range = (longitude >= mnlon) and (longitude <= mxlon)
         return in_lat_range and in_lon_range
     filenames_filtered = [f for f in filenames if filename_filter(f)]
 
@@ -231,7 +235,12 @@ def main():
     )
 
     parser.add_argument('--worldcover-tiles-dir', help='The path to the directory containing the worldcover tifs.')
-    parser.add_argument('--lat-begin', help='The minimum latitude of the dataset in EPSG:4326.', default=-85, required=True)
+    parser.add_argument(
+        '--lat-begin',
+        help='The minimum latitude of the dataset in EPSG:4326.',
+        default=-85,
+        required=True
+    )
     parser.add_argument('--lat-end', help='The maximum latitude of the dataset in EPSG:4326.', default=85)
     parser.add_argument('--lon-begin', help='The minimum longitude of the dataset in EPSG:4326.', default=-180)
     parser.add_argument('--lon-end', help='The maximum longitude of the dataset in EPSG:4326.', default=180)
