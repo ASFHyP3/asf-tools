@@ -97,7 +97,7 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
     # Extract tile from the main pbf, then convert it to a tif.
     bbox = f'--bbox {lon},{lat},{lon+tile_width_deg},{lat+tile_height_deg}'
     extract_command = f'osmium extract -s smart -S tags=natural=water {bbox} {water_file} -o {tile_pbf}'.split(' ')
-    export_command = f'osmium export --geometry-types="polygon" {tile_pbf} -o {tile_geojson}'.split(' ')
+    export_command = f'osmium export --geometry-types=polygon {tile_pbf} -o {tile_geojson}'.split(' ')
     subprocess.run(extract_command)
     subprocess.run(export_command)
 
@@ -210,9 +210,9 @@ def main():
 
     setup_directories([INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR])
 
-    print('Extracting water from planet file...')
+    # print('Extracting water from planet file...')
     processed_pbf_path = 'planet_processed.pbf'
-    process_pbf(args.planet_file_path, processed_pbf_path)
+    # process_pbf(args.planet_file_path, processed_pbf_path)
 
     print('Processing tiles...')
     lat_range = range(lat_begin, lat_end, tile_height)
