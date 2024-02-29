@@ -1,15 +1,20 @@
 import argparse
 import os
+import subprocess
 import time
 
 import geopandas as gpd
 from osgeo import gdal
 
+gdal.UseExceptions()
+
 from asf_tools.watermasking.utils import lat_lon_to_tile_string, remove_temp_files, setup_directories
+
 
 INTERIOR_TILE_DIR = 'interior_tiles/'
 OCEAN_TILE_DIR = 'ocean_tiles/'
 FINISHED_TILE_DIR = 'tiles/'
+GDAL_OPTIONS = ['COMPRESS=LZW', 'TILED=YES', 'NUM_THREADS=all_cpus']
 
 
 def process_pbf(planet_file: str, output_file: str):
@@ -24,15 +29,15 @@ def process_pbf(planet_file: str, output_file: str):
     waterways_file = 'planet_waterways.pbf'
     reservoirs_file = 'planet_reservoirs.pbf'
 
-    natural_water_command = f'osmium tags-filter -o {natural_file} {planet_file} wr/natural=water'
-    waterways_command = f'osmium tags-filter -o {waterways_file} {planet_file} waterway="*"'
-    reservoirs_command = f'osmium tags-filter -o {reservoirs_file} {planet_file} landuse=reservoir'
-    merge_command = f'osmium merge {natural_file} {waterways_file} {reservoirs_file} -o {output_file}'
+    natural_water_command = f'osmium tags-filter -o {natural_file} {planet_file} wr/natural=water'.split(' ')
+    waterways_command = f'osmium tags-filter -o {waterways_file} {planet_file} waterway="*"'.split(' ')
+    reservoirs_command = f'osmium tags-filter -o {reservoirs_file} {planet_file} landuse=reservoir'.split(' ')
+    merge_command = f'osmium merge {natural_file} {waterways_file} {reservoirs_file} -o {output_file}'.split(' ')
 
-    os.system(natural_water_command)
-    os.system(waterways_command)
-    os.system(reservoirs_command)
-    os.system(merge_command)
+    subprocess.run(natural_water_command)
+    subprocess.run(waterways_command)
+    subprocess.run(reservoirs_command)
+    subprocess.run(merge_command)
 
 
 def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_height_deg, output_dir):
@@ -54,8 +59,8 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
     pixel_size_y = 0.00009009009
 
     clipped_polygons_path = tile + '.shp'
-    command = f'ogr2ogr -clipsrc {xmin} {ymin} {xmax} {ymax} {clipped_polygons_path} {ocean_polygons_path}'
-    os.system(command)
+    command = f'ogr2ogr -clipsrc {xmin} {ymin} {xmax} {ymax} {clipped_polygons_path} {ocean_polygons_path}'.split(' ')
+    subprocess.run(command)
 
     gdal.Rasterize(
         tile_tif,
@@ -65,7 +70,7 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         burnValues=1,
         outputBounds=[xmin, ymin, xmax, ymax],
         outputType=gdal.GDT_Byte,
-        creationOptions=['COMPRESS=LZW']
+        creationOptions=GDAL_OPTIONS
     )
 
     temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx']
@@ -91,8 +96,10 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
 
     # Extract tile from the main pbf, then convert it to a tif.
     bbox = f'--bbox {lon},{lat},{lon+tile_width_deg},{lat+tile_height_deg}'
-    os.system(f'osmium extract -s smart -S tags=natural=water {bbox} {water_file} -o {tile_pbf}')
-    os.system(f'osmium export --geometry-types="polygon" {tile_pbf} -o {tile_geojson}')
+    extract_command = f'osmium extract -s smart -S tags=natural=water {bbox} {water_file} -o {tile_pbf}'.split(' ')
+    export_command = f'osmium export --geometry-types="polygon" {tile_pbf} -o {tile_geojson}'.split(' ')
+    subprocess.run(extract_command)
+    subprocess.run(export_command)
 
     # Islands and Islets can be members of the water features, so they must be removed.
     water_gdf = gpd.read_file(tile_geojson, engine='pyogrio')
@@ -117,7 +124,7 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
         burnValues=1,
         outputBounds=[xmin, ymin, xmax, ymax],
         outputType=gdal.GDT_Byte,
-        creationOptions=['COMPRESS=LZW']
+        creationOptions=GDAL_OPTIONS
     )
 
     temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx', tile_shp, tile_pbf, tile_geojson]
@@ -154,7 +161,7 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
                 '--calc',
                 '"logical_or(A, B)"'
             ])
-            os.system(command)
+            subprocess.run(command)
 
             if translate_to_cog:
                 cogs_dir = finished_tile_dir + 'cogs/'
@@ -164,7 +171,7 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
                     pass
                 out_file = cogs_dir + filename
                 command = f'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus {output_tile} {out_file}'
-                os.system(command)
+                subprocess.run(command)
                 os.remove(output_tile)
 
             end_time = time.time()
