@@ -1,5 +1,6 @@
 import argparse
 import os
+import subprocess
 
 import numpy as np
 from osgeo import gdal, osr
@@ -65,8 +66,8 @@ def main():
             dst_band.WriteArray(data)
             del dst_ds
 
-            command = f'gdal_translate -of COG -co NUM_THREADS=all_cpus {tile_tif} {tile_cog}'
-            os.system(command)
+            command = f'gdal_translate -of COG -co NUM_THREADS=all_cpus {tile_tif} {tile_cog}'.split(' ')
+            subprocess.run(command)
             os.remove(tile_tif)
 
 
