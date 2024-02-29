@@ -1,4 +1,4 @@
-These scripts are for creating a global (or regional) water mask dataset based off of a OpenStreetMaps, and optionally augmented by ESA WorldCover.
+These scripts are for creating a global (or regional) water mask dataset based off of OpenStreetMaps, and optionally augmented by ESA WorldCover.
 
 For the OSM water mask dataset, follow these steps to replicate our dataset:
     1. Download the "Latest Weekly Planet PBF File" file from here: "https://planet.openstreetmap.org/".
