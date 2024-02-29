@@ -31,8 +31,8 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
     def filename_filter(filename):
         latitude = int(filename.split('_')[5][1:3])
         longitude = int(filename.split('_')[5][4:7])
-        in_lat_range = (latitude >= min_lat) and (latitude <= max_lat)
-        in_lon_range = (longitude >= min_lon) and (longitude <= max_lon)
+        in_lat_range = (latitude >= min_lat - WORLDCOVER_TILE_SIZE) and (latitude <= max_lat + WORLDCOVER_TILE_SIZE)
+        in_lon_range = (longitude >= min_lon - WORLDCOVER_TILE_SIZE) and (longitude <= max_lon + WORLDCOVER_TILE_SIZE)
         return in_lat_range and in_lon_range
     filenames_filtered = [f for f in filenames if filename_filter(f)]
 
