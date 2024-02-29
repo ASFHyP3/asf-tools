@@ -6,10 +6,10 @@ import time
 import geopandas as gpd
 from osgeo import gdal
 
-gdal.UseExceptions()
-
 from asf_tools.watermasking.utils import lat_lon_to_tile_string, remove_temp_files, setup_directories
 
+
+gdal.UseExceptions()
 
 INTERIOR_TILE_DIR = 'interior_tiles/'
 OCEAN_TILE_DIR = 'ocean_tiles/'

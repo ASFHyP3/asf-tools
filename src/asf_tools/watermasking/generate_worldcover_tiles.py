@@ -5,10 +5,10 @@ import time
 import numpy as np
 from osgeo import gdal
 
-gdal.UseExceptions()
-
 from asf_tools.watermasking.utils import lat_lon_to_tile_string, merge_tiles, remove_temp_files, setup_directories
 
+
+gdal.UseExceptions()
 
 PREPROCESSED_TILE_DIR = 'worldcover_tiles_preprocessed/'
 UNCROPPED_TILE_DIR = 'worldcover_tiles_uncropped/'

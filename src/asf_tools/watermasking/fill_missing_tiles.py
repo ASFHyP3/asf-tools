@@ -7,6 +7,9 @@ from osgeo import gdal, osr
 from asf_tools.watermasking.utils import lat_lon_to_tile_string
 
 
+gdal.UseExceptions()
+
+
 def main():
 
     parser = argparse.ArgumentParser(
