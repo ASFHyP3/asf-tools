@@ -73,7 +73,7 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         creationOptions=GDAL_OPTIONS
     )
 
-    temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx']
+    temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx', tile + '.shp']
     remove_temp_files(temp_files)
 
 
@@ -148,7 +148,7 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
             internal_tile = internal_tile_dir + filename
             external_tile = ocean_tile_dir + filename
             output_tile = finished_tile_dir + filename
-            command = ' '.join([
+            command = [
                 'gdal_calc.py',
                 '-A',
                 internal_tile,
@@ -160,7 +160,7 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
                 output_tile,
                 '--calc',
                 '"logical_or(A, B)"'
-            ])
+            ]
             subprocess.run(command)
 
             if translate_to_cog:
@@ -170,7 +170,8 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
                 except FileExistsError:
                     pass
                 out_file = cogs_dir + filename
-                command = f'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus {output_tile} {out_file}'
+                translate_string = 'gdal_translate -ot Byte -of COG -co NUM_THREADS=all_cpus'
+                command = f'{translate_string} {output_tile} {out_file}'.split(' ')
                 subprocess.run(command)
                 os.remove(output_tile)
 
@@ -210,9 +211,9 @@ def main():
 
     setup_directories([INTERIOR_TILE_DIR, OCEAN_TILE_DIR, FINISHED_TILE_DIR])
 
-    # print('Extracting water from planet file...')
+    print('Extracting water from planet file...')
     processed_pbf_path = 'planet_processed.pbf'
-    # process_pbf(args.planet_file_path, processed_pbf_path)
+    process_pbf(args.planet_file_path, processed_pbf_path)
 
     print('Processing tiles...')
     lat_range = range(lat_begin, lat_end, tile_height)
