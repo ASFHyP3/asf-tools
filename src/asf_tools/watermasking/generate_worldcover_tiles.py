@@ -269,8 +269,8 @@ def main():
         WORLDCOVER_TILE_SIZE
     )
     wc_lon_range = range(
-        lon_begin - (lon_begin % WORLDCOVER_TILE_SIZE), 
-        lon_end + (lon_end % WORLDCOVER_TILE_SIZE), 
+        lon_begin - (lon_begin % WORLDCOVER_TILE_SIZE),
+        lon_end + (lon_end % WORLDCOVER_TILE_SIZE),
         WORLDCOVER_TILE_SIZE
     )
 
