@@ -5,13 +5,17 @@ import time
 import numpy as np
 from osgeo import gdal
 
+gdal.UseExceptions()
+
 from asf_tools.watermasking.utils import lat_lon_to_tile_string, merge_tiles, remove_temp_files, setup_directories
 
-PROCESSED_TILE_DIR = 'worldcover_tiles_preprocessed/'
-TILE_DIR = 'worldcover_tiles_uncropped/'
+
+PREPROCESSED_TILE_DIR = 'worldcover_tiles_preprocessed/'
+UNCROPPED_TILE_DIR = 'worldcover_tiles_uncropped/'
 CROPPED_TILE_DIR = 'worldcover_tiles/'
 FILENAME_POSTFIX = '.tif'
 WORLDCOVER_TILE_SIZE = 3
+GDAL_OPTIONS = ['COMPRESS=LZW', 'TILED=YES', 'NUM_THREADS=all_cpus']
 
 
 def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
@@ -39,7 +43,7 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
         start_time = time.time()
 
         filename = tile_dir + filename
-        dst_filename = PROCESSED_TILE_DIR + filename.split('_')[6] + '.tif'
+        dst_filename = PREPROCESSED_TILE_DIR + filename.split('_')[6] + '.tif'
 
         print(f'Processing: {filename}  ---  {dst_filename}  -- {index} of {num_tiles}')
 
@@ -52,14 +56,13 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
         water_arr[not_water] = 0
 
         driver = gdal.GetDriverByName('GTiff')
-
         dst_ds = driver.Create(
             dst_filename,
             water_arr.shape[0],
             water_arr.shape[1],
             1,
             gdal.GDT_Byte,
-            options=['COMPRESS=LZW', 'TILED=YES']
+            options=GDAL_OPTIONS
         )
         dst_ds.SetGeoTransform(src_ds.GetGeoTransform())
         dst_ds.SetProjection(src_ds.GetProjection())
@@ -95,6 +98,7 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
             if tile not in current_existing_tiles:
                 print(f'Could not find {tile}')
 
+                filename = PREPROCESSED_TILE_DIR + tile
                 x_size, y_size = 36000, 36000
                 x_res, y_res = 8.333333333333333055e-05, -8.333333333333333055e-05
                 ul_lon = lon
@@ -103,12 +107,12 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
 
                 driver = gdal.GetDriverByName('GTiff')
                 ds = driver.Create(
-                    tile,
+                    filename,
                     xsize=x_size,
                     ysize=y_size,
                     bands=1,
                     eType=gdal.GDT_Byte,
-                    options=['COMPRESS=LZW']
+                    options=GDAL_OPTIONS
                 )
                 ds.SetProjection('EPSG:4326')
                 ds.SetGeoTransform(geotransform)
@@ -178,7 +182,7 @@ def crop_tile(tile, lat, lon, tile_width, tile_height):
     Args:
         tile: The filename of the desired tile to crop.
     """
-    in_filename = TILE_DIR + tile
+    in_filename = UNCROPPED_TILE_DIR + tile
     out_filename = CROPPED_TILE_DIR + tile
     pixel_size_x, pixel_size_y = 0.00009009009, -0.00009009009
 
@@ -209,7 +213,7 @@ def build_dataset(worldcover_tile_dir, lat_range, lon_range, tile_width, tile_he
         for lon in lon_range:
             start_time = time.time()
             tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False)
-            tile_filename = TILE_DIR + tile
+            tile_filename = UNCROPPED_TILE_DIR + tile
             worldcover_tiles = lat_lon_to_filenames(worldcover_tile_dir, (lat, lon), WORLDCOVER_TILE_SIZE, tile_width)
             print(f'Processing: {tile_filename} {worldcover_tiles}')
             merge_tiles(worldcover_tiles, tile_filename, 'GTiff', compress=True)
@@ -245,18 +249,19 @@ def main():
     lat_range = range(lat_begin, lat_end, tile_width)
     lon_range = range(lon_begin, lon_end, tile_height)
 
-    setup_directories([PROCESSED_TILE_DIR, TILE_DIR, CROPPED_TILE_DIR])
+    setup_directories([PREPROCESSED_TILE_DIR, UNCROPPED_TILE_DIR, CROPPED_TILE_DIR])
 
     # Process the multi-class masks into water/not-water masks.
     tile_preprocessing(args.worldcover_tiles_dir, lat_begin, lat_end, lon_begin, lon_end)
 
     wc_lat_range = range(lat_begin, lat_end, WORLDCOVER_TILE_SIZE)
     wc_lon_range = range(lon_begin, lon_end, WORLDCOVER_TILE_SIZE)
+
     # Ocean only tiles are missing from WorldCover, so we need to create blank (water-only) ones.
-    create_missing_tiles(PROCESSED_TILE_DIR, wc_lat_range, wc_lon_range)
+    create_missing_tiles(PREPROCESSED_TILE_DIR, wc_lat_range, wc_lon_range)
 
     build_dataset(
-        PROCESSED_TILE_DIR,
+        PREPROCESSED_TILE_DIR,
         lat_range,
         lon_range,
         tile_width=tile_width,
