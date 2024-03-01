@@ -1,6 +1,7 @@
 import argparse
 import os
 import time
+from pathlib import Path
 
 import numpy as np
 from osgeo import gdal
@@ -49,7 +50,7 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
         start_time = time.time()
 
         tile_name = filename.split('_')[5]
-        filename = tile_dir + filename
+        filename = str(Path(tile_dir) / filename)
         dst_filename = PREPROCESSED_TILE_DIR + tile_name + '.tif'
 
         print(f'Processing: {filename}  ---  {dst_filename}  -- {index} of {num_tiles}')
