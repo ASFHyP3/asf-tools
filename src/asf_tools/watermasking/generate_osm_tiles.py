@@ -64,7 +64,7 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
 
     gdal.Rasterize(
         tile_tif,
-        ocean_polygons_path,
+        clipped_polygons_path,
         xRes=pixel_size_x,
         yRes=pixel_size_y,
         burnValues=1,
@@ -106,7 +106,7 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
     try:
         water_gdf = water_gdf.drop(water_gdf[water_gdf['place'] == 'island'].index)
         water_gdf = water_gdf.drop(water_gdf[water_gdf['place'] == 'islet'].index)
-    except AttributeError:
+    except KeyError:
         # When there are no islands to remove, an AttributeError should throw, but we don't care about it.
         pass
     water_gdf.to_file(tile_shp, mode='w', engine='pyogrio')
@@ -140,7 +140,7 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
         merged_tile_dir: The path to the directory containing the merged water tiles.
     """
     index = 0
-    num_tiles = len([f for f in os.listdir(internal_tile_dir) if f.endswith('tif')])
+    num_tiles = len([f for f in os.listdir(internal_tile_dir) if f.endswith('tif')]) - 1
     for filename in os.listdir(internal_tile_dir):
         if filename.endswith('.tif'):
             start_time = time.time()
@@ -218,7 +218,7 @@ def main():
     print('Processing tiles...')
     lat_range = range(lat_begin, lat_end, tile_height)
     lon_range = range(lon_begin, lon_end, tile_width)
-    num_tiles = len(lat_range) * len(lon_range)
+    num_tiles = len(lat_range) * len(lon_range) - 1
     index = 0
     for lat in lat_range:
         for lon in lon_range:
