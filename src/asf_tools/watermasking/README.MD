@@ -2,12 +2,13 @@ These scripts are for creating a global (or regional) water mask dataset based o
 
 For the OSM water mask dataset, follow these steps to replicate our dataset:
 
-1. Download the "Latest Weekly Planet PBF File" file from here: "https://planet.openstreetmap.org/".
-2. Download the WGS84 water polygons shapefile from: "https://osmdata.openstreetmap.de/data/water-polygons.html".
-3. The files should be unzipped and you should have something like `planet.osm.pbf` or `planet.pbf` and `water_polygons.shp` (and the support files for `water_polygons.shp`). 
-4. Run ```generate_osm_dataset --planet-file-path [path-to-planet.pbf] --ocean-polygons-path [path-to-water-polygons.shp] --lat-begin -85 --lat-end 85 --lon-begin -180 --lon-end 180 --tile-width 5 --tile-height 5```
-5. Run ```fill_missing_tiles --fill-value 0 --lat-begin -90 --lat-end -85 --lon-begin -180 --lon-end 180 --tile-width 5 --tile-height 5```
-6. Run ```fill_missing_tiles --fill-value 1 --lat-begin 85 --lat-end 90 --lon-begin -180 --lon-end 180 --tile-width 5 --tile-height 5```
+1. Install osmium-tool from conda-forge or "https://osmcode.org/osmium-tool/".
+2. Download the "Latest Weekly Planet PBF File" file from here: "https://planet.openstreetmap.org/".
+3. Download the WGS84 water polygons shapefile from: "https://osmdata.openstreetmap.de/data/water-polygons.html".
+4. The files should be unzipped and you should have something like `planet.osm.pbf` or `planet.pbf` and `water_polygons.shp` (and the support files for `water_polygons.shp`). 
+5. Run ```generate_osm_dataset --planet-file-path [path-to-planet.pbf] --ocean-polygons-path [path-to-water-polygons.shp] --lat-begin -85 --lat-end 85 --lon-begin -180 --lon-end 180 --tile-width 5 --tile-height 5```
+6. Run ```fill_missing_tiles --fill-value 0 --lat-begin -90 --lat-end -85 --lon-begin -180 --lon-end 180 --tile-width 5 --tile-height 5```
+7. Run ```fill_missing_tiles --fill-value 1 --lat-begin 85 --lat-end 90 --lon-begin -180 --lon-end 180 --tile-width 5 --tile-height 5```
 
 For the WorldCover water mask dataset, follow these steps:
 
