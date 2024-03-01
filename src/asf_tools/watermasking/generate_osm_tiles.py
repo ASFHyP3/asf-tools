@@ -205,7 +205,7 @@ def main():
     try:
         subprocess.run(['osmium', '--help'], check=True, stdout=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        raise ImportError('osmium-tool must be installed to run this program.')
+        raise ImportError('osmium-tool must be installed to run this program: https://osmcode.org/osmium-tool/.')
 
     lat_begin = int(args.lat_begin)
     lat_end = int(args.lat_end)
