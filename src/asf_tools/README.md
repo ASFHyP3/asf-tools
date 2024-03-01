@@ -165,6 +165,6 @@ For details on the algorithm see the `asf_tools.flood_map.make_flood_map` docstr
 ### Water Mask Dataset Generation
 
 The `asf_tools.watermasking` sub-package allows you to create a watermasking dataset 
-over an arbitrary ROI (including global) using OpenStreetMap and ESA WorldCover data.
+over an arbitrary ROI using OpenStreetMap and ESA WorldCover data.
 Note, this program requires `osmium-tool`. See [README.md](watermasking/README.md) 
 for more information on setup and usage.
