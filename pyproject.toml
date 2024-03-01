@@ -25,14 +25,15 @@ dependencies = [
     "astropy",
     "fiona",
     "gdal>=3.3",
+    "geopandas",
     "numpy",
+    "pyogrio",
     "pysheds>=0.3",
     "rasterio",
     "scikit-fuzzy",
     "scikit-image",
     "scipy",
-    "shapely",
-    "tqdm",
+    "shapely"
 ]
 dynamic = ["version"]
 
@@ -41,6 +42,9 @@ make_composite = "asf_tools.composite:main"
 water_map = "asf_tools.hydrosar.water_map:main"
 calculate_hand = "asf_tools.hydrosar.hand.calculate:main"
 flood_map = "asf_tools.hydrosar.flood_map:main"
+generate_osm_dataset = "asf_tools.watermasking.generate_osm_tiles:main"
+generate_worldcover_dataset = "asf_tools.watermasking.generate_worldcover_tiles:main"
+fill_missing_tiles = "asf_tools.watermasking.fill_missing_tiles:main"
 
 [project.entry-points.hyp3]
 water_map = "asf_tools.hydrosar.water_map:hyp3"
