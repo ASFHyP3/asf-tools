@@ -27,6 +27,7 @@ dependencies = [
     "gdal>=3.3",
     "geopandas",
     "numpy",
+    # "osmium-tool", # C++ CLI tool available via conda-forge or 'https://osmcode.org/osmium-tool/', used by `asf_tools.watermasking.generate_osm_tiles`.
     "pyogrio",
     "pysheds>=0.3",
     "rasterio",
