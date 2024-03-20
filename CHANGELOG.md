@@ -7,6 +7,11 @@ and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/)
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.7.2]
+
+### Fixed
+- Changed relative link to the watermasking readme in the repo readme to the full URL, so that the link is valid when readme content is mirrored in hyp3-docs
+
 ## [0.7.1]
 
 ### Added
@@ -18,7 +23,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.7.0]
 
-## Added
+### Added
 * Scripts and entrypoints for generating our global watermasking dataset added to `watermasking`.
 
 ## [0.6.0]
