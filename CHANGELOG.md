@@ -7,9 +7,28 @@ and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/)
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.7.2]
+
+### Fixed
+- Changed relative link to the watermasking readme in the repo readme to the full URL, so that the link is valid when readme content is mirrored in hyp3-docs
+
+## [0.7.1]
+
+### Added
+- A description of the `asf_tools.watermasking` sub-package has been added to the [`asf_tools` README](src/asf_tools/README.md)
+- Installation instructions for `osmium-tool` have been added to the [`asf_tools.watermasking` README](src/asf_tools/watermasking/README.md)
+
+### Fixed
+- `osmium-tool` dependency handling. Because `osmium-tool` is not distributed on PyPI and thus is not installed when `pip` installing `asf_tools`, `asf_tools` will now raise an `ImportError` when `osmium-tool` is missing that provides installation instructions. Note: `osmium-tool` is distributed on conda-forge and will be included when conda installing `asf_tools`.
+
+## [0.7.0]
+
+### Added
+* Scripts and entrypoints for generating our global watermasking dataset added to `watermasking`.
+
 ## [0.6.0]
 
-## Added
+### Added
 * You can choose whether the `ts` (threat score; default) or `fmi` (Fowlkes-Mallows index) minimization metric is used for the flood mapping iterative estimator:
   * the `flood_map` console script entrypoint now accepts a `--minimization-metric` argument
   * the  `asf_tools.hydrosar.floopd_map.make_flood_map` function now accepts a `minimization_metric` keyword argument
