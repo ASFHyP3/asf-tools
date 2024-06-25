@@ -15,6 +15,8 @@ jobs:
     uses: ASFHyP3/actions/.github/workflows/reusable-pytest.yml@v0.11.0
     with:
       local_package_name: asf_tools
+      python_versions: >-  # Optional; default shown
+        ["3.10", "3.11"]
 
   call-version-info-workflow:
     uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.11.0
