@@ -4,7 +4,7 @@ channels:
   # - esri  # windows only
   - nodefaults
 dependencies:
-  - python>=3.8
+  - python>=3.10, <3.12
   - pip
   # For packaging, and testing
   # - arcpy  # windows only
