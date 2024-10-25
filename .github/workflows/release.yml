@@ -51,16 +51,16 @@ jobs:
           git merge --ff-only origin/main
           git push
 
-      - name: Open PR to bring main back to develop
+      - name: On failure, open PR to bring release back to develop
         if: ${{ failure() }}
-        uses: repo-sync/pull-request@v2
-        with:
-          source_branch: main
-          destination_branch: develop
-          pr_title: Pulling ${{ github.ref }} into default
-          pr_body: Fast-forward of main to default failed!
-          pr_assignee: ${{ github.actor }}
-          pr_label: tools-bot
-          pr_draft: false
-          pr_allow_empty: true
-          github_token: ${{ secrets.TOOLS_BOT_PAK }}
+        env:
+          PR_TITLE: Pulling ${{ github.ref }} into develop
+          PR_BODY: Fast-forward of main to develop failed!
+          GH_TOKEN: ${{ secrets.USER_TOKEN }}
+        run: |
+          gh pr create --title "${PR_TITLE}" \
+                      --body "${PR_BODY}" \
+                      --assignee ${{ github.actor }} \
+                      --label tools-bot \
+                      --head main \
+                      --base develop
