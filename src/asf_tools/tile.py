@@ -48,9 +48,7 @@ def tile_array(
     cpad = -array_columns % tile_columns
 
     if (rpad or cpad) and pad_value is None:
-        raise ValueError(
-            f"Cannot evenly tile a {array.shape} array into ({tile_rows},{tile_columns}) tiles"
-        )
+        raise ValueError(f'Cannot evenly tile a {array.shape} array into ({tile_rows},{tile_columns}) tiles')
 
     if rpad or cpad:
         padded_array = np.pad(array, ((0, rpad), (0, cpad)), constant_values=pad_value)
@@ -62,9 +60,7 @@ def tile_array(
 
     tile_list = []
     for rows in np.vsplit(padded_array, range(tile_rows, array_rows, tile_rows)):
-        tile_list.extend(
-            np.hsplit(rows, range(tile_columns, array_columns, tile_columns))
-        )
+        tile_list.extend(np.hsplit(rows, range(tile_columns, array_columns, tile_columns)))
 
     dstack = np.ma.dstack if isinstance(array, np.ma.MaskedArray) else np.dstack
     tiled = np.moveaxis(dstack(tile_list), -1, 0)
@@ -121,8 +117,8 @@ def untile_array(
 
     if (array_size := array_rows * array_columns) > tiled_array.size:
         raise ValueError(
-            f"array_shape {array_shape} will result in an array bigger than the tiled array:"
-            f" {array_size} > {tiled_array.size}"
+            f'array_shape {array_shape} will result in an array bigger than the tiled array:'
+            f' {array_size} > {tiled_array.size}'
         )
 
     for ii in range(untiled_rows):

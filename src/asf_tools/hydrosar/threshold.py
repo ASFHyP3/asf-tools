@@ -1,5 +1,3 @@
-# Turned off flake8 because we haven't refactored 3rd party provided functions
-# flake8: noqa
 import numpy as np
 
 
@@ -39,9 +37,7 @@ def _make_distribution(m, v, g, x):
     return y
 
 
-def expectation_maximization_threshold(
-    tile: np.ndarray, number_of_classes: int = 3
-) -> float:
+def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int = 3) -> float:
     """Water threshold Calculation using a multi-mode Expectation Maximization Approach
 
     Thresholding works best when backscatter tiles are provided on a decibel scale
@@ -60,9 +56,7 @@ def expectation_maximization_threshold(
     """
 
     image_copy = tile.copy()
-    image_copy2 = np.ma.filled(
-        tile.astype(float), np.nan
-    )  # needed for valid posterior_lookup keys
+    image_copy2 = np.ma.filled(tile.astype(float), np.nan)  # needed for valid posterior_lookup keys
     image = tile.flatten()
     minimum = np.amin(image)
     image = image - minimum + 1
@@ -78,36 +72,20 @@ def expectation_maximization_threshold(
     sml = np.mean(np.diff(nonzero_indices)) / 1000
     iteration = 0
     while True:
-        class_likelihood = _make_distribution(
-            class_means, class_variances, class_proportions, nonzero_indices
-        )
-        sum_likelihood = (
-            np.sum(class_likelihood, 1) + np.finfo(class_likelihood[0][0]).eps
-        )
+        class_likelihood = _make_distribution(class_means, class_variances, class_proportions, nonzero_indices)
+        sum_likelihood = np.sum(class_likelihood, 1) + np.finfo(class_likelihood[0][0]).eps
         log_likelihood = np.sum(histogram * np.log(sum_likelihood))
         for j in range(0, number_of_classes):
-            class_posterior_probability = (
-                histogram * class_likelihood[:, j] / sum_likelihood
-            )
+            class_posterior_probability = histogram * class_likelihood[:, j] / sum_likelihood
             class_proportions[j] = np.sum(class_posterior_probability)
-            class_means[j] = (
-                np.sum(nonzero_indices * class_posterior_probability)
-                / class_proportions[j]
-            )
+            class_means[j] = np.sum(nonzero_indices * class_posterior_probability) / class_proportions[j]
             vr = nonzero_indices - class_means[j]
-            class_variances[j] = (
-                np.sum(vr * vr * class_posterior_probability) / class_proportions[j]
-                + sml
-            )
+            class_variances[j] = np.sum(vr * vr * class_posterior_probability) / class_proportions[j] + sml
             del class_posterior_probability, vr
         class_proportions += 1e-3
         class_proportions /= np.sum(class_proportions)
-        class_likelihood = _make_distribution(
-            class_means, class_variances, class_proportions, nonzero_indices
-        )
-        sum_likelihood = (
-            np.sum(class_likelihood, 1) + np.finfo(class_likelihood[0, 0]).eps
-        )
+        class_likelihood = _make_distribution(class_means, class_variances, class_proportions, nonzero_indices)
+        sum_likelihood = np.sum(class_likelihood, 1) + np.finfo(class_likelihood[0, 0]).eps
         del class_likelihood
         new_log_likelihood = np.sum(histogram * np.log(sum_likelihood))
         del sum_likelihood

@@ -16,12 +16,12 @@ from asf_tools.watermasking.utils import (
 
 gdal.UseExceptions()
 
-PREPROCESSED_TILE_DIR = "worldcover_tiles_preprocessed/"
-UNCROPPED_TILE_DIR = "worldcover_tiles_uncropped/"
-CROPPED_TILE_DIR = "worldcover_tiles/"
-FILENAME_POSTFIX = ".tif"
+PREPROCESSED_TILE_DIR = 'worldcover_tiles_preprocessed/'
+UNCROPPED_TILE_DIR = 'worldcover_tiles_uncropped/'
+CROPPED_TILE_DIR = 'worldcover_tiles/'
+FILENAME_POSTFIX = '.tif'
 WORLDCOVER_TILE_SIZE = 3
-GDAL_OPTIONS = ["COMPRESS=LZW", "TILED=YES", "NUM_THREADS=all_cpus"]
+GDAL_OPTIONS = ['COMPRESS=LZW', 'TILED=YES', 'NUM_THREADS=all_cpus']
 
 
 def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
@@ -32,12 +32,12 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
         tile_dir: The directory containing all of the worldcover tiles.
     """
 
-    filenames = [f for f in os.listdir(tile_dir) if f.endswith(".tif")]
+    filenames = [f for f in os.listdir(tile_dir) if f.endswith('.tif')]
 
     def filename_filter(filename):
-        latitude = int(filename.split("_")[5][1:3])
-        longitude = int(filename.split("_")[5][4:7])
-        if filename.split("_")[5][3] == "W":
+        latitude = int(filename.split('_')[5][1:3])
+        longitude = int(filename.split('_')[5][4:7])
+        if filename.split('_')[5][3] == 'W':
             longitude = -longitude
         mnlat = min_lat - (min_lat % WORLDCOVER_TILE_SIZE)
         mnlon = min_lon - (min_lon % WORLDCOVER_TILE_SIZE)
@@ -54,11 +54,11 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
     for filename in filenames_filtered:
         start_time = time.time()
 
-        tile_name = filename.split("_")[5]
+        tile_name = filename.split('_')[5]
         filename = str(Path(tile_dir) / filename)
-        dst_filename = PREPROCESSED_TILE_DIR + tile_name + ".tif"
+        dst_filename = PREPROCESSED_TILE_DIR + tile_name + '.tif'
 
-        print(f"Processing: {filename}  ---  {dst_filename}  -- {index} of {num_tiles}")
+        print(f'Processing: {filename}  ---  {dst_filename}  -- {index} of {num_tiles}')
 
         src_ds = gdal.Open(filename)
         src_band = src_ds.GetRasterBand(1)
@@ -68,7 +68,7 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
         water_arr = np.ones(src_arr.shape)
         water_arr[not_water] = 0
 
-        driver = gdal.GetDriverByName("GTiff")
+        driver = gdal.GetDriverByName('GTiff')
         dst_ds = driver.Create(
             dst_filename,
             water_arr.shape[0],
@@ -89,7 +89,7 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
         end_time = time.time()
         total_time = end_time - start_time
 
-        print(f"Processing {dst_filename} took {total_time} seconds.")
+        print(f'Processing {dst_filename} took {total_time} seconds.')
 
         index += 1
 
@@ -103,15 +103,13 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
     Returns:
         current_existing_tiles: The list of tiles that exist after the function has completed.
     """
-    current_existing_tiles = [
-        f for f in os.listdir(tile_dir) if f.endswith(FILENAME_POSTFIX)
-    ]
+    current_existing_tiles = [f for f in os.listdir(tile_dir) if f.endswith(FILENAME_POSTFIX)]
     for lon in lon_range:
         for lat in lat_range:
             tile = lat_lon_to_tile_string(lat, lon, is_worldcover=True)
-            print(f"Checking {tile}")
+            print(f'Checking {tile}')
             if tile not in current_existing_tiles:
-                print(f"Could not find {tile}")
+                print(f'Could not find {tile}')
 
                 filename = PREPROCESSED_TILE_DIR + tile
                 x_size, y_size = 36000, 36000
@@ -120,7 +118,7 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
                 ul_lat = lat + WORLDCOVER_TILE_SIZE
                 geotransform = (ul_lon, x_res, 0, ul_lat, 0, y_res)
 
-                driver = gdal.GetDriverByName("GTiff")
+                driver = gdal.GetDriverByName('GTiff')
                 ds = driver.Create(
                     filename,
                     xsize=x_size,
@@ -129,18 +127,16 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
                     eType=gdal.GDT_Byte,
                     options=GDAL_OPTIONS,
                 )
-                ds.SetProjection("EPSG:4326")
+                ds.SetProjection('EPSG:4326')
                 ds.SetGeoTransform(geotransform)
-                band = ds.GetRasterBand(
-                    1
-                )  # Write ones, as tiles should only be missing over water.
+                band = ds.GetRasterBand(1)  # Write ones, as tiles should only be missing over water.
                 band.WriteArray(np.ones((x_size, y_size)))
 
                 del ds
                 del band
 
                 current_existing_tiles.append(tile)
-                print(f"Added {tile}")
+                print(f'Added {tile}')
     return current_existing_tiles
 
 
@@ -175,9 +171,7 @@ def get_tiles(osm_tile_coord: tuple, wc_tile_width: int, tile_width: int):
     return tiles
 
 
-def lat_lon_to_filenames(
-    worldcover_tile_dir, osm_tile_coord: tuple, wc_tile_width: int, tile_width: int
-):
+def lat_lon_to_filenames(worldcover_tile_dir, osm_tile_coord: tuple, wc_tile_width: int, tile_width: int):
     """Get a list of the Worldcover tile filenames that are necessary to overlap an OSM tile.
 
     Args:
@@ -191,10 +185,7 @@ def lat_lon_to_filenames(
     filenames = []
     tiles = get_tiles(osm_tile_coord, wc_tile_width, tile_width)
     for tile in tiles:
-        filenames.append(
-            worldcover_tile_dir
-            + lat_lon_to_tile_string(tile[0], tile[1], is_worldcover=True)
-        )
+        filenames.append(worldcover_tile_dir + lat_lon_to_tile_string(tile[0], tile[1], is_worldcover=True))
     return filenames
 
 
@@ -215,11 +206,11 @@ def crop_tile(tile, lat, lon, tile_width, tile_height):
         projWin=[lon, lat + tile_height, lon + tile_width, lat],
         xRes=pixel_size_x,
         yRes=pixel_size_y,
-        outputSRS="EPSG:4326",
-        format="COG",
-        creationOptions=["NUM_THREADS=all_cpus"],
+        outputSRS='EPSG:4326',
+        format='COG',
+        creationOptions=['NUM_THREADS=all_cpus'],
     )
-    remove_temp_files(["tmp_px_size.tif", "tmp.shp"])
+    remove_temp_files(['tmp_px_size.tif', 'tmp.shp'])
 
 
 def build_dataset(worldcover_tile_dir, lat_range, lon_range, tile_width, tile_height):
@@ -236,54 +227,48 @@ def build_dataset(worldcover_tile_dir, lat_range, lon_range, tile_width, tile_he
             start_time = time.time()
             tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False)
             tile_filename = UNCROPPED_TILE_DIR + tile
-            worldcover_tiles = lat_lon_to_filenames(
-                worldcover_tile_dir, (lat, lon), WORLDCOVER_TILE_SIZE, tile_width
-            )
-            print(f"Processing: {tile_filename} {worldcover_tiles}")
-            merge_tiles(worldcover_tiles, tile_filename, "GTiff", compress=True)
+            worldcover_tiles = lat_lon_to_filenames(worldcover_tile_dir, (lat, lon), WORLDCOVER_TILE_SIZE, tile_width)
+            print(f'Processing: {tile_filename} {worldcover_tiles}')
+            merge_tiles(worldcover_tiles, tile_filename, 'GTiff', compress=True)
             crop_tile(tile, lat, lon, tile_width, tile_height)
             end_time = time.time()
             total_time = end_time - start_time
-            print(f"Time Elapsed: {total_time}s")
+            print(f'Time Elapsed: {total_time}s')
 
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="generate_worldcover_tiles.py",
-        description="Main script for creating a tiled watermask dataset from the ESA WorldCover dataset.",
+        prog='generate_worldcover_tiles.py',
+        description='Main script for creating a tiled watermask dataset from the ESA WorldCover dataset.',
     )
 
     parser.add_argument(
-        "--worldcover-tiles-dir",
-        help="The path to the directory containing the worldcover tifs.",
+        '--worldcover-tiles-dir',
+        help='The path to the directory containing the worldcover tifs.',
     )
     parser.add_argument(
-        "--lat-begin",
-        help="The minimum latitude of the dataset in EPSG:4326.",
+        '--lat-begin',
+        help='The minimum latitude of the dataset in EPSG:4326.',
         default=-85,
         required=True,
     )
     parser.add_argument(
-        "--lat-end",
-        help="The maximum latitude of the dataset in EPSG:4326.",
+        '--lat-end',
+        help='The maximum latitude of the dataset in EPSG:4326.',
         default=85,
     )
     parser.add_argument(
-        "--lon-begin",
-        help="The minimum longitude of the dataset in EPSG:4326.",
+        '--lon-begin',
+        help='The minimum longitude of the dataset in EPSG:4326.',
         default=-180,
     )
     parser.add_argument(
-        "--lon-end",
-        help="The maximum longitude of the dataset in EPSG:4326.",
+        '--lon-end',
+        help='The maximum longitude of the dataset in EPSG:4326.',
         default=180,
     )
-    parser.add_argument(
-        "--tile-width", help="The desired width of the tile in degrees.", default=5
-    )
-    parser.add_argument(
-        "--tile-height", help="The desired height of the tile in degrees.", default=5
-    )
+    parser.add_argument('--tile-width', help='The desired width of the tile in degrees.', default=5)
+    parser.add_argument('--tile-height', help='The desired height of the tile in degrees.', default=5)
 
     args = parser.parse_args()
 
@@ -299,9 +284,7 @@ def main():
     setup_directories([PREPROCESSED_TILE_DIR, UNCROPPED_TILE_DIR, CROPPED_TILE_DIR])
 
     # Process the multi-class masks into water/not-water masks.
-    tile_preprocessing(
-        args.worldcover_tiles_dir, lat_begin, lat_end, lon_begin, lon_end
-    )
+    tile_preprocessing(args.worldcover_tiles_dir, lat_begin, lat_end, lon_begin, lon_end)
 
     wc_lat_range = range(
         lat_begin - (lat_begin % WORLDCOVER_TILE_SIZE),
@@ -326,5 +309,5 @@ def main():
     )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -4,9 +4,7 @@ import subprocess
 import numpy as np
 
 
-def lat_lon_to_tile_string(
-    lat, lon, is_worldcover: bool = False, postfix: str = ".tif"
-):
+def lat_lon_to_tile_string(lat, lon, is_worldcover: bool = False, postfix: str = '.tif'):
     """Get the name of the tile with lower left corner (lat, lon).
 
     Args:
@@ -18,7 +16,7 @@ def lat_lon_to_tile_string(
     Returns:
         The name of the tile.
     """
-    prefixes = ["N", "S", "E", "W"] if is_worldcover else ["n", "s", "e", "w"]
+    prefixes = ['N', 'S', 'E', 'W'] if is_worldcover else ['n', 's', 'e', 'w']
     if lat >= 0:
         lat_part = prefixes[0] + str(int(lat)).zfill(2)
     else:
@@ -38,19 +36,19 @@ def merge_tiles(tiles, out_filename, out_format, compress=False):
         out_format: The format of the output image.
         out_filename: The name of the output COG.
     """
-    vrt = "merged.vrt"
-    build_vrt_command = ["gdalbuildvrt", vrt] + tiles
+    vrt = 'merged.vrt'
+    build_vrt_command = ['gdalbuildvrt', vrt] + tiles
     if not compress:
-        translate_command = ["gdal_translate", "-of", out_format, vrt, out_filename]
+        translate_command = ['gdal_translate', '-of', out_format, vrt, out_filename]
     else:
         translate_command = [
-            "gdal_translate",
-            "-of",
+            'gdal_translate',
+            '-of',
             out_format,
-            "-co",
-            "COMPRESS=LZW",
-            "-co",
-            "NUM_THREADS=all_cpus",
+            '-co',
+            'COMPRESS=LZW',
+            '-co',
+            'NUM_THREADS=all_cpus',
             vrt,
             out_filename,
         ]
@@ -69,7 +67,7 @@ def remove_temp_files(temp_files: list):
         try:
             os.remove(file)
         except FileNotFoundError:
-            print(f"Temp file {file} was not found, skipping removal...")
+            print(f'Temp file {file} was not found, skipping removal...')
 
 
 def setup_directories(dirs: list[str]):

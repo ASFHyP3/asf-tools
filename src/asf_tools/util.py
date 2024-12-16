@@ -37,8 +37,8 @@ def get_epsg_code(info: dict) -> int:
     Returns:
         epsg_code: The integer EPSG code
     """
-    proj = osr.SpatialReference(info["coordinateSystem"]["wkt"])
-    epsg_code = int(proj.GetAttrValue("AUTHORITY", 1))
+    proj = osr.SpatialReference(info['coordinateSystem']['wkt'])
+    epsg_code = int(proj.GetAttrValue('AUTHORITY', 1))
     return epsg_code
 
 
@@ -51,8 +51,8 @@ def get_coordinates(info: dict) -> Tuple[int, int, int, int]:
     Returns:
         (west, south, east, north): the corner coordinates values
     """
-    west, south = info["cornerCoordinates"]["lowerLeft"]
-    east, north = info["cornerCoordinates"]["upperRight"]
+    west, south = info['cornerCoordinates']['lowerLeft']
+    east, north = info['cornerCoordinates']['upperRight']
     return west, south, east, north
 
 
