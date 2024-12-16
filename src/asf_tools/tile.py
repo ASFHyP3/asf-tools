@@ -3,8 +3,11 @@ from typing import Tuple, Union
 import numpy as np
 
 
-def tile_array(array: Union[np.ndarray, np.ma.MaskedArray], tile_shape: Tuple[int, int] = (200, 200),
-               pad_value: float = None) -> Union[np.ndarray, np.ma.MaskedArray]:
+def tile_array(
+    array: Union[np.ndarray, np.ma.MaskedArray],
+    tile_shape: Tuple[int, int] = (200, 200),
+    pad_value: float = None,
+) -> Union[np.ndarray, np.ma.MaskedArray]:
     """Tile a 2D numpy array
 
     Turn a 2D numpy array like:
@@ -45,7 +48,9 @@ def tile_array(array: Union[np.ndarray, np.ma.MaskedArray], tile_shape: Tuple[in
     cpad = -array_columns % tile_columns
 
     if (rpad or cpad) and pad_value is None:
-        raise ValueError(f'Cannot evenly tile a {array.shape} array into ({tile_rows},{tile_columns}) tiles')
+        raise ValueError(
+            f"Cannot evenly tile a {array.shape} array into ({tile_rows},{tile_columns}) tiles"
+        )
 
     if rpad or cpad:
         padded_array = np.pad(array, ((0, rpad), (0, cpad)), constant_values=pad_value)
@@ -57,7 +62,9 @@ def tile_array(array: Union[np.ndarray, np.ma.MaskedArray], tile_shape: Tuple[in
 
     tile_list = []
     for rows in np.vsplit(padded_array, range(tile_rows, array_rows, tile_rows)):
-        tile_list.extend(np.hsplit(rows, range(tile_columns, array_columns, tile_columns)))
+        tile_list.extend(
+            np.hsplit(rows, range(tile_columns, array_columns, tile_columns))
+        )
 
     dstack = np.ma.dstack if isinstance(array, np.ma.MaskedArray) else np.dstack
     tiled = np.moveaxis(dstack(tile_list), -1, 0)
@@ -65,8 +72,9 @@ def tile_array(array: Union[np.ndarray, np.ma.MaskedArray], tile_shape: Tuple[in
     return tiled
 
 
-def untile_array(tiled_array: Union[np.ndarray, np.ma.MaskedArray], array_shape: Tuple[int, int]) \
-        -> Union[np.ndarray, np.ma.MaskedArray]:
+def untile_array(
+    tiled_array: Union[np.ndarray, np.ma.MaskedArray], array_shape: Tuple[int, int]
+) -> Union[np.ndarray, np.ma.MaskedArray]:
     """Untile a tiled array into a 2D numpy array
 
     This is the reverse of `tile_array` and will turn a tiled array like:
@@ -106,18 +114,23 @@ def untile_array(tiled_array: Union[np.ndarray, np.ma.MaskedArray], array_shape:
     untiled_rows = int(np.ceil(array_rows / tile_rows))
     untiled_columns = int(np.ceil(array_columns / tile_columns))
 
-    untiled = np.zeros((untiled_rows*tile_rows, untiled_columns*tile_columns), dtype=tiled_array.dtype)
+    untiled = np.zeros(
+        (untiled_rows * tile_rows, untiled_columns * tile_columns),
+        dtype=tiled_array.dtype,
+    )
 
     if (array_size := array_rows * array_columns) > tiled_array.size:
         raise ValueError(
-            f'array_shape {array_shape} will result in an array bigger than the tiled array:'
-            f' {array_size} > {tiled_array.size}'
+            f"array_shape {array_shape} will result in an array bigger than the tiled array:"
+            f" {array_size} > {tiled_array.size}"
         )
 
     for ii in range(untiled_rows):
         for jj in range(untiled_columns):
-            untiled[ii*tile_rows:(ii+1)*tile_rows, jj*tile_columns:(jj+1)*tile_columns] = \
-                tiled_array[ii * untiled_columns + jj, :, :]
+            untiled[
+                ii * tile_rows : (ii + 1) * tile_rows,
+                jj * tile_columns : (jj + 1) * tile_columns,
+            ] = tiled_array[ii * untiled_columns + jj, :, :]
 
     if isinstance(tiled_array, np.ma.MaskedArray):
         untiled_mask = untile_array(tiled_array.mask, untiled.shape)

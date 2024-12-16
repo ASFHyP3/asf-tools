@@ -1,7 +1,6 @@
 from warnings import warn
 
-HYDROSAR_MOVE_WARNING = \
-    """
+HYDROSAR_MOVE_WARNING = """
     ---------------------------------------------------------------------------
     The HydroSAR codes (`flood_map`, `water_map` and `hand` modules) are being
     moved to the HydroSAR project repository:
@@ -12,4 +11,4 @@ HYDROSAR_MOVE_WARNING = \
     ----------------------------------------------------------------------------
     """
 
-warn(HYDROSAR_MOVE_WARNING,  category=FutureWarning)
+warn(HYDROSAR_MOVE_WARNING, category=FutureWarning)
