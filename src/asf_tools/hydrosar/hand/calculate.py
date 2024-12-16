@@ -6,7 +6,6 @@ import sys
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Optional, Union
 
 import astropy.convolution
 import fiona
@@ -18,6 +17,7 @@ from shapely.geometry import GeometryCollection, shape
 
 from asf_tools.dem import prepare_dem_vrt
 from asf_tools.raster import write_cog
+
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ def calculate_hand(
     dem_affine: rasterio.Affine,
     dem_crs: rasterio.crs.CRS,
     basin_mask,
-    acc_thresh: Optional[int] = 100,
+    acc_thresh: int | None = 100,
 ):
     """Calculate the Height Above Nearest Drainage (HAND)
 
@@ -143,10 +143,10 @@ def calculate_hand(
 
 
 def calculate_hand_for_basins(
-    out_raster: Union[str, Path],
+    out_raster: str | Path,
     geometries: GeometryCollection,
-    dem_file: Union[str, Path],
-    acc_thresh: Optional[int] = 100,
+    dem_file: str | Path,
+    acc_thresh: int | None = 100,
 ):
     """Calculate the Height Above Nearest Drainage (HAND) for watershed boundaries (hydrobasins).
 
@@ -177,9 +177,9 @@ def calculate_hand_for_basins(
 
 
 def make_copernicus_hand(
-    out_raster: Union[str, Path],
-    vector_file: Union[str, Path],
-    acc_thresh: Optional[int] = 100,
+    out_raster: str | Path,
+    vector_file: str | Path,
+    acc_thresh: int | None = 100,
 ):
     """Copernicus GLO-30 Height Above Nearest Drainage (HAND)
 

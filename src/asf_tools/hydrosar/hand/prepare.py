@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Union
 
 from osgeo import gdal, ogr
 from rasterio.enums import Resampling
@@ -12,13 +11,14 @@ from shapely.geometry.base import BaseGeometry
 from asf_tools import vector
 from asf_tools.util import GDALConfigManager, get_epsg_code
 
+
 HAND_GEOJSON = '/vsicurl/https://glo-30-hand.s3.amazonaws.com/v1/2021/glo-30-hand.geojson'
 
 gdal.UseExceptions()
 ogr.UseExceptions()
 
 
-def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGeometry]):
+def prepare_hand_vrt(vrt: str | Path, geometry: ogr.Geometry | BaseGeometry):
     """Prepare a HAND mosaic VRT covering a given geometry
 
     Prepare a Height Above Nearest Drainage (HAND) virtual raster (VRT) covering a given geometry.
@@ -50,8 +50,8 @@ def prepare_hand_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGe
 
 
 def prepare_hand_for_raster(
-    hand_raster: Union[str, Path],
-    source_raster: Union[str, Path],
+    hand_raster: str | Path,
+    source_raster: str | Path,
     resampling_method: str = 'lanczos',
 ):
     """Create a HAND raster pixel-aligned to a source raster

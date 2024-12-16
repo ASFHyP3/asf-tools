@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from osgeo import gdal
 
 from asf_tools import raster

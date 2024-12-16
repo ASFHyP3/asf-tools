@@ -31,7 +31,6 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
     Args:
         tile_dir: The directory containing all of the worldcover tiles.
     """
-
     filenames = [f for f in os.listdir(tile_dir) if f.endswith('.tif')]
 
     def filename_filter(filename):
@@ -100,6 +99,7 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
     Args:
         lat_range: The range of latitudes to check.
         lon_range: The range of longitudes to check.
+
     Returns:
         current_existing_tiles: The list of tiles that exist after the function has completed.
     """
@@ -151,7 +151,6 @@ def get_tiles(osm_tile_coord: tuple, wc_tile_width: int, tile_width: int):
     Returns:
         tiles: A list of the lower left corner coordinates of the Worldcover tiles that overlap the OSM tile.
     """
-
     osm_lat = osm_tile_coord[0]
     osm_lon = osm_tile_coord[1]
 

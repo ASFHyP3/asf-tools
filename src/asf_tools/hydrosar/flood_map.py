@@ -13,9 +13,10 @@ import logging
 import sys
 import tempfile
 import warnings
+from collections.abc import Callable
 from pathlib import Path
 from shutil import make_archive
-from typing import Callable, Literal, Optional, Tuple, Union
+from typing import Literal
 
 import numpy as np
 from osgeo import gdal
@@ -25,6 +26,7 @@ from tqdm import tqdm
 from asf_tools.aws import get_path_to_s3_file, upload_file_to_s3
 from asf_tools.raster import read_as_masked_array, write_cog
 from asf_tools.util import get_coordinates, get_epsg_code
+
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ def get_pw_threshold(water_array: np.array) -> float:
     return round(ths_orig) + 1
 
 
-def get_waterbody(input_info: dict, threshold: Optional[float] = None) -> np.array:
+def get_waterbody(input_info: dict, threshold: float | None = None) -> np.array:
     epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
@@ -86,7 +88,7 @@ def iterative(
         tp, _, fp, fn = get_confusion_matrix(w)
         return 1 - np.sqrt((tp / (tp + fp)) * (tp / (tp + fn)))
 
-    class MyBounds(object):
+    class MyBounds:
         def __init__(self, xmax=max(water_levels), xmin=min(water_levels)):
             self.xmax = np.array(xmax)
             self.xmin = np.array(xmin)
@@ -119,7 +121,7 @@ def iterative(
         return np.inf  # set as inf to mark unstable solution
 
 
-def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, float]:
+def logstat(data: np.ndarray, func: Callable = np.nanstd) -> np.ndarray | float:
     """Calculate a function in logarithmic scale and return in linear scale.
     INF values inside the data array are set to nan.
 
@@ -141,7 +143,7 @@ def estimate_flood_depth(
     flood_labels: np.ndarray,
     estimator: str = 'iterative',
     water_level_sigma: float = 3.0,
-    iterative_bounds: Tuple[int, int] = (0, 15),
+    iterative_bounds: tuple[int, int] = (0, 15),
     iterative_min_size: int = 0,
     minimization_metric: str = 'ts',
 ) -> float:
@@ -179,14 +181,14 @@ def estimate_flood_depth(
 
 
 def make_flood_map(
-    out_raster: Union[str, Path],
-    vv_raster: Union[str, Path],
-    water_raster: Union[str, Path],
-    hand_raster: Union[str, Path],
+    out_raster: str | Path,
+    vv_raster: str | Path,
+    water_raster: str | Path,
+    hand_raster: str | Path,
     estimator: str = 'iterative',
     water_level_sigma: float = 3.0,
-    known_water_threshold: Optional[float] = None,
-    iterative_bounds: Tuple[int, int] = (0, 15),
+    known_water_threshold: float | None = None,
+    iterative_bounds: tuple[int, int] = (0, 15),
     iterative_min_size: int = 0,
     minimization_metric: str = 'ts',
 ):
@@ -233,7 +235,6 @@ def make_flood_map(
     References:
         Jean-Francios Pekel, Andrew Cottam, Noel Gorelik, Alan S. Belward. 2016. <https://doi:10.1038/nature20584>
     """
-
     info = gdal.Info(str(water_raster), format='json')
     epsg = get_epsg_code(info)
     geotransform = info['geoTransform']
@@ -328,13 +329,13 @@ def make_flood_map(
     )
 
 
-def optional_str(value: str) -> Optional[str]:
+def optional_str(value: str) -> str | None:
     if value.lower() == 'none':
         return None
     return value
 
 
-def optional_float(value: str) -> Optional[float]:
+def optional_float(value: str) -> float | None:
     if value.lower() == 'none':
         return None
     return float(value)

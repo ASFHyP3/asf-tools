@@ -1,6 +1,0 @@
-exclude = ["prototype"]
-
-line-length = 120
-
-[format]
-quote-style = "single"

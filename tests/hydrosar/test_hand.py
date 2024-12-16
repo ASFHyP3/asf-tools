@@ -1,12 +1,13 @@
 import json
 
+import numpy as np
 import pytest
 from osgeo import gdal, ogr
 from osgeo_utils.gdalcompare import find_diff
-import numpy as np
 
 from asf_tools import vector
 from asf_tools.hydrosar import hand
+
 
 HAND_BASINS = (
     '/vsicurl/https://hyp3-testing.s3-us-west-2.amazonaws.com/'
