@@ -43,11 +43,14 @@ def merge_tiles(tiles, out_filename, out_format, compress=False):
     else:
         translate_command = [
             'gdal_translate',
-            '-of', out_format,
-            '-co', 'COMPRESS=LZW',
-            '-co', 'NUM_THREADS=all_cpus',
+            '-of',
+            out_format,
+            '-co',
+            'COMPRESS=LZW',
+            '-co',
+            'NUM_THREADS=all_cpus',
             vrt,
-            out_filename
+            out_filename,
         ]
     subprocess.run(build_vrt_command)
     subprocess.run(translate_command)

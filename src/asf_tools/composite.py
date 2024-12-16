@@ -123,19 +123,27 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
             log.info(f'Reprojecting {raster}')
             reprojected_raster = os.path.join(directory, os.path.basename(raster))
             gdal.Warp(
-                reprojected_raster, raster, dstSRS=f'EPSG:{target_epsg_code}',
-                xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
+                reprojected_raster,
+                raster,
+                dstSRS=f'EPSG:{target_epsg_code}',
+                xRes=target_resolution,
+                yRes=target_resolution,
+                targetAlignedPixels=True,
             )
 
             area_raster = get_area_raster(raster)
             log.info(f'Reprojecting {area_raster}')
             reprojected_area_raster = os.path.join(directory, os.path.basename(area_raster))
             gdal.Warp(
-                reprojected_area_raster, area_raster, dstSRS=f'EPSG:{target_epsg_code}',
-                xRes=target_resolution, yRes=target_resolution, targetAlignedPixels=True
+                reprojected_area_raster,
+                area_raster,
+                dstSRS=f'EPSG:{target_epsg_code}',
+                xRes=target_resolution,
+                yRes=target_resolution,
+                targetAlignedPixels=True,
             )
 
-            target_raster_info[reprojected_raster] = gdal.Info(reprojected_raster,  format='json')
+            target_raster_info[reprojected_raster] = gdal.Info(reprojected_raster, format='json')
         else:
             log.info(f'No need to reproject {raster}')
             target_raster_info[raster] = info
@@ -173,8 +181,12 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
 
     # resample rasters to maximum resolution & common UTM zone
     with TemporaryDirectory(prefix='reprojected_') as temp_dir:
-        raster_info = reproject_to_target(raster_info, target_epsg_code=target_epsg_code, target_resolution=resolution,
-                                          directory=temp_dir)
+        raster_info = reproject_to_target(
+            raster_info,
+            target_epsg_code=target_epsg_code,
+            target_resolution=resolution,
+            directory=temp_dir,
+        )
 
         # Get extent of union of all images
         full_ul, full_lr, full_trans = get_full_extent(raster_info)
@@ -188,8 +200,10 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
 
         for raster, info in raster_info.items():
             log.info(f'Processing raster {raster}')
-            log.debug(f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
-                      f"lower right: {info['cornerCoordinates']['lowerRight']}")
+            log.debug(
+                f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
+                f"lower right: {info['cornerCoordinates']['lowerRight']}"
+            )
 
             values = read_as_array(raster)
 
@@ -224,7 +238,13 @@ def make_composite(out_name: str, rasters: List[str], resolution: float = None):
     out_raster = write_cog(f'{out_name}.tif', outputs, full_trans, target_epsg_code, nodata_value=0)
     del outputs
 
-    out_counts_raster = write_cog(f'{out_name}_counts.tif', counts, full_trans, target_epsg_code, dtype=gdal.GDT_Int16)
+    out_counts_raster = write_cog(
+        f'{out_name}_counts.tif',
+        counts,
+        full_trans,
+        target_epsg_code,
+        dtype=gdal.GDT_Int16,
+    )
     del counts
 
     return out_raster, out_counts_raster
@@ -237,14 +257,21 @@ def main():
     )
     parser.add_argument('out_name', help='Base name of output composite GeoTIFF (without extension)')
     parser.add_argument('rasters', nargs='+', help='Sentinel-1 GeoTIFF rasters to composite')
-    parser.add_argument('-r', '--resolution', type=float,
-                        help='Desired output resolution in meters '
-                             '(default is the max resolution of all the input files)')
+    parser.add_argument(
+        '-r',
+        '--resolution',
+        type=float,
+        help='Desired output resolution in meters ' '(default is the max resolution of all the input files)',
+    )
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
+    logging.basicConfig(
+        stream=sys.stdout,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        level=level,
+    )
     log.debug(' '.join(sys.argv))
     log.info(f'Creating a composite of {len(args.rasters)} rasters')
 

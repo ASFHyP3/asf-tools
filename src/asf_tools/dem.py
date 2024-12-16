@@ -1,4 +1,5 @@
 """Prepare a Copernicus GLO-30 DEM virtual raster (VRT) covering a given geometry"""
+
 from pathlib import Path
 from typing import Union
 
@@ -31,7 +32,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGeo
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
         min_lon, max_lon, _, _ = geometry.GetEnvelope()
-        if min_lon < -160. and max_lon > 160.:
+        if min_lon < -160.0 and max_lon > 160.0:
             raise ValueError(f'asf_tools does not currently support geometries that cross the antimeridian: {geometry}')
 
         tile_features = vector.get_features(DEM_GEOJSON)

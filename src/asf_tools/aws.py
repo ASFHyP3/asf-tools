@@ -10,14 +10,7 @@ log = logging.getLogger(__name__)
 
 
 def get_tag_set() -> dict:
-    tag_set = {
-        'TagSet': [
-            {
-                'Key': 'file_type',
-                'Value': 'product'
-            }
-        ]
-    }
+    tag_set = {'TagSet': [{'Key': 'file_type', 'Value': 'product'}]}
     return tag_set
 
 

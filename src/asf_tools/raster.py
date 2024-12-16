@@ -13,8 +13,11 @@ gdal.UseExceptions()
 log = logging.getLogger(__name__)
 
 
-def convert_scale(array: Union[np.ndarray, np.ma.MaskedArray], in_scale: Literal['db', 'amplitude', 'power'],
-                  out_scale: Literal['db', 'amplitude', 'power']) -> Union[np.ndarray, np.ma.MaskedArray]:
+def convert_scale(
+    array: Union[np.ndarray, np.ma.MaskedArray],
+    in_scale: Literal['db', 'amplitude', 'power'],
+    out_scale: Literal['db', 'amplitude', 'power'],
+) -> Union[np.ndarray, np.ma.MaskedArray]:
     """Convert calibrated raster scale between db, amplitude and power"""
     if in_scale == out_scale:
         warnings.warn(f'Nothing to do! {in_scale} is same as {out_scale}.')
@@ -30,9 +33,9 @@ def convert_scale(array: Union[np.ndarray, np.ma.MaskedArray], in_scale: Literal
 
     if in_scale == 'amplitude':
         if out_scale == 'power':
-            return array ** 2
+            return array**2
         if out_scale == 'db':
-            return 10 * log10(array ** 2)
+            return 10 * log10(array**2)
 
     if in_scale == 'power':
         if out_scale == 'amplitude':
@@ -81,8 +84,14 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
     return data
 
 
-def write_cog(file_name: Union[str, Path], data: np.ndarray, transform: List[float], epsg_code: int,
-              dtype=gdal.GDT_Float32, nodata_value=None):
+def write_cog(
+    file_name: Union[str, Path],
+    data: np.ndarray,
+    transform: List[float],
+    epsg_code: int,
+    dtype=gdal.GDT_Float32,
+    nodata_value=None,
+):
     """Creates a Cloud Optimized GeoTIFF
 
     Args:
@@ -108,7 +117,12 @@ def write_cog(file_name: Union[str, Path], data: np.ndarray, transform: List[flo
         temp_geotiff.SetProjection(epsg_to_wkt(epsg_code))
 
         driver = gdal.GetDriverByName('COG')
-        options = ['COMPRESS=LZW', 'OVERVIEW_RESAMPLING=AVERAGE', 'NUM_THREADS=ALL_CPUS', 'BIGTIFF=YES']
+        options = [
+            'COMPRESS=LZW',
+            'OVERVIEW_RESAMPLING=AVERAGE',
+            'NUM_THREADS=ALL_CPUS',
+            'BIGTIFF=YES',
+        ]
         driver.CreateCopy(str(file_name), temp_geotiff, options=options)
 
         del temp_geotiff  # How to close w/ gdal

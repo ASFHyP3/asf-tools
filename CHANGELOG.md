@@ -11,6 +11,9 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 - The [`release`](.github/workflows/release.yml) Github Actions workflow now uses the `gh` CLI instead of the archived `repo-sync/pull-request` action.
 
+### Changed
+- The [`static-analysis`](.github/workflows/static-analysis.yml) Github Actions workflow now uses `ruff` rather than `flake8`.
+
 ## [0.8.0]
 
 ### Removed

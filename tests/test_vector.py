@@ -45,7 +45,7 @@ def test_get_intersecting_feature_properties():
 
     geojson = {
         'type': 'MultiPoint',
-        'coordinates': [[0, 0], [169, -45], [-121.5, 73.5]]
+        'coordinates': [[0, 0], [169, -45], [-121.5, 73.5]],
     }
     geometry = ogr.CreateGeometryFromJson(json.dumps(geojson))
     assert vector.intersecting_feature_properties(geometry, dem_tile_features, 'file_path') == [
