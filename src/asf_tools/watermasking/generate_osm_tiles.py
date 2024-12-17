@@ -28,7 +28,6 @@ def process_pbf(planet_file: str, output_file: str):
         planet_file: The path to the OSM Planet PBF file.
         output_file: The desired path of the processed PBF file.
     """
-
     natural_file = 'planet_natural.pbf'
     waterways_file = 'planet_waterways.pbf'
     reservoirs_file = 'planet_reservoirs.pbf'
@@ -54,7 +53,6 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         tile_width_deg: The width of the tile in degrees.
         tile_height_deg: The height of the tile in degrees.
     """
-
     tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False, postfix='')
     tile_tif = output_dir + tile + '.tif'
 
@@ -97,7 +95,6 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
         tile_width_deg: The desired width of the tile in degrees.
         tile_height_deg: The desired height of the tile in degrees.
     """
-
     tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False, postfix='')
     tile_pbf = tile + '.osm.pbf'
     tile_tif = interior_tile_dir + tile + '.tif'

@@ -17,7 +17,6 @@ import os
 import sys
 from statistics import multimode
 from tempfile import TemporaryDirectory
-from typing import List
 
 import numpy as np
 from osgeo import gdal
@@ -25,11 +24,12 @@ from osgeo import gdal
 from asf_tools.raster import read_as_array, write_cog
 from asf_tools.util import get_epsg_code
 
+
 gdal.UseExceptions()
 log = logging.getLogger(__name__)
 
 
-def get_target_epsg_code(codes: List[int]) -> int:
+def get_target_epsg_code(codes: list[int]) -> int:
     """Determine the target UTM EPSG projection for the output composite
 
     Args:
@@ -151,7 +151,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
     return target_raster_info
 
 
-def make_composite(out_name: str, rasters: List[str], resolution: float = None):
+def make_composite(out_name: str, rasters: list[str], resolution: float = None):
     """Creates a local-resolution-weighted composite from Sentinel-1 RTC products
 
     Args:

@@ -54,7 +54,6 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
     Returns:
         threshold: threshold value that can be used to create a water extent map
     """
-
     image_copy = tile.copy()
     image_copy2 = np.ma.filled(tile.astype(float), np.nan)  # needed for valid posterior_lookup keys
     image = tile.flatten()

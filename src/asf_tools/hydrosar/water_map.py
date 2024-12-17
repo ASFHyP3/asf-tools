@@ -11,7 +11,7 @@ import logging
 import sys
 from pathlib import Path
 from shutil import make_archive
-from typing import Literal, Optional, Tuple, Union
+from typing import Literal
 
 import numpy as np
 import skfuzzy as fuzz
@@ -27,6 +27,7 @@ from asf_tools.raster import read_as_masked_array, write_cog
 from asf_tools.tile import tile_array, untile_array
 from asf_tools.util import get_epsg_code
 
+
 log = logging.getLogger(__name__)
 
 
@@ -40,7 +41,7 @@ def mean_of_subtiles(tiles: np.ndarray) -> np.ndarray:
 
 
 def select_hand_tiles(
-    tiles: Union[np.ndarray, np.ma.MaskedArray],
+    tiles: np.ndarray | np.ma.MaskedArray,
     hand_threshold: float,
     hand_fraction: float,
 ) -> np.ndarray:
@@ -98,7 +99,7 @@ def calculate_slope_magnitude(array: np.ndarray, pixel_size) -> np.ndarray:
 
 def determine_membership_limits(
     array: np.ndarray, mask_percentile: float = 90.0, std_range: float = 3.0
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     array = np.ma.masked_values(array, 0.0)
     array = np.ma.masked_greater(array, np.nanpercentile(array.filled(np.nan), mask_percentile))
     lower_limit = np.ma.median(array)
@@ -146,9 +147,7 @@ def remove_small_segments(segments: np.ndarray, min_area: int = 3) -> np.ndarray
 
 
 def format_raster_data(raster, padding_mask=None, nodata=np.iinfo(np.uint8).max):
-    """
-    Ensure raster data is uint8 and set the area outside the valid data to nodata
-    """
+    """Ensure raster data is uint8 and set the area outside the valid data to nodata"""
     if padding_mask is None:
         array = read_as_masked_array(raster)
         padding_mask = array.mask
@@ -163,7 +162,7 @@ def fuzzy_refinement(
     gaussian_array: np.ndarray,
     hand_array: np.ndarray,
     pixel_size: float,
-    gaussian_thresholds: Tuple[float, float],
+    gaussian_thresholds: tuple[float, float],
     membership_threshold: float = 0.45,
 ) -> np.ndarray:
     water_map = np.ones_like(initial_map)
@@ -190,11 +189,11 @@ def fuzzy_refinement(
 
 
 def make_water_map(
-    out_raster: Union[str, Path],
-    vv_raster: Union[str, Path],
-    vh_raster: Union[str, Path],
-    hand_raster: Optional[Union[str, Path]] = None,
-    tile_shape: Tuple[int, int] = (100, 100),
+    out_raster: str | Path,
+    vv_raster: str | Path,
+    vh_raster: str | Path,
+    hand_raster: str | Path | None = None,
+    tile_shape: tuple[int, int] = (100, 100),
     max_vv_threshold: float = -15.5,
     max_vh_threshold: float = -23.0,
     hand_threshold: float = 15.0,

@@ -1,9 +1,9 @@
 import logging
 from mimetypes import guess_type
 from pathlib import Path
-from typing import Union
 
 import boto3
+
 
 S3_CLIENT = boto3.client('s3')
 log = logging.getLogger(__name__)
@@ -14,14 +14,14 @@ def get_tag_set() -> dict:
     return tag_set
 
 
-def get_content_type(file_location: Union[Path, str]) -> str:
+def get_content_type(file_location: Path | str) -> str:
     content_type = guess_type(file_location)[0]
     if not content_type:
         content_type = 'application/octet-stream'
     return content_type
 
 
-def upload_file_to_s3(path_to_file: Union[str, Path], bucket: str, prefix: str = ''):
+def upload_file_to_s3(path_to_file: str | Path, bucket: str, prefix: str = ''):
     path_to_file = Path(path_to_file)
     key = str(Path(prefix) / path_to_file.name)
     extra_args = {'ContentType': get_content_type(key)}

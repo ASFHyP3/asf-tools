@@ -2,22 +2,23 @@ import logging
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import List, Literal, Union
+from typing import Literal
 
 import numpy as np
 from osgeo import gdal
 
 from asf_tools.util import epsg_to_wkt
 
+
 gdal.UseExceptions()
 log = logging.getLogger(__name__)
 
 
 def convert_scale(
-    array: Union[np.ndarray, np.ma.MaskedArray],
+    array: np.ndarray | np.ma.MaskedArray,
     in_scale: Literal['db', 'amplitude', 'power'],
     out_scale: Literal['db', 'amplitude', 'power'],
-) -> Union[np.ndarray, np.ma.MaskedArray]:
+) -> np.ndarray | np.ma.MaskedArray:
     """Convert calibrated raster scale between db, amplitude and power"""
     if in_scale == out_scale:
         warnings.warn(f'Nothing to do! {in_scale} is same as {out_scale}.')
@@ -46,7 +47,7 @@ def convert_scale(
     raise ValueError(f'Cannot convert raster of scale {in_scale} to {out_scale}')
 
 
-def read_as_masked_array(raster: Union[str, Path], band: int = 1) -> np.ma.MaskedArray:
+def read_as_masked_array(raster: str | Path, band: int = 1) -> np.ma.MaskedArray:
     """Reads data from a raster image into memory, masking invalid and NoData values
 
     Args:
@@ -85,9 +86,9 @@ def read_as_array(raster: str, band: int = 1) -> np.array:
 
 
 def write_cog(
-    file_name: Union[str, Path],
+    file_name: str | Path,
     data: np.ndarray,
-    transform: List[float],
+    transform: list[float],
     epsg_code: int,
     dtype=gdal.GDT_Float32,
     nodata_value=None,

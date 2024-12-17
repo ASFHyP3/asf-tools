@@ -1,13 +1,11 @@
-from typing import Tuple, Union
-
 import numpy as np
 
 
 def tile_array(
-    array: Union[np.ndarray, np.ma.MaskedArray],
-    tile_shape: Tuple[int, int] = (200, 200),
+    array: np.ndarray | np.ma.MaskedArray,
+    tile_shape: tuple[int, int] = (200, 200),
     pad_value: float = None,
-) -> Union[np.ndarray, np.ma.MaskedArray]:
+) -> np.ndarray | np.ma.MaskedArray:
     """Tile a 2D numpy array
 
     Turn a 2D numpy array like:
@@ -69,8 +67,8 @@ def tile_array(
 
 
 def untile_array(
-    tiled_array: Union[np.ndarray, np.ma.MaskedArray], array_shape: Tuple[int, int]
-) -> Union[np.ndarray, np.ma.MaskedArray]:
+    tiled_array: np.ndarray | np.ma.MaskedArray, array_shape: tuple[int, int]
+) -> np.ndarray | np.ma.MaskedArray:
     """Untile a tiled array into a 2D numpy array
 
     This is the reverse of `tile_array` and will turn a tiled array like:
