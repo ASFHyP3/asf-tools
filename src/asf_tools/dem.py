@@ -1,6 +1,6 @@
 """Prepare a Copernicus GLO-30 DEM virtual raster (VRT) covering a given geometry"""
+
 from pathlib import Path
-from typing import Union
 
 from osgeo import gdal, ogr
 from shapely.geometry.base import BaseGeometry
@@ -8,13 +8,14 @@ from shapely.geometry.base import BaseGeometry
 from asf_tools import vector
 from asf_tools.util import GDALConfigManager
 
+
 DEM_GEOJSON = '/vsicurl/https://asf-dem-west.s3.amazonaws.com/v2/cop30-2021.geojson'
 
 gdal.UseExceptions()
 ogr.UseExceptions()
 
 
-def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGeometry]):
+def prepare_dem_vrt(vrt: str | Path, geometry: ogr.Geometry | BaseGeometry):
     """Create a DEM mosaic VRT covering a given geometry
 
     The DEM mosaic is assembled from the Copernicus GLO-30 DEM tiles that intersect the geometry.
@@ -31,7 +32,7 @@ def prepare_dem_vrt(vrt: Union[str, Path], geometry: Union[ogr.Geometry, BaseGeo
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
         min_lon, max_lon, _, _ = geometry.GetEnvelope()
-        if min_lon < -160. and max_lon > 160.:
+        if min_lon < -160.0 and max_lon > 160.0:
             raise ValueError(f'asf_tools does not currently support geometries that cross the antimeridian: {geometry}')
 
         tile_features = vector.get_features(DEM_GEOJSON)

@@ -8,11 +8,8 @@ dependencies:
   - pip
   # For packaging, and testing
   # - arcpy  # windows only
-  - build
-  - flake8
-  - flake8-import-order
-  - flake8-blind-except
-  - flake8-builtins
+  - python-build
+  - ruff
   - setuptools>=61
   - setuptools_scm>=6.2
   - pytest

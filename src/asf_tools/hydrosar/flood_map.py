@@ -13,9 +13,10 @@ import logging
 import sys
 import tempfile
 import warnings
+from collections.abc import Callable
 from pathlib import Path
 from shutil import make_archive
-from typing import Callable, Literal, Optional, Tuple, Union
+from typing import Literal
 
 import numpy as np
 from osgeo import gdal
@@ -25,6 +26,7 @@ from tqdm import tqdm
 from asf_tools.aws import get_path_to_s3_file, upload_file_to_s3
 from asf_tools.raster import read_as_masked_array, write_cog
 from asf_tools.util import get_coordinates, get_epsg_code
+
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ def get_pw_threshold(water_array: np.array) -> float:
     return round(ths_orig) + 1
 
 
-def get_waterbody(input_info: dict, threshold: Optional[float] = None) -> np.array:
+def get_waterbody(input_info: dict, threshold: float | None = None) -> np.array:
     epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
@@ -46,9 +48,16 @@ def get_waterbody(input_info: dict, threshold: Optional[float] = None) -> np.arr
     water_extent_vrt = data_dir / 'water_extent.vrt'  # All Perennial Flood Data
 
     with tempfile.NamedTemporaryFile() as water_extent_file:
-        gdal.Warp(water_extent_file.name, str(water_extent_vrt), dstSRS=f'EPSG:{epsg}',
-                  outputBounds=[west, south, east, north],
-                  width=width, height=height, resampleAlg='nearest', format='GTiff')
+        gdal.Warp(
+            water_extent_file.name,
+            str(water_extent_vrt),
+            dstSRS=f'EPSG:{epsg}',
+            outputBounds=[west, south, east, north],
+            width=width,
+            height=height,
+            resampleAlg='nearest',
+            format='GTiff',
+        )
         water_array = gdal.Open(water_extent_file.name, gdal.GA_ReadOnly).ReadAsArray()
 
     if threshold is None:
@@ -57,8 +66,12 @@ def get_waterbody(input_info: dict, threshold: Optional[float] = None) -> np.arr
     return water_array > threshold
 
 
-def iterative(hand: np.array, extent: np.array, water_levels: np.array = np.arange(15),
-              minimization_metric: str = 'ts'):
+def iterative(
+    hand: np.array,
+    extent: np.array,
+    water_levels: np.array = np.arange(15),
+    minimization_metric: str = 'ts',
+):
     def get_confusion_matrix(w):
         iterative_flood_extent = hand < w  # w=water level
         tp = np.nansum(np.logical_and(iterative_flood_extent == 1, extent == 1))  # true positive
@@ -73,15 +86,15 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = np.aran
 
     def _goal_fmi(w):
         tp, _, fp, fn = get_confusion_matrix(w)
-        return 1 - np.sqrt((tp/(tp+fp))*(tp/(tp+fn)))
+        return 1 - np.sqrt((tp / (tp + fp)) * (tp / (tp + fn)))
 
-    class MyBounds(object):
+    class MyBounds:
         def __init__(self, xmax=max(water_levels), xmin=min(water_levels)):
             self.xmax = np.array(xmax)
             self.xmin = np.array(xmin)
 
         def __call__(self, **kwargs):
-            x = kwargs["x_new"]
+            x = kwargs['x_new']
             tmax = bool(np.all(x <= self.xmax))
             tmin = bool(np.all(x >= self.xmin))
             return tmax and tmin
@@ -90,25 +103,33 @@ def iterative(hand: np.array, extent: np.array, water_levels: np.array = np.aran
     MINIMIZATION_FUNCTION = {'fmi': _goal_fmi, 'ts': _goal_ts}
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=RuntimeWarning)
-        opt_res = optimize.basinhopping(MINIMIZATION_FUNCTION[minimization_metric], np.mean(water_levels),
-                                        niter=10000, niter_success=100, accept_test=bounds, stepsize=3)
+        opt_res = optimize.basinhopping(
+            MINIMIZATION_FUNCTION[minimization_metric],
+            np.mean(water_levels),
+            niter=10000,
+            niter_success=100,
+            accept_test=bounds,
+            stepsize=3,
+        )
 
-    if opt_res.message[0] == 'success condition satisfied' \
-            or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully':
+    if (
+        opt_res.message[0] == 'success condition satisfied'
+        or opt_res.message[0] == 'requested number of basinhopping iterations completed successfully'
+    ):
         return opt_res.x[0]
     else:
         return np.inf  # set as inf to mark unstable solution
 
 
-def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, float]:
-    """ Calculate a function in logarithmic scale and return in linear scale.
-        INF values inside the data array are set to nan.
+def logstat(data: np.ndarray, func: Callable = np.nanstd) -> np.ndarray | float:
+    """Calculate a function in logarithmic scale and return in linear scale.
+    INF values inside the data array are set to nan.
 
-        Args:
-            data: array of data
-            func: statistical function to calculate in logarithmic scale
-        Returns:
-            statistic: statistic of data in linear scale
+    Args:
+        data: array of data
+        func: statistical function to calculate in logarithmic scale
+    Returns:
+        statistic: statistic of data in linear scale
     """
     ld = np.log(data)
     ld[np.isinf(ld)] = np.nan
@@ -116,29 +137,40 @@ def logstat(data: np.ndarray, func: Callable = np.nanstd) -> Union[np.ndarray, f
     return np.exp(st)
 
 
-def estimate_flood_depth(label: int, hand: np.ndarray, flood_labels: np.ndarray, estimator: str = 'iterative',
-                         water_level_sigma: float = 3., iterative_bounds: Tuple[int, int] = (0, 15),
-                         iterative_min_size: int = 0, minimization_metric: str = 'ts') -> float:
+def estimate_flood_depth(
+    label: int,
+    hand: np.ndarray,
+    flood_labels: np.ndarray,
+    estimator: str = 'iterative',
+    water_level_sigma: float = 3.0,
+    iterative_bounds: tuple[int, int] = (0, 15),
+    iterative_min_size: int = 0,
+    minimization_metric: str = 'ts',
+) -> float:
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'Mean of empty slice')
 
-        if estimator.lower() == "iterative":
+        if estimator.lower() == 'iterative':
             if (flood_labels == label).sum() < iterative_min_size:
                 return np.nan
 
             water_levels = np.arange(*iterative_bounds)
-            return iterative(hand, flood_labels == label,
-                             water_levels=water_levels, minimization_metric=minimization_metric)
+            return iterative(
+                hand,
+                flood_labels == label,
+                water_levels=water_levels,
+                minimization_metric=minimization_metric,
+            )
 
-        if estimator.lower() == "nmad":
+        if estimator.lower() == 'nmad':
             hand_mean = np.nanmean(hand[flood_labels == label])
             hand_std = stats.median_abs_deviation(hand[flood_labels == label], scale='normal', nan_policy='omit')
 
-        if estimator.lower() == "numpy":
+        if estimator.lower() == 'numpy':
             hand_mean = np.nanmean(hand[flood_labels == label])
             hand_std = np.nanstd(hand[flood_labels == label])
 
-        elif estimator.lower() == "logstat":
+        elif estimator.lower() == 'logstat':
             hand_mean = logstat(hand[flood_labels == label], func=np.nanmean)
             hand_std = logstat(hand[flood_labels == label])
 
@@ -148,15 +180,18 @@ def estimate_flood_depth(label: int, hand: np.ndarray, flood_labels: np.ndarray,
     return hand_mean + water_level_sigma * hand_std
 
 
-def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
-                   water_raster: Union[str, Path], hand_raster: Union[str, Path],
-                   estimator: str = 'iterative',
-                   water_level_sigma: float = 3.,
-                   known_water_threshold: Optional[float] = None,
-                   iterative_bounds: Tuple[int, int] = (0, 15),
-                   iterative_min_size: int = 0,
-                   minimization_metric: str = 'ts',
-                   ):
+def make_flood_map(
+    out_raster: str | Path,
+    vv_raster: str | Path,
+    water_raster: str | Path,
+    hand_raster: str | Path,
+    estimator: str = 'iterative',
+    water_level_sigma: float = 3.0,
+    known_water_threshold: float | None = None,
+    iterative_bounds: tuple[int, int] = (0, 15),
+    iterative_min_size: int = 0,
+    minimization_metric: str = 'ts',
+):
     """Create a flood depth map from a surface water extent map.
 
     WARNING: This functionality is still under active development and the products
@@ -200,7 +235,6 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
     References:
         Jean-Francios Pekel, Andrew Cottam, Noel Gorelik, Alan S. Belward. 2016. <https://doi:10.1038/nature20584>
     """
-
     info = gdal.Info(str(water_raster), format='json')
     epsg = get_epsg_code(info)
     geotransform = info['geoTransform']
@@ -208,8 +242,14 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
 
     log.info('Fetching perennial flood data.')
     known_water_mask = get_waterbody(info, threshold=known_water_threshold)
-    write_cog(str(out_raster).replace('.tif', f'_{estimator}_PW.tif'), known_water_mask, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=False)
+    write_cog(
+        str(out_raster).replace('.tif', f'_{estimator}_PW.tif'),
+        known_water_mask,
+        transform=geotransform,
+        epsg_code=epsg,
+        dtype=gdal.GDT_Byte,
+        nodata_value=False,
+    )
 
     water_map = gdal.Open(str(water_raster)).ReadAsArray()
     flood_mask = np.logical_or(water_map, known_water_mask)
@@ -237,8 +277,13 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
         hand_window = hand_array[min0:max0, min1:max1]
 
         water_height = estimate_flood_depth(
-            ll, hand_window, flood_window, estimator=estimator, water_level_sigma=water_level_sigma,
-            iterative_bounds=iterative_bounds, minimization_metric=minimization_metric,
+            ll,
+            hand_window,
+            flood_window,
+            estimator=estimator,
+            water_level_sigma=water_level_sigma,
+            iterative_bounds=iterative_bounds,
+            minimization_metric=minimization_metric,
             iterative_min_size=iterative_min_size,
         )
 
@@ -254,81 +299,130 @@ def make_flood_map(out_raster: Union[str, Path], vv_raster: Union[str, Path],
     flood_mask_byte = flood_mask.astype(np.uint8)
     flood_mask_byte[padding_mask] = floodmask_nodata
 
-    write_cog(str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
-    write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'), flood_mask_byte, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Byte, nodata_value=floodmask_nodata)
+    write_cog(
+        str(out_raster).replace('.tif', f'_{estimator}_WaterDepth.tif'),
+        flood_depth,
+        transform=geotransform,
+        epsg_code=epsg,
+        dtype=gdal.GDT_Float64,
+        nodata_value=nodata,
+    )
+    write_cog(
+        str(out_raster).replace('.tif', f'_{estimator}_FloodMask.tif'),
+        flood_mask_byte,
+        transform=geotransform,
+        epsg_code=epsg,
+        dtype=gdal.GDT_Byte,
+        nodata_value=floodmask_nodata,
+    )
 
     flood_mask[known_water_mask] = False
     flood_depth[np.logical_not(flood_mask)] = 0
     flood_depth[padding_mask] = nodata
-    write_cog(str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'), flood_depth, transform=geotransform,
-              epsg_code=epsg, dtype=gdal.GDT_Float64, nodata_value=nodata)
+    write_cog(
+        str(out_raster).replace('.tif', f'_{estimator}_FloodDepth.tif'),
+        flood_depth,
+        transform=geotransform,
+        epsg_code=epsg,
+        dtype=gdal.GDT_Float64,
+        nodata_value=nodata,
+    )
 
 
-def optional_str(value: str) -> Optional[str]:
+def optional_str(value: str) -> str | None:
     if value.lower() == 'none':
         return None
     return value
 
 
-def optional_float(value: str) -> Optional[float]:
+def optional_float(value: str) -> float | None:
     if value.lower() == 'none':
         return None
     return float(value)
 
 
 def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     available_estimators = ['iterative', 'logstat', 'nmad', 'numpy']
     estimator_help = 'Flood depth estimation approach.'
     if interface == 'hyp3':
         parser.add_argument('--bucket')
         parser.add_argument('--bucket-prefix', default='')
-        parser.add_argument('--wm-raster',
-                            help='Water map GeoTIFF raster, with suffix `_WM.tif`.')
+        parser.add_argument('--wm-raster', help='Water map GeoTIFF raster, with suffix `_WM.tif`.')
         available_estimators.append(None)
         estimator_help += ' If `None`, flood depth will not be calculated.'
     elif interface == 'main':
-        parser.add_argument('out_raster',
-                            help='File to which flood depth map will be saved.')
-        parser.add_argument('vv_raster',
-                            help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization')
-        parser.add_argument('water_extent_map',
-                            help='HyP3-generated water extent raster file.')
-        parser.add_argument('hand_raster',
-                            help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
-                                 'If not specified, HAND data will be extracted from the GLO-30 HAND.')
+        parser.add_argument('out_raster', help='File to which flood depth map will be saved.')
+        parser.add_argument(
+            'vv_raster',
+            help='Sentinel-1 RTC GeoTIFF raster, in power scale, with VV polarization',
+        )
+        parser.add_argument('water_extent_map', help='HyP3-generated water extent raster file.')
+        parser.add_argument(
+            'hand_raster',
+            help='Height Above Nearest Drainage (HAND) GeoTIFF aligned to the RTC rasters. '
+            'If not specified, HAND data will be extracted from the GLO-30 HAND.',
+        )
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')
 
-    parser.add_argument('--estimator', type=optional_str, default='iterative', choices=available_estimators,
-                        help=estimator_help)
-    parser.add_argument('--water-level-sigma', type=float, default=3.,
-                        help='Estimate max water height for each object.')
-    parser.add_argument('--known-water-threshold', type=optional_float, default=None,
-                        help='Threshold for extracting known water area in percent.'
-                             ' If `None`, threshold will be calculated.')
-    parser.add_argument('--minimization-metric', type=str, default='ts', choices=['fmi', 'ts'],
-                        help='Evaluation method to minimize when using the iterative estimator. '
-                             'Options include a Fowlkes-Mallows index (fmi) or a threat score (ts).')
-    parser.add_argument('--iterative-min-size', type=int, default=0,
-                        help='Minimum size of a connected waterbody in pixels for calculating flood depths with the '
-                             'iterative estimator. Waterbodies smaller than this wll be skipped.')
+    parser.add_argument(
+        '--estimator',
+        type=optional_str,
+        default='iterative',
+        choices=available_estimators,
+        help=estimator_help,
+    )
+    parser.add_argument(
+        '--water-level-sigma',
+        type=float,
+        default=3.0,
+        help='Estimate max water height for each object.',
+    )
+    parser.add_argument(
+        '--known-water-threshold',
+        type=optional_float,
+        default=None,
+        help='Threshold for extracting known water area in percent.' ' If `None`, threshold will be calculated.',
+    )
+    parser.add_argument(
+        '--minimization-metric',
+        type=str,
+        default='ts',
+        choices=['fmi', 'ts'],
+        help='Evaluation method to minimize when using the iterative estimator. '
+        'Options include a Fowlkes-Mallows index (fmi) or a threat score (ts).',
+    )
+    parser.add_argument(
+        '--iterative-min-size',
+        type=int,
+        default=0,
+        help='Minimum size of a connected waterbody in pixels for calculating flood depths with the '
+        'iterative estimator. Waterbodies smaller than this wll be skipped.',
+    )
 
     if interface == 'hyp3':
-        parser.add_argument('--iterative-min', type=int, default=0,
-                            help='Minimum bound on the flood depths calculated using the iterative estimator.')
-        parser.add_argument('--iterative-max', type=int, default=15,
-                            help='Maximum bound on the flood depths calculated using the iterative estimator.')
+        parser.add_argument(
+            '--iterative-min',
+            type=int,
+            default=0,
+            help='Minimum bound on the flood depths calculated using the iterative estimator.',
+        )
+        parser.add_argument(
+            '--iterative-max',
+            type=int,
+            default=15,
+            help='Maximum bound on the flood depths calculated using the iterative estimator.',
+        )
     elif interface == 'main':
-        parser.add_argument('--iterative-bounds', type=int, nargs=2, default=[0, 15],
-                            help='Minimum and maximum bound on the flood depths calculated using the iterative '
-                                 'estimator.')
+        parser.add_argument(
+            '--iterative-bounds',
+            type=int,
+            nargs=2,
+            default=[0, 15],
+            help='Minimum and maximum bound on the flood depths calculated using the iterative ' 'estimator.',
+        )
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')
 
@@ -342,7 +436,11 @@ def hyp3():
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
+    logging.basicConfig(
+        stream=sys.stdout,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        level=level,
+    )
     log.debug(' '.join(sys.argv))
 
     if args.estimator is None:
@@ -370,10 +468,16 @@ def hyp3():
     flood_map_raster = product_dir / f'{product_name}.tif'
 
     make_flood_map(
-        out_raster=flood_map_raster, vv_raster=vv_raster, water_raster=water_map_raster, hand_raster=hand_raster,
-        estimator=args.estimator, water_level_sigma=args.water_level_sigma,
-        known_water_threshold=args.known_water_threshold, iterative_bounds=(args.iterative_min, args.iterative_max),
-        iterative_min_size=args.iterative_min_size, minimization_metric=args.minimization_metric,
+        out_raster=flood_map_raster,
+        vv_raster=vv_raster,
+        water_raster=water_map_raster,
+        hand_raster=hand_raster,
+        estimator=args.estimator,
+        water_level_sigma=args.water_level_sigma,
+        known_water_threshold=args.known_water_threshold,
+        iterative_bounds=(args.iterative_min, args.iterative_max),
+        iterative_min_size=args.iterative_min_size,
+        minimization_metric=args.minimization_metric,
     )
 
     log.info(f'Flood depth map created successfully: {flood_map_raster}')
@@ -390,14 +494,24 @@ def main():
     args = parser.parse_args()
 
     level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
+    logging.basicConfig(
+        stream=sys.stdout,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        level=level,
+    )
     log.debug(' '.join(sys.argv))
 
     make_flood_map(
-        out_raster=args.out_raster, vv_raster=args.vv_raster, water_raster=args.water_extent_map,
-        hand_raster=args.hand_raster, estimator=args.estimator, water_level_sigma=args.water_level_sigma,
-        known_water_threshold=args.known_water_threshold, iterative_bounds=tuple(args.iterative_bounds),
-        iterative_min_size=args.iterative_min_size, minimization_metric=args.minimization_metric,
+        out_raster=args.out_raster,
+        vv_raster=args.vv_raster,
+        water_raster=args.water_extent_map,
+        hand_raster=args.hand_raster,
+        estimator=args.estimator,
+        water_level_sigma=args.water_level_sigma,
+        known_water_threshold=args.known_water_threshold,
+        iterative_bounds=tuple(args.iterative_bounds),
+        iterative_min_size=args.iterative_min_size,
+        minimization_metric=args.minimization_metric,
     )
 
-    log.info(f"Flood depth map created successfully: {args.out_raster}")
+    log.info(f'Flood depth map created successfully: {args.out_raster}')

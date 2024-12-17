@@ -6,7 +6,12 @@ from pathlib import Path
 import numpy as np
 from osgeo import gdal
 
-from asf_tools.watermasking.utils import lat_lon_to_tile_string, merge_tiles, remove_temp_files, setup_directories
+from asf_tools.watermasking.utils import (
+    lat_lon_to_tile_string,
+    merge_tiles,
+    remove_temp_files,
+    setup_directories,
+)
 
 
 gdal.UseExceptions()
@@ -26,7 +31,6 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
     Args:
         tile_dir: The directory containing all of the worldcover tiles.
     """
-
     filenames = [f for f in os.listdir(tile_dir) if f.endswith('.tif')]
 
     def filename_filter(filename):
@@ -41,12 +45,12 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
         in_lat_range = (latitude >= mnlat) and (latitude <= mxlat)
         in_lon_range = (longitude >= mnlon) and (longitude <= mxlon)
         return in_lat_range and in_lon_range
+
     filenames_filtered = [f for f in filenames if filename_filter(f)]
 
     index = 0
     num_tiles = len(filenames_filtered)
     for filename in filenames_filtered:
-
         start_time = time.time()
 
         tile_name = filename.split('_')[5]
@@ -70,7 +74,7 @@ def tile_preprocessing(tile_dir, min_lat, max_lat, min_lon, max_lon):
             water_arr.shape[1],
             1,
             gdal.GDT_Byte,
-            options=GDAL_OPTIONS
+            options=GDAL_OPTIONS,
         )
         dst_ds.SetGeoTransform(src_ds.GetGeoTransform())
         dst_ds.SetProjection(src_ds.GetProjection())
@@ -95,6 +99,7 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
     Args:
         lat_range: The range of latitudes to check.
         lon_range: The range of longitudes to check.
+
     Returns:
         current_existing_tiles: The list of tiles that exist after the function has completed.
     """
@@ -120,7 +125,7 @@ def create_missing_tiles(tile_dir, lat_range, lon_range):
                     ysize=y_size,
                     bands=1,
                     eType=gdal.GDT_Byte,
-                    options=GDAL_OPTIONS
+                    options=GDAL_OPTIONS,
                 )
                 ds.SetProjection('EPSG:4326')
                 ds.SetGeoTransform(geotransform)
@@ -146,7 +151,6 @@ def get_tiles(osm_tile_coord: tuple, wc_tile_width: int, tile_width: int):
     Returns:
         tiles: A list of the lower left corner coordinates of the Worldcover tiles that overlap the OSM tile.
     """
-
     osm_lat = osm_tile_coord[0]
     osm_lon = osm_tile_coord[1]
 
@@ -198,18 +202,18 @@ def crop_tile(tile, lat, lon, tile_width, tile_height):
     gdal.Translate(
         out_filename,
         src_ds,
-        projWin=[lon, lat+tile_height, lon+tile_width, lat],
+        projWin=[lon, lat + tile_height, lon + tile_width, lat],
         xRes=pixel_size_x,
         yRes=pixel_size_y,
         outputSRS='EPSG:4326',
         format='COG',
-        creationOptions=['NUM_THREADS=all_cpus']
+        creationOptions=['NUM_THREADS=all_cpus'],
     )
     remove_temp_files(['tmp_px_size.tif', 'tmp.shp'])
 
 
 def build_dataset(worldcover_tile_dir, lat_range, lon_range, tile_width, tile_height):
-    """ Main function for generating a dataset with worldcover tiles.
+    """Main function for generating a dataset with worldcover tiles.
 
     Args:
         worldcover_tile_dir: The directory containing the unprocessed worldcover tiles.
@@ -232,22 +236,36 @@ def build_dataset(worldcover_tile_dir, lat_range, lon_range, tile_width, tile_he
 
 
 def main():
-
     parser = argparse.ArgumentParser(
         prog='generate_worldcover_tiles.py',
-        description='Main script for creating a tiled watermask dataset from the ESA WorldCover dataset.'
+        description='Main script for creating a tiled watermask dataset from the ESA WorldCover dataset.',
     )
 
-    parser.add_argument('--worldcover-tiles-dir', help='The path to the directory containing the worldcover tifs.')
+    parser.add_argument(
+        '--worldcover-tiles-dir',
+        help='The path to the directory containing the worldcover tifs.',
+    )
     parser.add_argument(
         '--lat-begin',
         help='The minimum latitude of the dataset in EPSG:4326.',
         default=-85,
-        required=True
+        required=True,
     )
-    parser.add_argument('--lat-end', help='The maximum latitude of the dataset in EPSG:4326.', default=85)
-    parser.add_argument('--lon-begin', help='The minimum longitude of the dataset in EPSG:4326.', default=-180)
-    parser.add_argument('--lon-end', help='The maximum longitude of the dataset in EPSG:4326.', default=180)
+    parser.add_argument(
+        '--lat-end',
+        help='The maximum latitude of the dataset in EPSG:4326.',
+        default=85,
+    )
+    parser.add_argument(
+        '--lon-begin',
+        help='The minimum longitude of the dataset in EPSG:4326.',
+        default=-180,
+    )
+    parser.add_argument(
+        '--lon-end',
+        help='The maximum longitude of the dataset in EPSG:4326.',
+        default=180,
+    )
     parser.add_argument('--tile-width', help='The desired width of the tile in degrees.', default=5)
     parser.add_argument('--tile-height', help='The desired height of the tile in degrees.', default=5)
 
@@ -270,12 +288,12 @@ def main():
     wc_lat_range = range(
         lat_begin - (lat_begin % WORLDCOVER_TILE_SIZE),
         lat_end + (lat_end % WORLDCOVER_TILE_SIZE),
-        WORLDCOVER_TILE_SIZE
+        WORLDCOVER_TILE_SIZE,
     )
     wc_lon_range = range(
         lon_begin - (lon_begin % WORLDCOVER_TILE_SIZE),
         lon_end + (lon_end % WORLDCOVER_TILE_SIZE),
-        WORLDCOVER_TILE_SIZE
+        WORLDCOVER_TILE_SIZE,
     )
 
     # Ocean only tiles are missing from WorldCover, so we need to create blank (water-only) ones.
@@ -286,7 +304,7 @@ def main():
         lat_range,
         lon_range,
         tile_width=tile_width,
-        tile_height=tile_height
+        tile_height=tile_height,
     )
 
 

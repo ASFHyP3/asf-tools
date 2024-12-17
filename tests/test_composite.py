@@ -25,9 +25,7 @@ def test_get_target_epsg_code():
     assert composite.get_target_epsg_code([32701, 32760, 32701]) == 32701
     assert composite.get_target_epsg_code([32701, 32760, 32760]) == 32760
 
-    assert composite.get_target_epsg_code(
-        [32731, 32631, 32731, 32631, 32732, 32633, 32733, 32633, 32733]
-    ) == 32732
+    assert composite.get_target_epsg_code([32731, 32631, 32731, 32631, 32732, 32633, 32733, 32633, 32733]) == 32732
 
     # bounds
     with pytest.raises(ValueError):
@@ -67,7 +65,11 @@ def test_get_full_extents():
     expected_upper_left = (10.0, 130.0)
     expected_lower_right = (110.0, 30.0)
     expected_geotransform = [10.0, 2.0, 0.0, 130.0, 0.0, -2.0]
-    assert composite.get_full_extent(data) == (expected_upper_left, expected_lower_right, expected_geotransform)
+    assert composite.get_full_extent(data) == (
+        expected_upper_left,
+        expected_lower_right,
+        expected_geotransform,
+    )
 
     data['b'] = {
         'cornerCoordinates': {
@@ -80,7 +82,11 @@ def test_get_full_extents():
     expected_upper_left = (10.0, 140.0)
     expected_lower_right = (120.0, 30.0)
     expected_geotransform = [10.0, 2.0, 0.0, 140.0, 0.0, -2.0]
-    assert composite.get_full_extent(data) == (expected_upper_left, expected_lower_right, expected_geotransform)
+    assert composite.get_full_extent(data) == (
+        expected_upper_left,
+        expected_lower_right,
+        expected_geotransform,
+    )
 
 
 def test_make_composite(tmp_path):
@@ -88,26 +94,34 @@ def test_make_composite(tmp_path):
     epsg_code = 32601
 
     transform = [0.0, 30.0, 0.0, 60.0, 0.0, -30.0]
-    data = np.array([
-        [1, 1, 1, 1],
-        [1, 1, 1, 1],
-    ])
-    area = np.array([
-        [1, 1, 1, 1],
-        [1, 1, 1, 1],
-    ])
+    data = np.array(
+        [
+            [1, 1, 1, 1],
+            [1, 1, 1, 1],
+        ]
+    )
+    area = np.array(
+        [
+            [1, 1, 1, 1],
+            [1, 1, 1, 1],
+        ]
+    )
     asf_tools.raster.write_cog('first_data.tif', data, transform, epsg_code, nodata_value=0)
     asf_tools.raster.write_cog('first_area.tif', area, transform, epsg_code)
 
     transform = [30.0, 30.0, 0.0, 30.0, 0.0, -30.0]
-    data = np.array([
-        [3, 0, 3, 3],
-        [3, 0, 3, 3],
-    ])
-    area = np.array([
-        [1, 1, 3, 1],
-        [1, 1, 2, 1],
-    ])
+    data = np.array(
+        [
+            [3, 0, 3, 3],
+            [3, 0, 3, 3],
+        ]
+    )
+    area = np.array(
+        [
+            [1, 1, 3, 1],
+            [1, 1, 2, 1],
+        ]
+    )
     asf_tools.raster.write_cog('second_data.tif', data, transform, epsg_code)
     asf_tools.raster.write_cog('second_area.tif', area, transform, epsg_code)
 
@@ -119,17 +133,21 @@ def test_make_composite(tmp_path):
     assert os.path.exists(count_file)
 
     data = np.nan_to_num(asf_tools.raster.read_as_array(out_file))
-    expected = np.array([
-        [1, 1, 1,   1, 0],
-        [1, 2, 1, 1.5, 3],
-        [0, 3, 0,   3, 3],
-    ])
+    expected = np.array(
+        [
+            [1, 1, 1, 1, 0],
+            [1, 2, 1, 1.5, 3],
+            [0, 3, 0, 3, 3],
+        ]
+    )
     assert np.allclose(data, expected)
 
     counts = asf_tools.raster.read_as_array(count_file)
-    expected = np.array([
-        [1, 1, 1, 1, 0],
-        [1, 2, 1, 2, 1],
-        [0, 1, 0, 1, 1],
-    ])
+    expected = np.array(
+        [
+            [1, 1, 1, 1, 0],
+            [1, 2, 1, 2, 1],
+            [0, 1, 0, 1, 1],
+        ]
+    )
     assert np.allclose(counts, expected)

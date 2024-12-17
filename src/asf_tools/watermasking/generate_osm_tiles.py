@@ -6,7 +6,11 @@ import time
 import geopandas as gpd
 from osgeo import gdal
 
-from asf_tools.watermasking.utils import lat_lon_to_tile_string, remove_temp_files, setup_directories
+from asf_tools.watermasking.utils import (
+    lat_lon_to_tile_string,
+    remove_temp_files,
+    setup_directories,
+)
 
 
 gdal.UseExceptions()
@@ -24,7 +28,6 @@ def process_pbf(planet_file: str, output_file: str):
         planet_file: The path to the OSM Planet PBF file.
         output_file: The desired path of the processed PBF file.
     """
-
     natural_file = 'planet_natural.pbf'
     waterways_file = 'planet_waterways.pbf'
     reservoirs_file = 'planet_reservoirs.pbf'
@@ -50,11 +53,10 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         tile_width_deg: The width of the tile in degrees.
         tile_height_deg: The height of the tile in degrees.
     """
-
     tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False, postfix='')
     tile_tif = output_dir + tile + '.tif'
 
-    xmin, xmax, ymin, ymax = lon, lon+tile_width_deg, lat, lat+tile_height_deg
+    xmin, xmax, ymin, ymax = lon, lon + tile_width_deg, lat, lat + tile_height_deg
     pixel_size_x = 0.00009009009
     pixel_size_y = 0.00009009009
 
@@ -70,10 +72,16 @@ def process_ocean_tiles(ocean_polygons_path, lat, lon, tile_width_deg, tile_heig
         burnValues=1,
         outputBounds=[xmin, ymin, xmax, ymax],
         outputType=gdal.GDT_Byte,
-        creationOptions=GDAL_OPTIONS
+        creationOptions=GDAL_OPTIONS,
     )
 
-    temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx', tile + '.shp']
+    temp_files = [
+        tile + '.dbf',
+        tile + '.cpg',
+        tile + '.prj',
+        tile + '.shx',
+        tile + '.shp',
+    ]
     remove_temp_files(temp_files)
 
 
@@ -87,7 +95,6 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
         tile_width_deg: The desired width of the tile in degrees.
         tile_height_deg: The desired height of the tile in degrees.
     """
-
     tile = lat_lon_to_tile_string(lat, lon, is_worldcover=False, postfix='')
     tile_pbf = tile + '.osm.pbf'
     tile_tif = interior_tile_dir + tile + '.tif'
@@ -112,7 +119,7 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
     water_gdf.to_file(tile_shp, mode='w', engine='pyogrio')
     water_gdf = None
 
-    xmin, xmax, ymin, ymax = lon, lon+tile_width_deg, lat, lat+tile_height_deg
+    xmin, xmax, ymin, ymax = lon, lon + tile_width_deg, lat, lat + tile_height_deg
     pixel_size_x = 0.00009009009
     pixel_size_y = 0.00009009009
 
@@ -124,10 +131,18 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
         burnValues=1,
         outputBounds=[xmin, ymin, xmax, ymax],
         outputType=gdal.GDT_Byte,
-        creationOptions=GDAL_OPTIONS
+        creationOptions=GDAL_OPTIONS,
     )
 
-    temp_files = [tile + '.dbf', tile + '.cpg', tile + '.prj', tile + '.shx', tile_shp, tile_pbf, tile_geojson]
+    temp_files = [
+        tile + '.dbf',
+        tile + '.cpg',
+        tile + '.prj',
+        tile + '.shx',
+        tile_shp,
+        tile_pbf,
+        tile_geojson,
+    ]
     remove_temp_files(temp_files)
 
 
@@ -159,7 +174,7 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
                 '--outfile',
                 output_tile,
                 '--calc',
-                '"logical_or(A, B)"'
+                '"logical_or(A, B)"',
             ]
             subprocess.run(command)
 
@@ -185,18 +200,33 @@ def merge_interior_and_ocean(internal_tile_dir, ocean_tile_dir, finished_tile_di
 
 
 def main():
-
     parser = argparse.ArgumentParser(
         prog='generate_osm_tiles.py',
-        description='Main script for creating a tiled watermask dataset from OSM data.'
+        description='Main script for creating a tiled watermask dataset from OSM data.',
     )
 
     parser.add_argument('--planet-file-path', help='The path to the global planet.pbf file.')
     parser.add_argument('--ocean-polygons-path', help='The path to the global OSM ocean polygons.')
-    parser.add_argument('--lat-begin', help='The minimum latitude of the dataset in EPSG:4326.', default=-85)
-    parser.add_argument('--lat-end', help='The maximum latitude of the dataset in EPSG:4326.', default=85)
-    parser.add_argument('--lon-begin', help='The minimum longitude of the dataset in EPSG:4326.', default=-180)
-    parser.add_argument('--lon-end', help='The maximum longitude of the dataset in EPSG:4326.', default=180)
+    parser.add_argument(
+        '--lat-begin',
+        help='The minimum latitude of the dataset in EPSG:4326.',
+        default=-85,
+    )
+    parser.add_argument(
+        '--lat-end',
+        help='The maximum latitude of the dataset in EPSG:4326.',
+        default=85,
+    )
+    parser.add_argument(
+        '--lon-begin',
+        help='The minimum longitude of the dataset in EPSG:4326.',
+        default=-180,
+    )
+    parser.add_argument(
+        '--lon-end',
+        help='The maximum longitude of the dataset in EPSG:4326.',
+        default=180,
+    )
     parser.add_argument('--tile-width', help='The desired width of the tile in degrees.', default=5)
     parser.add_argument('--tile-height', help='The desired height of the tile in degrees.', default=5)
 
@@ -235,7 +265,7 @@ def main():
                 lon,
                 tile_width,
                 tile_height,
-                interior_tile_dir=INTERIOR_TILE_DIR
+                interior_tile_dir=INTERIOR_TILE_DIR,
             )
             process_ocean_tiles(
                 args.ocean_polygons_path,
@@ -243,7 +273,7 @@ def main():
                 lon,
                 tile_width,
                 tile_height,
-                output_dir=OCEAN_TILE_DIR
+                output_dir=OCEAN_TILE_DIR,
             )
             end_time = time.time()
             total_time = end_time - start_time

@@ -1,16 +1,15 @@
-from typing import Tuple
-
 from osgeo import gdal, osr
+
 
 gdal.UseExceptions()
 
 
 class GDALConfigManager:
     """Context manager for setting GDAL config options temporarily"""
+
     def __init__(self, **options):
-        """
-        Args:
-            **options: GDAL Config `option=value` keyword arguments.
+        """Args:
+        **options: GDAL Config `option=value` keyword arguments.
         """
         self.options = options.copy()
         self._previous_options = {}
@@ -41,7 +40,7 @@ def get_epsg_code(info: dict) -> int:
     return epsg_code
 
 
-def get_coordinates(info: dict) -> Tuple[int, int, int, int]:
+def get_coordinates(info: dict) -> tuple[int, int, int, int]:
     """Get the corner coordinates from a GDAL Info dictionary
 
     Args:

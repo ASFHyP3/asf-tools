@@ -22,8 +22,10 @@ def test_get_epsg_code():
 
 
 def test_get_coordinates():
-    water_raster = '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/' \
-                   'S1A_IW_20230228T120437_DVR_RTC30/flood_map/watermap.tif'
+    water_raster = (
+        '/vsicurl/https://hyp3-testing.s3.us-west-2.amazonaws.com/asf-tools/'
+        'S1A_IW_20230228T120437_DVR_RTC30/flood_map/watermap.tif'
+    )
     info = gdal.Info(water_raster, format='json')
 
     west, south, east, north = util.get_coordinates(info)
