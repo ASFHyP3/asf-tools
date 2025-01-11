@@ -384,7 +384,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
         '--known-water-threshold',
         type=optional_float,
         default=None,
-        help='Threshold for extracting known water area in percent.' ' If `None`, threshold will be calculated.',
+        help='Threshold for extracting known water area in percent. If `None`, threshold will be calculated.',
     )
     parser.add_argument(
         '--minimization-metric',
@@ -421,7 +421,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
             type=int,
             nargs=2,
             default=[0, 15],
-            help='Minimum and maximum bound on the flood depths calculated using the iterative ' 'estimator.',
+            help='Minimum and maximum bound on the flood depths calculated using the iterative estimator.',
         )
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')

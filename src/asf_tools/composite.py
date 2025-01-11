@@ -201,8 +201,8 @@ def make_composite(out_name: str, rasters: list[str], resolution: float | None =
         for raster, info in raster_info.items():
             log.info(f'Processing raster {raster}')
             log.debug(
-                f"Raster upper left: {info['cornerCoordinates']['upperLeft']}; "
-                f"lower right: {info['cornerCoordinates']['lowerRight']}"
+                f'Raster upper left: {info["cornerCoordinates"]["upperLeft"]}; '
+                f'lower right: {info["cornerCoordinates"]["lowerRight"]}'
             )
 
             values = read_as_array(raster)
@@ -261,7 +261,7 @@ def main():
         '-r',
         '--resolution',
         type=float,
-        help='Desired output resolution in meters ' '(default is the max resolution of all the input files)',
+        help='Desired output resolution in meters (default is the max resolution of all the input files)',
     )
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()

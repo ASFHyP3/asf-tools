@@ -102,7 +102,7 @@ def extract_water(water_file, lat, lon, tile_width_deg, tile_height_deg, interio
     tile_geojson = tile + '.geojson'
 
     # Extract tile from the main pbf, then convert it to a tif.
-    bbox = f'--bbox {lon},{lat},{lon+tile_width_deg},{lat+tile_height_deg}'
+    bbox = f'--bbox {lon},{lat},{lon + tile_width_deg},{lat + tile_height_deg}'
     extract_command = f'osmium extract -s smart -S tags=natural=water {bbox} {water_file} -o {tile_pbf}'.split(' ')
     export_command = f'osmium export --geometry-types=polygon {tile_pbf} -o {tile_geojson}'.split(' ')
     subprocess.run(extract_command)
