@@ -95,7 +95,7 @@ def expectation_maximization_threshold(tile: np.ndarray, number_of_classes: int 
     class_means = class_means + minimum - 1
     s = image_copy.shape
     posterior = np.zeros((s[0], s[1], number_of_classes))
-    posterior_lookup = dict()
+    posterior_lookup: dict = dict()
     for i in range(0, s[0]):
         for j in range(0, s[1]):
             pixel_val = image_copy2[i, j]

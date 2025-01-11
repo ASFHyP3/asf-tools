@@ -203,7 +203,7 @@ def make_copernicus_hand(
 
 
 def none_or_int(value: str):
-    if value.lower == 'none':
+    if value.lower() == 'none':
         return None
     return int(value)
 

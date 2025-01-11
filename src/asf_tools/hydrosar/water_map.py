@@ -53,8 +53,8 @@ def select_hand_tiles(
 
     tile_indexes = np.arange(tiles.shape[0])
 
-    tiles = np.ma.masked_greater_equal(tiles, hand_threshold)
-    percent_valid_pixels = np.sum(~tiles.mask, axis=(1, 2)) / (tiles.shape[1] * tiles.shape[2])
+    masked_tiles = np.ma.masked_greater_equal(tiles, hand_threshold)
+    percent_valid_pixels = np.sum(~masked_tiles.mask, axis=(1, 2)) / (masked_tiles.shape[1] * masked_tiles.shape[2])
 
     return tile_indexes[percent_valid_pixels > hand_fraction]
 
@@ -100,10 +100,10 @@ def calculate_slope_magnitude(array: np.ndarray, pixel_size) -> np.ndarray:
 def determine_membership_limits(
     array: np.ndarray, mask_percentile: float = 90.0, std_range: float = 3.0
 ) -> tuple[float, float]:
-    array = np.ma.masked_values(array, 0.0)
-    array = np.ma.masked_greater(array, np.nanpercentile(array.filled(np.nan), mask_percentile))
-    lower_limit = np.ma.median(array)
-    upper_limit = lower_limit + std_range * array.std() + 5.0
+    masked_array = np.ma.masked_values(array, 0.0)
+    masked_array = np.ma.masked_greater(masked_array, np.nanpercentile(masked_array.filled(np.nan), mask_percentile))
+    lower_limit = np.ma.median(masked_array)
+    upper_limit = lower_limit + std_range * masked_array.std() + 5.0
     return lower_limit, upper_limit
 
 

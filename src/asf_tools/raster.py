@@ -59,16 +59,16 @@ def read_as_masked_array(raster: str | Path, band: int = 1) -> np.ma.MaskedArray
     """
     log.debug(f'Reading raster values from {raster}')
     ds = gdal.Open(str(raster))
-    band = ds.GetRasterBand(band)
-    data = np.ma.masked_invalid(band.ReadAsArray())
-    nodata = band.GetNoDataValue()
+    raster_band = ds.GetRasterBand(band)
+    data = np.ma.masked_invalid(raster_band.ReadAsArray())
+    nodata = raster_band.GetNoDataValue()
     if nodata is not None:
         return np.ma.masked_values(data, nodata)
     del ds  # How to close w/ gdal
     return data
 
 
-def read_as_array(raster: str, band: int = 1) -> np.array:
+def read_as_array(raster: str, band: int = 1) -> np.ndarray:
     """Reads data from a raster image into memory
 
     Args:

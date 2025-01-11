@@ -48,7 +48,7 @@ def test_convert_scale():
 
 
 def test_convert_scale_masked_arrays():
-    masked_array = np.ma.MaskedArray([-1, 0, 1, 4, 9], mask=[False, False, False, False, False])
+    masked_array: np.ma.MaskedArray = np.ma.MaskedArray([-1, 0, 1, 4, 9], mask=[False, False, False, False, False])
     c = raster.convert_scale(masked_array, 'power', 'db')
     assert np.allclose(c.mask, [True, True, False, False, False])
     assert np.allclose(

@@ -151,7 +151,7 @@ def reproject_to_target(raster_info: dict, target_epsg_code: int, target_resolut
     return target_raster_info
 
 
-def make_composite(out_name: str, rasters: list[str], resolution: float = None):
+def make_composite(out_name: str, rasters: list[str], resolution: float | None = None):
     """Creates a local-resolution-weighted composite from Sentinel-1 RTC products
 
     Args:

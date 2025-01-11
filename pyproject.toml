@@ -112,3 +112,4 @@ warn_unused_ignores = true
 warn_unreachable = true
 strict_equality = true
 check_untyped_defs = true
+explicit_package_bases = true
