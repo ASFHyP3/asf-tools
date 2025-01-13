@@ -46,7 +46,7 @@ def test_tile_masked_array():
         ]
     )
 
-    ma = np.ma.MaskedArray(a, mask=m)
+    ma: np.ma.MaskedArray = np.ma.MaskedArray(a, mask=m)
     tiled = tile.tile_array(ma, tile_shape=(2, 2))
 
     assert tiled.shape == (4, 2, 2)
@@ -119,7 +119,7 @@ def test_untile_masked_array():
         ]
     )
 
-    ma = np.ma.MaskedArray(a, mask=m)
+    ma: np.ma.MaskedArray = np.ma.MaskedArray(a, mask=m)
     untiled = tile.untile_array(tile.tile_array(ma.copy(), tile_shape=(2, 2)), array_shape=a.shape)
 
     assert np.all(ma == untiled)

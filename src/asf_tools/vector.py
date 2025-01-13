@@ -17,6 +17,7 @@ def get_property_values_for_intersecting_features(geometry: ogr.Geometry, featur
     for feature in features:
         if feature.GetGeometryRef().Intersects(geometry):
             return True
+    return False
 
 
 def intersecting_feature_properties(geometry: ogr.Geometry, features: Iterator, feature_property: str) -> list[str]:

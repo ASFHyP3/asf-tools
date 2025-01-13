@@ -203,7 +203,7 @@ def make_copernicus_hand(
 
 
 def none_or_int(value: str):
-    if value.lower == 'none':
+    if value.lower() == 'none':
         return None
     return int(value)
 
@@ -226,8 +226,7 @@ def main():
         '--acc-threshold',
         type=none_or_int,
         default=100,
-        help='Accumulation threshold for determining the drainage mask. '
-        'If `None`, the mean accumulation value is used',
+        help='Accumulation threshold for determining the drainage mask. If `None`, the mean accumulation value is used',
     )
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
