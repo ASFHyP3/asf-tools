@@ -10,6 +10,7 @@ dependencies:
   # - arcpy  # windows only
   - python-build
   - ruff
+  - mypy
   - setuptools>=61
   - setuptools_scm>=6.2
   - pytest

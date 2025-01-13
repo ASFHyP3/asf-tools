@@ -4,7 +4,7 @@ import numpy as np
 def tile_array(
     array: np.ndarray | np.ma.MaskedArray,
     tile_shape: tuple[int, int] = (200, 200),
-    pad_value: float = None,
+    pad_value: float | None = None,
 ) -> np.ndarray | np.ma.MaskedArray:
     """Tile a 2D numpy array
 
@@ -49,6 +49,7 @@ def tile_array(
         raise ValueError(f'Cannot evenly tile a {array.shape} array into ({tile_rows},{tile_columns}) tiles')
 
     if rpad or cpad:
+        assert pad_value is not None
         padded_array = np.pad(array, ((0, rpad), (0, cpad)), constant_values=pad_value)
         if isinstance(array, np.ma.MaskedArray):
             mask = np.pad(array.mask, ((0, rpad), (0, cpad)), constant_values=True)
@@ -127,6 +128,7 @@ def untile_array(
             ] = tiled_array[ii * untiled_columns + jj, :, :]
 
     if isinstance(tiled_array, np.ma.MaskedArray):
+        assert len(untiled.shape) == 2
         untiled_mask = untile_array(tiled_array.mask, untiled.shape)
         untiled = np.ma.MaskedArray(untiled, mask=untiled_mask)
 

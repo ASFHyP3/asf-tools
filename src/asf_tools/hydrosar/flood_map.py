@@ -31,14 +31,14 @@ from asf_tools.util import get_coordinates, get_epsg_code
 log = logging.getLogger(__name__)
 
 
-def get_pw_threshold(water_array: np.array) -> float:
+def get_pw_threshold(water_array: np.ndarray) -> float:
     hist, bin_edges = np.histogram(water_array, density=True, bins=100)
     reverse_cdf = np.cumsum(np.flipud(hist)) * (bin_edges[1] - bin_edges[0])
     ths_orig = np.flipud(bin_edges)[np.searchsorted(np.array(reverse_cdf), 0.95)]
     return round(ths_orig) + 1
 
 
-def get_waterbody(input_info: dict, threshold: float | None = None) -> np.array:
+def get_waterbody(input_info: dict, threshold: float | None = None) -> np.ndarray:
     epsg = get_epsg_code(input_info)
 
     west, south, east, north = get_coordinates(input_info)
@@ -67,9 +67,9 @@ def get_waterbody(input_info: dict, threshold: float | None = None) -> np.array:
 
 
 def iterative(
-    hand: np.array,
-    extent: np.array,
-    water_levels: np.array = np.arange(15),
+    hand: np.ndarray,
+    extent: np.ndarray,
+    water_levels: np.ndarray = np.arange(15),
     minimization_metric: str = 'ts',
 ):
     def get_confusion_matrix(w):
@@ -344,7 +344,7 @@ def optional_float(value: str) -> float | None:
 def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    available_estimators = ['iterative', 'logstat', 'nmad', 'numpy']
+    available_estimators: list[str | None] = ['iterative', 'logstat', 'nmad', 'numpy']
     estimator_help = 'Flood depth estimation approach.'
     if interface == 'hyp3':
         parser.add_argument('--bucket')
@@ -384,7 +384,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
         '--known-water-threshold',
         type=optional_float,
         default=None,
-        help='Threshold for extracting known water area in percent.' ' If `None`, threshold will be calculated.',
+        help='Threshold for extracting known water area in percent. If `None`, threshold will be calculated.',
     )
     parser.add_argument(
         '--minimization-metric',
@@ -421,7 +421,7 @@ def _get_cli(interface: Literal['hyp3', 'main']) -> argparse.ArgumentParser:
             type=int,
             nargs=2,
             default=[0, 15],
-            help='Minimum and maximum bound on the flood depths calculated using the iterative ' 'estimator.',
+            help='Minimum and maximum bound on the flood depths calculated using the iterative estimator.',
         )
     else:
         raise NotImplementedError(f'Unknown interface: {interface}')

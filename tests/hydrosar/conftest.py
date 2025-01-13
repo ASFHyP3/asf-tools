@@ -8,7 +8,7 @@ import pytest
 def raster_tiles():
     tiles_file = Path(__file__).parent / 'data' / 'em_tiles.npz'
     tile_data = np.load(tiles_file)
-    tiles = np.ma.MaskedArray(tile_data['tiles'], mask=tile_data['mask'])
+    tiles: np.ma.MaskedArray = np.ma.MaskedArray(tile_data['tiles'], mask=tile_data['mask'])
     return np.log10(tiles) + 30
 
 
