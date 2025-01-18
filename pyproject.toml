@@ -116,4 +116,8 @@ install_types = true
 non_interactive = true
 pretty = true
 disable_error_code = ["import-untyped"]
-explicit_package_bases = true
+# TODO: decide on one of these options, or something better:
+#explicit_package_bases = true
+exclude = [
+    "/conftest\\.py$",
+]
