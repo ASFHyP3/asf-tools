@@ -33,5 +33,5 @@ dependencies:
   - shapely
   - tqdm
   - pip:
-    - gdal-utils # for testing
-    - -e .
+    # for testing
+    - gdal-utils
