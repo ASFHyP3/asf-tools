@@ -32,9 +32,9 @@ def test_convert_scale():
 
     a = np.array([-10, -5, 0, 5, 10])
     with pytest.raises(ValueError):
-        _ = raster.convert_scale(a, 'power', 'foo')
+        _ = raster.convert_scale(a, 'power', 'foo')  # type: ignore[arg-type]
     with pytest.raises(ValueError):
-        _ = raster.convert_scale(a, 'bar', 'amplitude')
+        _ = raster.convert_scale(a, 'bar', 'amplitude')  # type: ignore[arg-type]
 
     with pytest.warns(UserWarning):
         assert np.allclose(
@@ -50,6 +50,8 @@ def test_convert_scale():
 def test_convert_scale_masked_arrays():
     masked_array: np.ma.MaskedArray = np.ma.MaskedArray([-1, 0, 1, 4, 9], mask=[False, False, False, False, False])
     c = raster.convert_scale(masked_array, 'power', 'db')
+
+    assert isinstance(c, np.ma.MaskedArray)
     assert np.allclose(c.mask, [True, True, False, False, False])
     assert np.allclose(
         c,
@@ -60,6 +62,8 @@ def test_convert_scale_masked_arrays():
     )
 
     a = raster.convert_scale(c, 'db', 'power')
+
+    assert isinstance(a, np.ma.MaskedArray)
     assert np.allclose(a.mask, [True, True, False, False, False])
     assert np.allclose(a, np.ma.MaskedArray([-1, 0, 1, 4, 9], mask=[True, True, False, False, False]))
 
