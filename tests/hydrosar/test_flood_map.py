@@ -27,7 +27,7 @@ def test_get_waterbody():
 
 def test_logstat():
     arr = [10, 100, 1000, 10000, 100000]
-    logstd = flood_map.logstat(arr)
+    logstd = flood_map.logstat(arr)  # type: ignore[arg-type]
 
     assert np.isclose(logstd, 25.95455351947008)
 
