@@ -35,7 +35,7 @@ def test_tile_masked_array():
     a = np.array([[0, 0, 1, 1], [0, 0, 1, 1], [2, 2, 3, 3], [2, 2, 3, 3]])
 
     with pytest.raises(AttributeError):
-        _ = tile.tile_array(a, tile_shape=(2, 2)).mask
+        _ = tile.tile_array(a, tile_shape=(2, 2)).mask  # type: ignore[attr-defined]
 
     m = np.array(
         [
@@ -86,6 +86,7 @@ def test_untile_array():
         ]
     )
 
+    assert len(a.shape) == 2
     assert np.all(a == tile.untile_array(tile.tile_array(a, tile_shape=(2, 2)), array_shape=a.shape))
     assert np.all(a == tile.untile_array(tile.tile_array(a, tile_shape=(4, 4), pad_value=9), array_shape=a.shape))
     assert np.all(a == tile.untile_array(tile.tile_array(a, tile_shape=(2, 4), pad_value=9), array_shape=a.shape))
@@ -107,8 +108,9 @@ def test_untile_array():
 def test_untile_masked_array():
     a = np.array([[0, 0, 1, 1], [0, 0, 1, 1], [2, 2, 3, 3], [2, 2, 3, 3]])
 
+    assert len(a.shape) == 2
     with pytest.raises(AttributeError):
-        _ = tile.untile_array(tile.tile_array(a, tile_shape=(2, 2)), array_shape=a.shape).mask
+        _ = tile.untile_array(tile.tile_array(a, tile_shape=(2, 2)), array_shape=a.shape).mask  # type: ignore[attr-defined]
 
     m = np.array(
         [
@@ -122,9 +124,12 @@ def test_untile_masked_array():
     ma: np.ma.MaskedArray = np.ma.MaskedArray(a, mask=m)
     untiled = tile.untile_array(tile.tile_array(ma.copy(), tile_shape=(2, 2)), array_shape=a.shape)
 
+    assert isinstance(untiled, np.ma.MaskedArray)
     assert np.all(ma == untiled)
     assert np.all(ma.mask == untiled.mask)
 
     untiled = tile.untile_array(tile.tile_array(ma.copy(), tile_shape=(3, 3), pad_value=4), array_shape=a.shape)
+
+    assert isinstance(untiled, np.ma.MaskedArray)
     assert np.all(ma == untiled)
     assert np.all(ma.mask == untiled.mask)
