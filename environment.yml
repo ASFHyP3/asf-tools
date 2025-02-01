@@ -18,7 +18,7 @@ dependencies:
   - pytest-cov
   # For running
   - astropy
-  - boto3<1.36.0  # FIXME: remove top pin when tests no longer fail
+  - boto3>=1.36.0
   - fiona
   - gdal>=3.7
   - geopandas
