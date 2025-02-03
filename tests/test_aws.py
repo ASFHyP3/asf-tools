@@ -29,6 +29,7 @@ def test_upload_file_to_s3(tmp_path, s3_stubber):
         'Bucket': 'myBucket',
         'Key': 'myFile.zip',
         'ContentType': 'application/zip',
+        'ChecksumAlgorithm': 'CRC32',
     }
     tag_params = {
         'Bucket': 'myBucket',
@@ -49,6 +50,7 @@ def test_upload_file_to_s3_with_prefix(tmp_path, s3_stubber):
         'Bucket': 'myBucket',
         'Key': 'myPrefix/myFile.txt',
         'ContentType': 'text/plain',
+        'ChecksumAlgorithm': 'CRC32',
     }
     tag_params = {
         'Bucket': 'myBucket',

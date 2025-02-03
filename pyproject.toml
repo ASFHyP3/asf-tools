@@ -22,6 +22,7 @@ classifiers=[
 ]
 dependencies = [
     "astropy",
+    "boto3>=1.36.0",
     "fiona",
     "gdal>=3.3",
     "geopandas",
