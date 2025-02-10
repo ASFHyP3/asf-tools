@@ -9,8 +9,6 @@ dependencies:
   # For packaging, and testing
   # - arcpy  # windows only
   - python-build
-  - ruff
-  - mypy
   - setuptools>=61
   - setuptools_scm>=6.2
   - pytest
@@ -33,5 +31,6 @@ dependencies:
   - shapely
   - tqdm
   - pip:
+    - -r requirements-static.txt
     # for testing
     - gdal-utils
