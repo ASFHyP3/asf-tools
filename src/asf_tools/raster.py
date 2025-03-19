@@ -57,18 +57,19 @@ def read_as_masked_array(raster: str | Path, band: int = 1) -> np.ma.MaskedArray
     Returns:
         masked_raster: The raster pixel data as a numpy MaskedArray
     """
+    print(raster)
     log.debug(f'Reading raster values from {raster}')
     ds = gdal.Open(str(raster))
     raster_band = ds.GetRasterBand(band)
+    raster_array = raster_band.ReadAsArray()
     
     nodata = raster_band.GetNoDataValue()
-    if nodata and not np.isnan(nodata):
-        masked_raster = np.ma.masked_values(raster_band, nodata)
-    else:
-        masked_raster = np.ma.masked_invalid(raster_band.ReadAsArray())
+    if nodata is not None and not np.isnan(nodata):
+        raster_array = np.ma.masked_values(raster_array, nodata)
+    raster_array = np.ma.masked_invalid(raster_array)
     
     del ds  # How to close w/ gdal
-    return masked_raster
+    return raster_array
 
 
 def read_as_array(raster: str, band: int = 1) -> np.ndarray:
