@@ -55,9 +55,8 @@ def read_as_masked_array(raster: str | Path, band: int = 1) -> np.ma.MaskedArray
         band: The raster band to read
 
     Returns:
-        masked_raster: The raster pixel data as a numpy MaskedArray
+        raster_array: The raster pixel data as a numpy MaskedArray
     """
-    print(raster)
     log.debug(f'Reading raster values from {raster}')
     ds = gdal.Open(str(raster))
     raster_band = ds.GetRasterBand(band)
