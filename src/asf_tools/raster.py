@@ -61,12 +61,12 @@ def read_as_masked_array(raster: str | Path, band: int = 1) -> np.ma.MaskedArray
     ds = gdal.Open(str(raster))
     raster_band = ds.GetRasterBand(band)
     raster_array = raster_band.ReadAsArray()
-    
+
     nodata = raster_band.GetNoDataValue()
     if nodata is not None:
         raster_array = np.ma.masked_values(raster_array, nodata)
     raster_array = np.ma.masked_invalid(raster_array)
-    
+
     del ds  # How to close w/ gdal
     return raster_array
 
