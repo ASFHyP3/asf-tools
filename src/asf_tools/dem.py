@@ -31,6 +31,7 @@ def prepare_dem_vrt(vrt: str | Path, geometry: ogr.Geometry | BaseGeometry):
         if isinstance(geometry, BaseGeometry):
             geometry = ogr.CreateGeometryFromWkb(geometry.wkb)
 
+        assert isinstance(geometry, ogr.Geometry)
         min_lon, max_lon, _, _ = geometry.GetEnvelope()
         if min_lon < -160.0 and max_lon > 160.0:
             raise ValueError(f'asf_tools does not currently support geometries that cross the antimeridian: {geometry}')

@@ -16,7 +16,7 @@ import warnings
 from collections.abc import Callable
 from pathlib import Path
 from shutil import make_archive
-from typing import Literal
+from typing import Literal, Any
 
 import numpy as np
 from osgeo import gdal
@@ -164,7 +164,7 @@ def estimate_flood_depth(
 
         if estimator.lower() == 'nmad':
             hand_mean = np.nanmean(hand[flood_labels == label])
-            hand_std = stats.median_abs_deviation(hand[flood_labels == label], scale='normal', nan_policy='omit')
+            hand_std: Any = stats.median_abs_deviation(hand[flood_labels == label], scale='normal', nan_policy='omit')
 
         if estimator.lower() == 'numpy':
             hand_mean = np.nanmean(hand[flood_labels == label])
@@ -260,7 +260,9 @@ def make_flood_map(
     padding_mask = vv_array.mask
     del vv_array
 
-    labeled_flood_mask, num_labels = ndimage.label(flood_mask)
+    # The return type annotation for ndimage.label is int, which seems incorrect,
+    # since the documentation shows an example of unpacking the return value, like we do here.
+    labeled_flood_mask, num_labels = ndimage.label(flood_mask)  # type: ignore[misc]
     object_slices = ndimage.find_objects(labeled_flood_mask)
     log.info(f'Detected {num_labels} waterbodies...')
     if estimator.lower() == 'iterative':
