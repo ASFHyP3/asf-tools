@@ -16,7 +16,7 @@ import warnings
 from collections.abc import Callable
 from pathlib import Path
 from shutil import make_archive
-from typing import Literal, Any
+from typing import Any, Literal
 
 import numpy as np
 from osgeo import gdal
