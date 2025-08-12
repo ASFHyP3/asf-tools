@@ -12,7 +12,7 @@ on:
 
 jobs:
   call-pytest-workflow:
-    uses: ASFHyP3/actions/.github/workflows/reusable-pytest.yml@v0.19.0
+    uses: ASFHyP3/actions/.github/workflows/reusable-pytest.yml@v0.20.0
     permissions:
       contents: read
     with:
@@ -21,7 +21,7 @@ jobs:
         ["3.10", "3.11"]
 
   call-version-info-workflow:
-    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.19.0
+    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.20.0
     permissions:
       contents: read
     with:
@@ -29,7 +29,7 @@ jobs:
 
   call-docker-ghcr-workflow:
     needs: call-version-info-workflow
-    uses: ASFHyP3/actions/.github/workflows/reusable-docker-ghcr.yml@v0.19.0
+    uses: ASFHyP3/actions/.github/workflows/reusable-docker-ghcr.yml@v0.20.0
     permissions:
       contents: read
       packages: write
