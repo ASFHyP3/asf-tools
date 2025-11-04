@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/) 
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.4]
+
+### Changed
+- Various dependencies have been upgraded.
+
+### Fixed
+- Support rasters with `nan` nodata values in `read_as_masked_array`
+- Upgraded to [Actions v0.20.0](https://github.com/ASFHyP3/actions/releases/tag/v0.20.0) so that Docker image `latest` tag will correspond to the actual version tag. See https://github.com/ASFHyP3/actions/issues/278
+  
 ## [0.8.3]
 
 ### Changed

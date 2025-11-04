@@ -129,7 +129,7 @@ def untile_array(
 
     if isinstance(tiled_array, np.ma.MaskedArray):
         assert len(untiled.shape) == 2
-        untiled_mask = untile_array(tiled_array.mask, untiled.shape)
+        untiled_mask = untile_array(tiled_array.mask, untiled.shape)  # type: ignore[arg-type]
         untiled = np.ma.MaskedArray(untiled, mask=untiled_mask)
 
     return untiled[:array_rows, :array_columns]

@@ -10,7 +10,7 @@ def _make_histogram(image):
     del indices
     size = image.size
     maximum = int(np.ceil(np.amax(image)) + 1)
-    histogram = np.zeros((1, maximum))
+    histogram: np.ndarray = np.zeros((1, maximum))
     for i in range(0, size):
         floor_value = np.floor(image[i]).astype(np.uint8)
         if 0 < floor_value < maximum - 1:
