@@ -9,7 +9,7 @@ jobs:
   finish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.TOOLS_BOT_PAK }}
@@ -36,7 +36,7 @@ jobs:
             ${{ steps.release_assets.outputs.ARC_FILE }}
 
       - name: Bump ASF Tools version in HyP3 docs
-        uses: benc-uk/workflow-dispatch@v1.2
+        uses: benc-uk/workflow-dispatch@v1.3
         with:
           workflow: update_asf_tools_version.yml
           token: ${{ secrets.TOOLS_BOT_PAK }}
