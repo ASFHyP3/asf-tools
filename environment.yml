@@ -20,7 +20,7 @@ dependencies:
   - fiona
   - gdal>=3.7
   - geopandas
-  - numpy
+  - numpy<=2
   - osmium-tool
   - pyogrio
   - pysheds>=0.3
