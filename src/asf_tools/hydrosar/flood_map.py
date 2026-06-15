@@ -262,7 +262,7 @@ def make_flood_map(
 
     # The return type annotation for ndimage.label is int, which seems incorrect,
     # since the documentation shows an example of unpacking the return value, like we do here.
-    labeled_flood_mask, num_labels = ndimage.label(flood_mask)  # type: ignore[misc]
+    labeled_flood_mask, num_labels = ndimage.label(flood_mask)
     object_slices = ndimage.find_objects(labeled_flood_mask)
     log.info(f'Detected {num_labels} waterbodies...')
     if estimator.lower() == 'iterative':
