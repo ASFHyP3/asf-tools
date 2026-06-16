@@ -326,7 +326,7 @@ def make_water_map(
         gaussian_lower_limit = np.log10(np.ma.median(array)) + 30.0
 
         water_map = fuzzy_refinement(
-            water_map,
+            np.asarray(water_map),
             gaussian_array,
             hand_array,
             pixel_size=out_transform[1],
